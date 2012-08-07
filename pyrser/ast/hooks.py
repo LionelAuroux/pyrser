@@ -149,18 +149,18 @@ class GenericHook(object):
       def push_atWrapper(self, oRule, oNode, sField):
 	  """
 	  @push_at(sField) :
-	  The next node used as local is created and add to a list, at sField.
-	  If the oRule wrapped fails the node is popped from the list.
+	  The next node used as local is created and add to a list, at sField
+	  if oRule succeed.
 	  """
-	  if not oNode.has_key(sField):
-	    oNode[sField] = []
 	  oSub = {}
-	  oNode[sField].append(oSub)
 	  next_is(oNode, oSub)
-
 	  bRes = oRule()
-	  if bRes == False:
-	    oNode[sField].pop()
+
+	  if bRes == True:
+	    if not oNode.has_key(sField):
+	      oNode[sField] = []
+	    oNode[sField].append(oSub)
+
 	  next_clean(oNode)
           return bRes
 
@@ -170,14 +170,16 @@ class GenericHook(object):
 	  If the wrapped oRule succeeds the captured text stored at sCapture key will
 	  be push at the sField list.
 	  """
-	  if not oNode.has_key(sField):
-	    oNode[sField] = []
 	  next_is(oNode, oNode)
 	  bRes = oRule()
+
 	  if bRes == True\
 	    and oNode.has_key(sCapture):
+	    if not oNode.has_key(sField):
+	      oNode[sField] = []
 	    oNode[sField].append(oNode[sCapture])
 	    del oNode[sCapture]
+
 	  next_clean(oNode)
           return bRes
 

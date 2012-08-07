@@ -106,21 +106,24 @@ class Python(Procedural):
 
       def lang_rule_directive(self, rule):
 	  if rule['prototype'].has_key('rule_directive'):
-	    for rule_directive in rule.prototype.rule_directive:
-	      self.sRes += "@%s" % rule_directive['name']
+	    for rule_directive in rule['prototype']['rule_directive']:
+	      self.sRes += "      @%s" % rule_directive['name']
 	      if rule_directive.has_key('param'):
 		self.sRes += "(%s)" % {{rule_directive.param}}
+	      self.sRes += "\n"
 
       def lang_rule(self, grammar_name, rule):
 	  self.oHelper.setGlobal('current_rule', rule['prototype']['name'])
-	  self.lang_rule_directive(rule)
 	  self.sRes +=\
 """      @staticmethod
       @parsingContext
       @node('%s')
-      def %sRule(self, oNode):
+"""	  % rule['prototype']['name']
+	  self.lang_rule_directive(rule)
+	  self.sRes +=\
+"""      def %sRule(self, oNode):
 	  \"\"\"
-          """ % (rule['prototype']['name'], rule['prototype']['name'])
+          """ % rule['prototype']['name']
 	  self.sRes += self.__oDocstring.lang_rule(grammar_name, rule)
 	  self.sRes +=\
 """	  \"\"\"

@@ -14,16 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from imp import load_source
+
 from parsing.parsing_context import parsingContext
 from ast.node import next_is
 from dsl_parser.dsl_parser import *
 
-from imp import load_source
-from os import getcwd
 
 # FIXME : virer l'importation fixe du generateur
 from code_generation.python import *
+# FIXME : solution provisoire
+from os import getenv
+# FIXME : debug
 from time import time
+# ENDFIXME
 
 class Grammar(object):
       """
@@ -41,12 +45,13 @@ class Grammar(object):
 	  sCurrentFile = oSon.__name__
 	  if bFromString == False:
 	    sCurrentFile = sSource
+	    # FIXME : fileChecking n'existe plus, trouver une solution generique
 	    sSource = fileChecking(sSource, bFromString, parse)
 
           oGrammarAst = parse(sSource, {}, oSon.__name__)
 
 	  # FIXME : path non absolu
-	  sPath = '%s/pyrser/lang/%s/%s.py' % (getcwd(), sLang, sLang)
+	  sPath = '%s/pyrser/lang/%s/%s.py' % (getenv('PYRSERPATH'), sLang, sLang)
 	  oLangModule = load_source(sLang, sPath)
 
 	  dLangConf = getattr(oLangModule, sLang)
@@ -59,10 +64,12 @@ class Grammar(object):
 
 #	  print sGeneratedCode
 	  oByteCode = compile(sGeneratedCode, "<string>", "exec")
+  
 	  if dGlobals == None:
 	    dGlobals = globals()
 	  else:
 	    dGlobals.update(globals())
+
 	  eval(oByteCode, dGlobals, locals())
 
 	  dLocals = locals()
@@ -70,7 +77,6 @@ class Grammar(object):
 	    if hasattr(iValue, '__func__'):
 	      setattr(oCls, iKey, getattr(dLocals['CompiledGrammar'], iKey))
 
-	  oSon.bIsSet = True
 	  # FIXME : try/catch to test if a PostGeneration function was defined
 #	  return getattr(oLangModule, '%sPostGeneration' % sLang)\
 #	      (sModuleName, sOutFile, sToFile, sGrammar, self)
