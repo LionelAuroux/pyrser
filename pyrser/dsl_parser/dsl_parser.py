@@ -19,7 +19,7 @@ from pyrser.parsing.parsing_context import parsingContext
 from pyrser.parsing.capture import *
 from pyrser.parsing.bnf_primitives import *
 from pyrser.parsing.directive_functor import *
-from pyrser.ast.node import node
+from pyrser.node import node
 from dsl_hook import *
 from dsl_error import *
 

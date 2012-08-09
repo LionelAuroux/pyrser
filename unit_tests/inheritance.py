@@ -1,6 +1,5 @@
 import unittest
 from pyrser.grammar import Grammar
-from pyrser.generic.singleton import Singleton
 
 class Father(Grammar):
       """
@@ -10,9 +9,8 @@ class Father(Grammar):
       sub ::= #identifier
       ;
       """
-      __metaclass__ = Singleton
       def __init__(self):
-	  Grammar.__init__(self, Father, Father.__doc__, globals())
+	  super(Father, self).__init__(Father, Father.__doc__, globals())
 
 class Math(Father, Grammar):
       """
@@ -23,9 +21,7 @@ class Math(Father, Grammar):
       ;
       """
       def __init__(self):
-	  Father.__init__(self)
           Grammar.__init__(self, Math, Math.__doc__, globals())
-	  Father()
 
 class MultiMath(Father, Grammar):
       """
@@ -33,8 +29,9 @@ class MultiMath(Father, Grammar):
       ;
       """
       def __init__(self):
-	  Father.__init__(self)
 	  Grammar.__init__(self, MultiMath, MultiMath.__doc__, globals())
+
+Father() # for composition we need an instance
 
 class generatedCode(unittest.TestCase):
       @classmethod

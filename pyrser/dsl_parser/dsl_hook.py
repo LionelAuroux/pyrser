@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyrser.ast.node import new_node
+from pyrser.node import new_node
 from dsl_error import GrammarException
 
 # FIXME : erase all 'del' : usefull for debug, nothing more
@@ -109,6 +109,7 @@ def alternativeHook(oNode):
       injectUnaryTerminal(oNode, 'wrapper')
       if oNode.has_key('param'):
         oNode['terminal']['param'] = oNode['param']
+	del oNode['param']
       oNode['terminal']['name'] = oNode['name']
       del oNode['wrapper']
 

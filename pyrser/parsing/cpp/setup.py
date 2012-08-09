@@ -31,6 +31,9 @@ asciiParse = Extension('asciiParse',
 		      compilePath + 'csrcs/asciiParsePrimitives.cpp',
 		      compilePath + 'csrcs/Stream.cpp'
 		    ],
+		    # Uncomment to add GDB debug symbols.
+		    extra_compile_args=["-g3"],
+		    extra_link_args=["-g3"],
 		    language = "c++")
 
 setup(

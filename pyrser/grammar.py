@@ -14,10 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 from imp import load_source
+from traceback import extract_tb
 
 from parsing.parsing_context import parsingContext
-from ast.node import next_is
+from node import next_is
+from trace import *
 from dsl_parser.dsl_parser import *
 
 
@@ -29,12 +32,43 @@ from os import getenv
 from time import time
 # ENDFIXME
 
+def runtime_error_handle(oType, oValue, oTraceback):
+    lCalls = extract_tb(oTraceback)
+    print "Fatal error : %s %s" % (oType, oValue)
+    print "This is a traceback of the called rules."
+    nDepth = 1
+    for iCall in lCalls:
+      for iManglingEnd in ['Rule', 'Wrapper', 'Hook']:
+	if iCall[2].endswith(iManglingEnd):
+	  sFile = iCall[0]
+	  if sFile == '<string>':
+	    sFile = 'generated grammar'
+	  print "%s+|In %s line %s: %s (%s)" %\
+	            (nDepth * '-',
+	             sFile,
+	             iCall[1],
+		     iCall[2][:-len(iManglingEnd)],
+		     iManglingEnd)
+	  if iManglingEnd == 'Rule':
+	    nDepth += 1
+    exit(1)
+
+sys.excepthook = runtime_error_handle
+
 class Grammar(object):
       """
       This class turn any class A that inherit it into a grammar.
       Taking the description of the grammar in parameter it will add
       all what is what is needed for A to parse it.
       """
+
+      # FIXME : instanciation's debug
+      nCount = 0
+      # ENDFIXME
+
+      TRACE = False
+      # Borg design pattern.
+      dDefined = {}
 
       @classmethod
       def __compile_grammar(oCls,
@@ -49,6 +83,7 @@ class Grammar(object):
 	    sSource = fileChecking(sSource, bFromString, parse)
 
           oGrammarAst = parse(sSource, {}, oSon.__name__)
+	  Grammar.nCount += 1
 
 	  # FIXME : path non absolu
 	  sPath = '%s/pyrser/lang/%s/%s.py' % (getenv('PYRSERPATH'), sLang, sLang)
@@ -82,24 +117,35 @@ class Grammar(object):
 #	      (sModuleName, sOutFile, sToFile, sGrammar, self)
 
       def __init__(self,
-	  sName, sSource, dGlobals = None,
+	  oSon, sSource, dGlobals = None,
 	  bFromString = True,
 	  sOutFile = None, sLang = 'python'):
-	  self.__compile_grammar(
-	      sName, sSource, dGlobals, bFromString, sOutFile, sLang)
+	  sName = oSon.__name__
+	  if sName not in Grammar.dDefined:
+	    self.__compile_grammar(
+		oSon, sSource, dGlobals, bFromString, sOutFile, sLang)
+	    Grammar.dDefined[sName] = oSon
 
       def parse(self, sSource, oRoot, sRuleName):
 	  next_is(oRoot, oRoot)
 	  Parsing.oBaseParser.parsedStream(sSource)
 	  if hasattr(self, '%sRule' % sRuleName) == False:
 	    raise Exception('First rule doesn\'t exist : %s' % sRuleName)
-	  if getattr(self, '%sRule' % sRuleName)(oRoot) == False:
+	  if Grammar.TRACE == True:
+	    oTrace = set_stack_trace(self)
+	  bRes = getattr(self, '%sRule' % sRuleName)(oRoot)
+	  if Grammar.TRACE == True:
+	    result_stack_trace(oTrace)
+	  if not bRes:
 	    return False
 	  Parsing.oBaseParser.readWs()
 	  return Parsing.oBaseParser.readEOF()
 
       def __getattr__(self, sName):
-	  if sName.endswith('Rule'):
-	    raise Exception('No such rule declared : %s::%s'\
-			    % (self.__class__.__name__, sName))
+	  for iManglingEnd in ['Rule', 'Hook', 'Wrapper']:
+	    if sName.endswith(iManglingEnd):
+	      raise Exception('No such %s declared : %s::%s'\
+		% (iManglingEnd.lower(),
+		  self.__class__.__name__,
+		  sName[:-len(iManglingEnd)]))
           raise AttributeError, sName

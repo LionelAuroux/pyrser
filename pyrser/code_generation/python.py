@@ -52,15 +52,13 @@ class Python(Procedural):
 	    "%s%sWrapper" % (self.oHelper.accessInstance(), wrapper['name'])
 	    self.unary(wrapper)
 	    self.sRes += ",oNode"
-	    if wrapper.has_key("param"):
-	      self.sRes += ", %s" % wrapper['param']
 	  else:
 	    self.sRes +=\
 	    "Hook(%s%sWrapper," % (self.oHelper.accessInstance(), wrapper['name'])
 	    self.unary(wrapper, False)
 	    self.sRes += "),oNode"
-	    if wrapper.has_key("param"):
-	      self.sRes += ", %s" % wrapper['param']
+	  if wrapper.has_key("param"):
+	    self.sRes += ", %s" % wrapper['param']
 	  self.sRes += ")"
 
       def lang_hook(self, hook):

@@ -1,13 +1,11 @@
 import unittest
 from pyrser.grammar import Grammar
-from pyrser.generic.singleton import Singleton
 
 class CompositionMath(Grammar):
       """
       operand ::=  #num '+' #num
       ;
       """
-      __metaclass__ = Singleton # for composition we need an instance
       def __init__(self):
           super(CompositionMath, self).__init__(CompositionMath,
 				     CompositionMath.__doc__,

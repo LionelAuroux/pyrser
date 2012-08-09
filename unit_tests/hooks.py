@@ -1,7 +1,7 @@
 import unittest
 from pyrser.grammar import Grammar
-from pyrser.ast.hooks import GenericHook
-from pyrser.ast.node import clean_tree
+from pyrser.hooks import GenericHook
+from pyrser.node import clean_tree
 
 """
 This set of test check the generic hook class.

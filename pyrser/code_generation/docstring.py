@@ -44,7 +44,7 @@ class Docstring(BrowseGrammar):
 	  self.sRes += " %%%s" % terminal['name']
 
       def lang_wrapper(self, terminal):
-	  self.sRes += " @%s" % terminal['wrapper']
+	  self.sRes += " @%s" % terminal['name']
 	  self.lang_terminal(terminal['terminal'])
 
       def lang_until(self, terminal):

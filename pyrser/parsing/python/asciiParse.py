@@ -1,7 +1,23 @@
 from asciiParseStream import Stream
 
 class AsciiParseWrapper:
-      def __init__(self, sStream = "", sIgnore = " \r\n\t"):
+      """
+      An ascii parsing primitive library.
+      """
+      def __init__(self
+		   ,sStream = ""
+		   ,sIgnore = " \r\n\t"
+		   ,sCLine = "//"
+		   ,sCEnd = "*/"):
+
+          if len(sCLine) == 0:
+            raise Exception(\
+	  "Line comment open tag should be 1 character long at minimum")
+
+          if len(sCBegin) < 2\
+           or len(sCEnd) < 2:
+	     raise Exception(\
+	  "comment open tag and close tag should be 2 character long at minimum.")
 
 ##### private:
 	  self.__dTag = {}
@@ -26,6 +42,10 @@ class AsciiParseWrapper:
           return self.__stream().eofPos()
 
 ##### public:
+      def readComment(self):
+	  """
+	  """
+          pass
 
       def readWs(self):
           """
@@ -37,6 +57,11 @@ class AsciiParseWrapper:
 	    self.incPos()
 	  return True 
 
+      def readIgnored(self):
+          """
+	  docstring for readIgnored
+	  """
+          pass
 
       def peekChar(self, cC):
           """
