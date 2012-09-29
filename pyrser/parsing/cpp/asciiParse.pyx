@@ -28,7 +28,7 @@ cdef class AsciiParseWrapper:
       def __init__(self\
 		   ,char* stream = ""\
 		   ,char* ignore = " \r\n\t"\
-		   ,char* sCLine = "//"
+		   ,char* sCLine = "//"\
 		   ,char* sCBegin = "/*"\
 		   ,char* sCEnd = "*/"):
           """ Python initialisation. """

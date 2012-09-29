@@ -20,7 +20,6 @@ from traceback import extract_tb
 
 from parsing.parsing_context import parsingContext
 from node import next_is
-from trace import *
 from dsl_parser.dsl_parser import *
 
 
@@ -35,7 +34,7 @@ from time import time
 def runtime_error_handle(oType, oValue, oTraceback):
     lCalls = extract_tb(oTraceback)
     print "Fatal error : %s %s" % (oType, oValue)
-    print "This is a traceback of the called rules."
+    print "This is a traceback of the called rules, hooks and wrappers:"
     nDepth = 1
     for iCall in lCalls:
       for iManglingEnd in ['Rule', 'Wrapper', 'Hook']:
@@ -53,7 +52,7 @@ def runtime_error_handle(oType, oValue, oTraceback):
 	    nDepth += 1
     exit(1)
 
-sys.excepthook = runtime_error_handle
+#sys.excepthook = runtime_error_handle
 
 class Grammar(object):
       """
@@ -86,6 +85,10 @@ class Grammar(object):
 	  Grammar.nCount += 1
 
 	  # FIXME : path non absolu
+	  # DEBUG:
+	  if getenv('PYRSERPATH') == None:
+	    raise Exception('Set PYRSERPATH in the environment.')
+	  # ENDFIXME
 	  sPath = '%s/pyrser/lang/%s/%s.py' % (getenv('PYRSERPATH'), sLang, sLang)
 	  oLangModule = load_source(sLang, sPath)
 
@@ -131,11 +134,7 @@ class Grammar(object):
 	  Parsing.oBaseParser.parsedStream(sSource)
 	  if hasattr(self, '%sRule' % sRuleName) == False:
 	    raise Exception('First rule doesn\'t exist : %s' % sRuleName)
-	  if Grammar.TRACE == True:
-	    oTrace = set_stack_trace(self)
 	  bRes = getattr(self, '%sRule' % sRuleName)(oRoot)
-	  if Grammar.TRACE == True:
-	    result_stack_trace(oTrace)
 	  if not bRes:
 	    return False
 	  Parsing.oBaseParser.readWs()

@@ -27,5 +27,9 @@ def getParserClass():
 def setBaseParser(oBaseParser):
     Parsing.oBaseParser = oBaseParser
 
-def resetBaseParser():
-    setBaseParser(getParserClass()())
+def resetBaseParser(sStream = ""\
+		   ,sIgnore = " \r\n\t"\
+		   ,sCLine = "//"\
+		   ,sCBegin = "/*"\
+		   ,sCEnd = "*/"):
+    setBaseParser(getParserClass()(sStream, sIgnore, sCLine, sCBegin, sCEnd))

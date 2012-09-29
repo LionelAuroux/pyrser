@@ -37,6 +37,14 @@ class GenericHook(object):
 	  print sStr
           return True
 
+      def idHook(self, oNode, sName):
+          """
+	  #id :
+	  Print id of the local oNode.
+	  """
+          print "[%s] - %s" % (sName, id(oNode))
+	  return True
+
       def exitHook(self, oNode):
           """
 	  #exit :
@@ -74,7 +82,7 @@ class GenericHook(object):
 	  next_clean(oNode)
 	  return bRes
 
-      def nextWrapper(self, oRule, oNode, sField):
+      def nextWrapper(self, oRule, oNode, sField, bClean = False):
 	  """
 	  @next(sField) :
 	  The next node used as local for the following rules is created and
@@ -83,7 +91,8 @@ class GenericHook(object):
 	  """
 	  next(oNode, sField)
 	  bRes = oRule()
-	  if bRes == False:
+	  if bClean == True\
+	    and bRes == False:
 	    del oNode[sField]
 	  next_clean(oNode)
           return bRes
