@@ -1,0 +1,92 @@
+class CompiledGrammar:
+      @staticmethod
+      @parsingContext
+      @node('debug')
+      def debugRule(self, oNode):
+	  """
+          Debug::debug ::= @_ [ sub1 | sub2 | sub3 | sub4 | sub5 | sub6 ]
+          ;
+	  """
+	  return True\
+               and self._Wrapper(\
+                               Expression(\
+                                              Alt(\
+                                                             NonTerminal(self.sub1Rule, oNode)\
+                                                            ,NonTerminal(self.sub2Rule, oNode)\
+                                                            ,NonTerminal(self.sub3Rule, oNode)\
+                                                            ,NonTerminal(self.sub4Rule, oNode)\
+                                                            ,NonTerminal(self.sub5Rule, oNode)\
+                                                            ,NonTerminal(self.sub6Rule, oNode)))
+               ,oNode)
+
+      @staticmethod
+      @parsingContext
+      @node('sub1')
+      def sub1Rule(self, oNode):
+	  """
+          Debug::sub1 ::= #identifier
+          ;
+	  """
+	  return True\
+               and Parsing.oBaseParser.readIdentifier()
+
+      @staticmethod
+      @parsingContext
+      @node('sub2')
+      def sub2Rule(self, oNode):
+	  """
+          Debug::sub2 ::= #num
+          ;
+	  """
+	  return True\
+               and Parsing.oBaseParser.readInteger()
+
+      @staticmethod
+      @parsingContext
+      @node('sub3')
+      def sub3Rule(self, oNode):
+	  """
+          Debug::sub3 ::= #string
+          ;
+	  """
+	  return True\
+               and Parsing.oBaseParser.readCString()
+
+      @staticmethod
+      @parsingContext
+      @node('sub4')
+      def sub4Rule(self, oNode):
+	  """
+          Debug::sub4 ::= #cchar
+          ;
+	  """
+	  return True\
+               and Parsing.oBaseParser.readCChar()
+
+      @staticmethod
+      @parsingContext
+      @node('sub5')
+      def sub5Rule(self, oNode):
+	  """
+          Debug::sub5 ::= #num #num
+          ;
+	  """
+	  return True\
+               and Parsing.oBaseParser.readInteger()\
+               and Parsing.oBaseParser.readInteger()
+
+      @staticmethod
+      @parsingContext
+      @node('sub6')
+      def sub6Rule(self, oNode):
+	  """
+          Debug::sub6 ::= #identifier #identifier
+          ;
+	  """
+	  return True\
+               and Parsing.oBaseParser.readIdentifier()\
+               and Parsing.oBaseParser.readIdentifier()
+
+
+True
+{'parent': <Recursion on dict with id=140534472067104>, 'type': 'debug'}

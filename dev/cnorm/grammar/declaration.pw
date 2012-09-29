@@ -1,0 +1,199 @@
+/* vim: set filetype=ocaml : */
+
+translation_unit ::=
+    [ @push_at("external_declaration") external_declaration ]+
+;
+
+external_declaration ::=
+          [
+              @_ declaration
+            | #reset @_ function_definition
+          ]
+          #func_ptr_or_prototype
+;
+
+declaration ::=
+          @next("ctype") declaration_specifiers #cdecl
+          @_ [init_declarator_list]?
+          ';'
+          #type("__variable__")
+          #composed_type_rewrite
+;
+
+function_definition  ::=
+          [
+              @next("ctype") [declaration_specifiers]? #cdecl
+              @_ declarator
+              // [ @_ declaration]* // in official grammar but ... wtf?
+              @next("body", True) CStatement::compound
+              #type("__function__")
+          ]
+;
+
+declaration_specifiers ::=
+          @_
+          [
+                storage_class_specifier
+              | type_qualifier
+              | type_sign
+              | type_specifier
+          ]+
+;
+
+init_declarator_list ::= @_ init_declarator
+                         [',' #push_root("external_declaration") init_declarator]*
+;
+
+init_declarator ::= @_ declarator [ '='  @next("initializer", True) initializer]?
+;
+
+storage_class_specifier ::=
+        [
+          "typedef"
+        | "extern"
+        | "static"
+        | "auto"
+        | "register"
+        ] :storage_class_specifier
+;
+
+type_specifier ::=
+        [
+          "void"
+        | "char"
+        | "short"
+        | "int"
+        | "long"
+        | "float"
+        | "double"
+        ] :type_specifier
+        | @_ struct_or_union_specifier
+        | @_ enum_specifier
+        /*| typedef_name /*FIXME : ambiguous?*/ */
+;
+
+type_qualifier ::= ["const" | "volatile"] :type_qualifier
+;
+
+type_sign ::= [ "signed" | "unsigned"] :sign
+;
+
+struct_or_union_specifier ::=
+          @_ struct_or_union [#identifier :type_specifier ]?
+          '{'  [ @push_at("declarations") struct_declaration ]+'}'
+        | @_ struct_or_union #identifier :type_specifier
+;
+
+struct_or_union ::= ["struct" #type("__struct__") | "union" #type("__union__")]
+;
+
+struct_declaration ::= @next("ctype") specifier_qualifier_list #cdecl
+                       #ctype("__variable__")
+                       @_ struct_declarator_list ';'
+;
+
+specifier_qualifier_list ::= [ @_ type_specifier | @_ type_qualifier]+
+;
+
+struct_declarator_list ::= @_ struct_declarator #type("__declaration__")
+                           [ 
+                             ',' #push_parent("declarations") struct_declarator
+                             #type("__declaration__")
+                           ]*
+;
+
+struct_declarator ::=
+        @_ declarator [ ':' @next("bitfield", True) CExpression::constant ]?
+;
+
+enum_specifier ::=
+        [
+            "enum"  [ #identifier :type_specifier ]?
+            '{'  @_ enumerator_list '}'
+          | "enum"    #identifier :type_specifier
+        ]
+        #type("__enum__")
+;
+
+enumerator_list ::= @push_at("declarations") enumerator
+                    [ ',' @push_at("declarations") enumerator ]*
+;
+
+enumerator ::= #identifier :name
+               [ '='  @next("constant", True) CExpression::constant ]?
+               #type("enumerator")
+;
+
+declarator  ::= @_ [ pointer ]? @_ direct_declarator #type("declarator")
+;
+
+direct_declarator  ::=
+          [
+              '(' #slide("return", "ctype") @_ declarator ')'
+              #ctype("__func_ptr__")
+            | #identifier :name
+          ]
+          [ @_ direct_absolute_declarator ]?
+;
+
+direct_absolute_declarator  ::=
+            [ '[' @push_at("array") [CExpression::constant ]? ']' ]+
+            |
+            '(' [ @next("ctype") parameter_list ]? ')'
+;
+
+pointer ::= '*' #cdecl #insert_ptr
+            [ 
+                '*' #insert_ptr
+              | type_qualifier :type_qualifier #add_qualifier
+            ]*
+;
+
+ellipsis ::= "..."
+             #cdecl
+             #type("parameter_declaration")
+             #ctype("__ellipsis__")
+             #set("type_specifier", "...", "ctype")
+;
+
+parameter_list  ::=
+        @push_at("parameters") parameter_declaration
+  [ ',' @push_at("parameters") parameter_declaration ]*
+  [ ',' @push_at("parameters") ellipsis ]?
+;
+
+parameter_declaration ::=
+  @next("ctype") declaration_specifiers #cdecl
+  [ @_ declarator | [ #clean("pointer", "ctype") @_ abstract_declarator ]?]
+;
+
+type_name ::= @next("ctype") specifier_qualifier_list [ @_ abstract_declarator]?
+;
+
+abstract_declarator ::=
+          @_ [pointer]? @_ direct_abstract_declarator #type("declarator")
+        | #clean("pointer", "ctype") @_ pointer
+
+;
+
+direct_abstract_declarator ::=
+          '('  #slide("return", "ctype") @_ abstract_declarator ')'
+               #ctype("__func_ptr__")
+          [ @next("ctype") direct_absolute_declarator ]?
+;
+
+typedef_name ::= #identifier
+;
+
+initializer ::=
+        @push_at("initializer_list")
+        [
+            CExpression::assignment
+          | '{' @_ initializer_list '}'
+        ]
+        #type("initializer")
+        #clean_list("initializer_list", "right")
+;
+
+initializer_list ::=  @_ initializer [ ','  @_ initializer]*
+;

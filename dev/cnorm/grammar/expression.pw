@@ -1,0 +1,68 @@
+/* vim: set filetype=ocaml : */
+
+expression ::= @_ assignment :captured #captured_something
+;
+
+assignment ::=
+  @_ conditional
+  [ ['=' #Nnary_op("binary", "left", "right") ] :op conditional]*
+;
+
+constant ::= @_ conditional
+;
+
+conditional ::=
+  @_ add
+  [
+    ['?' #Nnary_op("ternary", "condition", "then")] :op
+    [add]?
+    ':'
+    @next("else")
+    [add]?
+  ]?
+;
+
+add ::=
+  @_ mul [ [ ['+'| '-'] #Nnary_op("binary", "left", "right") ] :op mul ]*
+;
+
+mul ::=
+  @_ unary [ [ ['/'| '*' | '%'] #Nnary_op("binary", "left", "right") ] :op unary ]*
+;
+
+unary ::=
+  [
+    @_ postfix #sizeof
+    | 
+    @_
+    [
+      [
+        ['-' | '&' | '*' | "++" | "--"] :op #type_next("unary", "subexpr")
+        | '(' type_name :op ')' #type_next("cast", "subexpr")
+      ]
+      unary // (*FIXME : infinite loop if put after the oneZero expression*)
+    ]?
+  ]
+;
+
+postfix ::=
+  @_ primary
+  [
+      '['  #to_post_expr("index") add ']' 
+    | '('  #to_post_expr("call") add ')' 
+    | ['.' | "->"] :op  #to_post_op("struct") struct_postfix
+  ]*
+  [ ["++" | "--"] :op #to_post_op("operator") ]?
+;
+
+type_name ::= ["void" | "char"| "int"] :type_name
+;
+
+struct_postfix ::= #identifier :struct_id
+;
+
+primary ::=
+    #num :primary #primary("primary")
+    | #identifier :primary_id #primary("id")
+    | '(' ![type_name] #type_next("parenthesis", "body") add ')'
+;

@@ -1,0 +1,82 @@
+/* vim: set filetype=ocaml : */
+
+statement ::=
+       @_
+       [
+          selection
+        | compound
+        | iteration
+        | jump
+        | labeled
+        | expression
+       ]
+;
+
+selection ::=
+         [
+           "if" :keyword '('  @next("condition") CExpression::expression ')'
+           @next("stmt") statement
+           [ "else"  @next("else") statement]?
+         |
+           "switch" :keyword '('  @next("condition") CExpression::expression ')'
+           @next("stmt") statement
+         ]
+         #type("selection")
+;
+
+compound ::=
+         '{'
+         
+         [@push_at("stmts") statement ]*
+         #type("compound")
+         
+         '}'
+;
+
+iteration ::=
+         [
+           "while" :keyword '('  @next("condition") CExpression::expression ')'
+           @next("stmt") statement
+         | 
+           "do" :keyword
+           @next("stmt") statement
+           "while" '('  @next("condition") CExpression::expression ')' ';'
+         | 
+           "for" :keyword '('
+           [@next("for_init", True) CExpression::expression]? ';'
+           [@next("condition", True) CExpression::expression]? ';'
+           [@next("for_each", True)  CExpression::expression]? ')'
+           @next("stmt") statement
+         ] 
+         #type("iteration")
+;
+
+jump ::=
+         [
+           "goto" :keyword #identifier :label ';'
+         | 
+           ["continue" | "break"] :keyword ';'
+         | 
+           "return" :keyword
+           ['(' @next("condition") CExpression::expression ')']?
+           ';'
+         ]
+          #type("jump")
+;
+
+labeled ::=
+        [
+          [
+              "default" :keyword
+            | "case" :keyword #false CExpression::constant
+            | #identifier :label
+          ]
+          ':' @next("stmt") statement
+        ]
+        #type("labeled")
+;
+
+expression ::= 
+         @next("subexpr") [CExpression::expression]? ';'
+         #type("expression")
+;

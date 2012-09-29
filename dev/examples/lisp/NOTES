@@ -1,0 +1,56 @@
+and(functor(eq, integer(33), integer(42)),
+    functor())
+
+  printf("Test : %d\n", add(integer(40), integer(2)));
+	printf("Test : %d\n", add(integer(40), integer(2)));
+//	dump_list(list(integer(40), integer(2), id("foo"),
+//		      list(id("bar"), integer(3))));
+/*
+	dump_list(list(id("let"),
+		       list(list(id("x"), integer(20)),
+			    list(id("y"), integer(-22))),
+		       list(id("add"),
+			    id("x"),
+			    id("y"))));
+	printf("\n");
+*/
+; this is a variable definition. Variables are globals
+(defparameter *x* 123)
+
+; this is a constant definition.
+ (defconstant Zero 0)
+
+; if syntax OK
+(if (< x 3)
+    (print "x < 3")
+    (print "x > 3"))
+
+; without else part. OK
+(if x
+(print "x is not null"))
+
+; logical operator OK
+(or
+  (and (null n) (print "n is null"))
+(print "n is not null"))
+
+; more if
+(if 0
+(print "true"))
+(if nil
+(print "never printed"))
+(if ’()
+(print "never printed"))
+
+;this is a function definition
+(defun function-name (arg1 arg2 arg3...)
+       (- arg1 arg2 (+ arg3)))
+
+ici ils auront a generer a partir de defun:
+atom*  function-name(const atom** list)
+{
+  add(list[2],
+      functor(minus, list[1], list[2]))
+}
+
+a gerer pour eux : le nombre d'arguments, le type des atoms passe en parametres
