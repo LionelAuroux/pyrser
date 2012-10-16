@@ -165,9 +165,7 @@ public:
 		++index;
 		++text_index;
 	      }
-	    if (text_index == len)
-	      return (true);
-	    return (false);
+	    return (text_index == len);
 	  }
 
 	inline char		lastRead(void) const

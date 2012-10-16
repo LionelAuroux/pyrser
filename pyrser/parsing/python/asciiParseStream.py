@@ -1,5 +1,5 @@
 from asciiParseContext import AsciiParseContext
-from error import error
+from copy import copy
 
 class Stream:
       def __init__(self, sString = "", sName = "stream", sIgnore = " \r\n\t"):
@@ -16,19 +16,19 @@ class Stream:
 ##### public:
 
       def saveContext(self):
-          self.__lContext.append(AsciiParseContext())
+          self.__lContext.append(copy(self.__context()))
 
       def restoreContext(self):
           self.__lContext.pop()
 
       def validContext(self):
           nCtxt = len(self.__lContext)
-	  if nCtxt < 2:
-	    error("Context error. (Context nbr == 1)", self)
+#	  if nCtxt < 2:
+#	    error("Context error. (Context nbr == 1)", self)
 	  self.__lContext[nCtxt - 2] = self.__context()
 	  self.__lContext.pop()
-	  if len(self.__lContext) == 0:
-	    error("Context error. (No context)", self)
+#	  if len(self.__lContext) == 0:
+#	    error("Context error. (No context)", self)
 
       def setWsList(self, sWsList):
           self.__context().sWsList = sWsList
@@ -36,7 +36,7 @@ class Stream:
       def getWsList(self):
           return self.__context().sWsList
 
-      def getIndex(self):
+      def index(self):
           return self.__context().nIndex
 
       def incPos(self):
@@ -46,8 +46,16 @@ class Stream:
 	  self.__context().nCol += 1
 	  self.__context().nIndex += 1
 
+      def incPosOf(self, nInc):
+	  while nInc > 0:
+	    self.incPos()
+	    nInc -= 1
+
       def getChar(self):
           return self.__sString[self.__context().nIndex]
+
+      def getCharAt(self, nIndex):
+          return self.__sString[nIndex]
 
       def eofPos(self):
           return self.__neofPos
@@ -67,13 +75,13 @@ class Stream:
 	  return self.__sString[0]
 
       def getStream(self):
-	  return self.sString
+	  return self.__sString
 
-      def printStream(self):
-          nIndex = 0
+      def printStream(self, nIndex):
 	  while nIndex < self.__neofPos:
-	    if self.getChar().isspace() == True:
-	      print '0x%x' % self.getChar(),
+	    if self.getCharAt(nIndex).isalnum() == False:
+	      print '0x%x' % ord(self.getCharAt(nIndex)),
 	    else:
-	      print self.getChar(),
+	      print self.getCharAt(nIndex),
+	    nIndex += 1
 	  print

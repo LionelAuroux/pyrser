@@ -38,18 +38,18 @@ def runtime_error_handle(oType, oValue, oTraceback):
     nDepth = 1
     for iCall in lCalls:
       for iManglingEnd in ['Rule', 'Wrapper', 'Hook']:
-	if iCall[2].endswith(iManglingEnd):
-	  sFile = iCall[0]
-	  if sFile == '<string>':
-	    sFile = 'generated grammar'
-	  print "%s+|In %s line %s: %s (%s)" %\
-	            (nDepth * '-',
-	             sFile,
-	             iCall[1],
-		     iCall[2][:-len(iManglingEnd)],
-		     iManglingEnd)
-	  if iManglingEnd == 'Rule':
-	    nDepth += 1
+        if iCall[2].endswith(iManglingEnd):
+          sFile = iCall[0]
+          if sFile == '<string>':
+            sFile = 'generated grammar'
+          print "%s+|In %s line %s: %s (%s)" %\
+                    (nDepth * '-',
+                     sFile,
+                     iCall[1],
+        	     iCall[2][:-len(iManglingEnd)],
+        	     iManglingEnd)
+          if iManglingEnd == 'Rule':
+            nDepth += 1
     exit(1)
 
 #sys.excepthook = runtime_error_handle
@@ -71,80 +71,80 @@ class Grammar(object):
 
       @classmethod
       def __compile_grammar(oCls,
-	  oSon, sSource, dGlobals,
-	  bFromString,
-	  sOutFile, sLang):
+          oSon, sSource, dGlobals,
+          bFromString,
+          sOutFile, sLang):
 
-	  sCurrentFile = oSon.__name__
-	  if bFromString == False:
-	    sCurrentFile = sSource
-	    # FIXME : fileChecking n'existe plus, trouver une solution generique
-	    sSource = fileChecking(sSource, bFromString, parse)
+          sCurrentFile = oSon.__name__
+          if bFromString == False:
+            sCurrentFile = sSource
+            # FIXME : fileChecking n'existe plus, trouver une solution generique
+            sSource = fileChecking(sSource, bFromString, parse)
 
           oGrammarAst = parse(sSource, {}, oSon.__name__)
-	  Grammar.nCount += 1
+          Grammar.nCount += 1
 
-	  # FIXME : path non absolu
-	  # DEBUG:
-	  if getenv('PYRSERPATH') == None:
-	    raise Exception('Set PYRSERPATH in the environment.')
-	  # ENDFIXME
-	  sPath = '%s/pyrser/lang/%s/%s.py' % (getenv('PYRSERPATH'), sLang, sLang)
-	  oLangModule = load_source(sLang, sPath)
+          # FIXME : path non absolu
+          # DEBUG:
+          if getenv('PYRSERPATH') == None:
+            raise Exception('Set PYRSERPATH in the environment.')
+          # ENDFIXME
+          sPath = '%s/pyrser/lang/%s/%s.py' % (getenv('PYRSERPATH'), sLang, sLang)
+          oLangModule = load_source(sLang, sPath)
 
-	  dLangConf = getattr(oLangModule, sLang)
-	  
-	  # FIXME : choper la bonne classe : python/c/c++/ocaml etc
-#	  t = time()
-	  sGeneratedCode =\
-	      Python(dLangConf).translation(oSon.__name__, oGrammarAst['rules'])
-#	  print time() - t
+          dLangConf = getattr(oLangModule, sLang)
+          
+          # FIXME : choper la bonne classe : python/c/c++/ocaml etc
+#          t = time()
+          sGeneratedCode =\
+              Python(dLangConf).translation(oSon.__name__, oGrammarAst['rules'])
+#          print time() - t
 
-#	  print sGeneratedCode
-	  oByteCode = compile(sGeneratedCode, "<string>", "exec")
+#          print sGeneratedCode
+          oByteCode = compile(sGeneratedCode, "<string>", "exec")
   
-	  if dGlobals == None:
-	    dGlobals = globals()
-	  else:
-	    dGlobals.update(globals())
+          if dGlobals == None:
+            dGlobals = globals()
+          else:
+            dGlobals.update(globals())
 
-	  eval(oByteCode, dGlobals, locals())
+          eval(oByteCode, dGlobals, locals())
 
-	  dLocals = locals()
-	  for iKey, iValue in dLocals['CompiledGrammar'].__dict__.iteritems():
-	    if hasattr(iValue, '__func__'):
-	      setattr(oCls, iKey, getattr(dLocals['CompiledGrammar'], iKey))
+          dLocals = locals()
+          for iKey, iValue in dLocals['CompiledGrammar'].__dict__.iteritems():
+            if hasattr(iValue, '__func__'):
+              setattr(oCls, iKey, getattr(dLocals['CompiledGrammar'], iKey))
 
-	  # FIXME : try/catch to test if a PostGeneration function was defined
-#	  return getattr(oLangModule, '%sPostGeneration' % sLang)\
-#	      (sModuleName, sOutFile, sToFile, sGrammar, self)
+          # FIXME : try/catch to test if a PostGeneration function was defined
+#          return getattr(oLangModule, '%sPostGeneration' % sLang)\
+#              (sModuleName, sOutFile, sToFile, sGrammar, self)
 
       def __init__(self,
-	  oSon, sSource, dGlobals = None,
-	  bFromString = True,
-	  sOutFile = None, sLang = 'python'):
-	  sName = oSon.__name__
-	  if sName not in Grammar.dDefined:
-	    self.__compile_grammar(
-		oSon, sSource, dGlobals, bFromString, sOutFile, sLang)
-	    Grammar.dDefined[sName] = oSon
+          oSon, sSource, dGlobals = None,
+          bFromString = True,
+          sOutFile = None, sLang = 'python'):
+          sName = oSon.__name__
+          if sName not in Grammar.dDefined:
+            self.__compile_grammar(
+        	oSon, sSource, dGlobals, bFromString, sOutFile, sLang)
+            Grammar.dDefined[sName] = oSon
 
       def parse(self, sSource, oRoot, sRuleName):
-	  next_is(oRoot, oRoot)
-	  Parsing.oBaseParser.parsedStream(sSource)
-	  if hasattr(self, '%sRule' % sRuleName) == False:
-	    raise Exception('First rule doesn\'t exist : %s' % sRuleName)
-	  bRes = getattr(self, '%sRule' % sRuleName)(oRoot)
-	  if not bRes:
-	    return False
-	  Parsing.oBaseParser.readWs()
-	  return Parsing.oBaseParser.readEOF()
+          next_is(oRoot, oRoot)
+          Parsing.oBaseParser.parsedStream(sSource)
+          if hasattr(self, '%sRule' % sRuleName) == False:
+            raise Exception('First rule doesn\'t exist : %s' % sRuleName)
+          bRes = getattr(self, '%sRule' % sRuleName)(oRoot)
+          if not bRes:
+            return False
+          Parsing.oBaseParser.readWs()
+          return Parsing.oBaseParser.readEOF()
 
       def __getattr__(self, sName):
-	  for iManglingEnd in ['Rule', 'Hook', 'Wrapper']:
-	    if sName.endswith(iManglingEnd):
-	      raise Exception('No such %s declared : %s::%s'\
-		% (iManglingEnd.lower(),
-		  self.__class__.__name__,
-		  sName[:-len(iManglingEnd)]))
+          for iManglingEnd in ['Rule', 'Hook', 'Wrapper']:
+            if sName.endswith(iManglingEnd):
+              raise Exception('No such %s declared : %s::%s'\
+        	% (iManglingEnd.lower(),
+        	  self.__class__.__name__,
+        	  sName[:-len(iManglingEnd)]))
           raise AttributeError, sName

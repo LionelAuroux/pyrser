@@ -57,8 +57,8 @@ class NoDepthGeneration(Grammar):
 
       def testWrapper(self, oRule, oNode):
           bRes = oRule()
-	  oNode['test'] =  oNode['capture']
-	  return bRes
+          oNode['test'] = oNode['capture']
+          return bRes
 
 class generatedCode(unittest.TestCase):
       @classmethod
