@@ -3,23 +3,24 @@ from pyrser.hooks import GenericHook
 from pyrser.node import clean_tree
 from pprint import pprint
 
+
 class Debug(Grammar, GenericHook):
-      """
-      debug ::= @next("sub") sub
-      ;
+    """
+    debug ::= @next("sub") sub
+    ;
 
-      sub ::= @_ [subsub | foo]
-      ;
+    sub ::= @_ [subsub | foo]
+    ;
 
-      subsub ::= #identifier :id
-      ;
+    subsub ::= #identifier :id
+    ;
 
-      foo ::= #num :num
-      ;
-      """
-      def __init__(self):
-          Grammar.__init__(self, Debug, Debug.__doc__)
-	  GenericHook.__init__(self)
+    foo ::= #num :num
+    ;
+    """
+    def __init__(self):
+        Grammar.__init__(self, Debug, Debug.__doc__)
+        GenericHook.__init__(self)
 
 oGrammar = Debug()
 oRoot = {}
