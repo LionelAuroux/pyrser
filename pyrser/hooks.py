@@ -1,187 +1,186 @@
-from pyrser.node import next, next_is, clean_tree, slide, next_clean
-from pyrser.parsing import Parsing
-from pyrser.trace import *
-from pprint import pprint
+from pyrser import node
+from pyrser import parsing
+from pyrser import trace
+import pprint
 
 
 class GenericHook(object):
 ##### Hooks:
-    def trueHook(self, oNode):
+    def true_hook(self, node_):
         """
         #true :
         Returns True.
-        Usefull for debug, for example if you didn't developp a part of a grammar.
+        Usefull for to mock a hook for debug.
         """
         return True
 
-    def falseHook(self, oNode):
+    def false_hook(self, node_):
         """
         #false :
         Returns False.
-        Usefull for debug, for example if you didn't developp a part of a grammar.
+        Usefull for to mock a hook for debug.
         """
         return False
 
-    def dumpHook(self, oNode):
+    def dump_hook(self, node_):
         """
         #dump :
         Dump the content of the current node.
         """
-        pprint(oNode)
+        pprint.pprint(node_)
         return True
 
-    def printHook(self, oNode, sStr):
+    def print_hook(self, node_, str_):
         """
-        #print(sStr) :
-        Print sStr.
+        #print(str) :
+        Print str.
         """
-        print sStr
+        print str_
         return True
 
-    def idHook(self, oNode, sName):
+    def id_hook(self, node_, name):
         """
         #id :
-        Print id of the local oNode.
+        Print id of the local node_.
         """
-        print "[%s] - %s" % (sName, id(oNode))
+        print "[%s] - %s" % (name, id(node_))
         return True
 
-    def exitHook(self, oNode):
+    def exit_hook(self, node_):
         """
         #exit :
         Exit the processus.
         """
         exit(1)
 
-    def traceHook(self, oNode):
+    def traceHook(self, node_):
         """
         Trace the function called until now.
         """
-        rule_stack_trace(self)
+        trace.rule_stack_trace(self)
         return True
 
-    def slideHook(self, oNode, sField, sSubKey=None):
+    def slideHook(self, node_, field, subkey=None):
         """
-        #slide(sField) :
-        The whole content of oNode will be put in a new node, stored at sField.
+        #slide(field) :
+        The whole content of node_ will be put in a new node, stored at field.
         """
-        if sSubKey != None:
-            oNode = oNode[sSubKey]
-        slide(oNode, sField)
+        if subkey is not None:
+            node_ = node_[subkey]
+        node.slide(node_, field)
         return True
 
 ##### Wrappers:
-    def _Wrapper(self, oRule, oNode):
+    def _Wrapper(self, rule, node_):
         """
         @_ :
         The next node used as local for the following rules will be the
         current local node.
         """
-        next_is(oNode, oNode)
-        bRes = oRule()
-        next_clean(oNode)
-        return bRes
+        node.next_is(node_, node_)
+        result = rule()
+        node.next_clean(node_)
+        return result
 
-    def nextWrapper(self, oRule, oNode, sField, bClean=False):
+    def nextWrapper(self, rule, node_, field, clean=False):
         """
-        @next(sField) :
+        @node.next(field) :
         The next node used as local for the following rules is created and
-        added under the sField key.
-        If the oRule wrapped fails the node will be delete.
+        added under the field key.
+        If the rule wrapped fails the node will be delete.
         """
-        next(oNode, sField)
-        bRes = oRule()
-        if bClean == True\
-                and bRes == False:
-            del oNode[sField]
-        next_clean(oNode)
-        return bRes
+        node.next(node_, field)
+        result = rule()
+        if clean is True and result is False:
+            del node_[field]
+        node.next_clean(node_)
+        return result
 
-    def push_atWrapper(self, oRule, oNode, sField):
+    def push_atWrapper(self, rule, node_, field):
         """
-        @push_at(sField) :
-        The next node used as local is created and add to a list, at sField
-        if oRule succeed.
+        @push_at(field) :
+        The next node used as local is created and add to a list, at field
+        if rule succeed.
         """
-        oSub = {}
-        next_is(oNode, oSub)
-        bRes = oRule()
+        sub_node = {}
+        node.next_is(node_, sub_node)
+        result = rule()
 
-        if bRes == True:
-            if sField not in oNode:
-                oNode[sField] = []
-            oNode[sField].append(oSub)
+        if result is True:
+            if field not in node_:
+                node_[field] = []
+            node_[field].append(sub_node)
 
-        next_clean(oNode)
-        return bRes
+        node.next_clean(node_)
+        return result
 
-    def push_capture_atWrapper(self, oRule, oNode, sField, sCapture):
+    def push_capture_atWrapper(self, rule, node_, field, sCapture):
         """
-        @push_capture_at(sField, sCapture) :
-        If the wrapped oRule succeeds the captured text stored at sCapture key will
-        be push at the sField list.
+        @push_capture_at(field, sCapture) :
+        If the wrapped rule succeeds the captured text stored at sCapture key
+        will be push at the field list.
         """
-        next_is(oNode, oNode)
-        bRes = oRule()
+        node.next_is(node_, node_)
+        result = rule()
 
-        if bRes == True\
-                and sCapture in oNode:
-            if sField not in oNode:
-                oNode[sField] = []
-            oNode[sField].append(oNode[sCapture])
-            del oNode[sCapture]
+        if result is True and sCapture in node_:
+            if not field in node_:
+                node_[field] = []
+            node_[field].append(node_[sCapture])
+            del node_[sCapture]
 
-        next_clean(oNode)
-        return bRes
+        node.next_clean(node_)
+        return result
 
-    def slideWrapper(self, oRule, oNode, sField, sSubKey=None):
+    def slideWrapper(self, rule, node_, field, subkey=None):
         """
-        @slide(sField) :
-        If the oRule succeed, the whole content of oNode will be put in a new
-        node, stored at sField.
+        @slide(field) :
+        If the rule succeed, the whole content of node_ will be put in a new
+        node, stored at field.
         """
-        bRes = oRule()
-        if bRes == True:
-            if sSubKey != None:
-                oNode = oNode[sSubKey]
-            slide(oNode, sField)
-        return bRes
+        result = rule()
+        if result is True:
+            if subkey is not None:
+                node_ = node_[subkey]
+            node.slide(node_, field)
+        return result
 
-    def continueWrapper(self, oRule, oNode, sText=None):
+    def continueWrapper(self, rule, node_, text=None):
         """
-        @continue(sText?) :
+        @continue(text?) :
         This wrapper should be used to keep trace of errors.
-        If the wrapped oRule fail, an execution stack will be printed ,an
+        If the wrapped rule fail, an execution stack will be printed, an
         Exception raised and the processus will be exit.
         """
-        oTrace = set_stack_trace(self)
-        bRes = oRule()
-        if bRes == False:
-            result_stack_trace(oTrace)
-            if sText != None:
-                raise Exception(sText)
+        trace_ = trace.set_stack_trace(self)
+        result = rule()
+        if result is False:
+            trace.result_stack_trace(trace_)
+            if text is not None:
+                raise Exception(text)
                 exit(1)
             raise Exception
             exit(1)
-        return bRes
+        return result
 
-    def traceWrapper(self, oRule, oNode, sName):
+    def traceWrapper(self, rule, node_, name):
         """
-        @trace(sText?) :
-        Print the rules, hooks and wrappers called by oRule, and their result.
+        @trace(text?) :
+        Print the rules, hooks and wrappers called by rule, and their result.
         """
-        oTrace = set_stack_trace(self)
-        bRes = oRule()
-        result_stack_trace(oTrace)
-        return bRes
+        trace_ = trace.set_stack_trace(self)
+        result = rule()
+        trace.result_stack_trace(trace_)
+        return result
 
-    def consumedWrapper(self, oRule, oNode, sName):
+    def consumedWrapper(self, rule, node_, name):
         """
-        @consumed(sName) :
-        Will display the text consumed by oRule if it succeeds.
+        @consumed(name) :
+        Will display the text consumed by rule if it succeeds.
         """
-        Parsing.oBaseParser.setTag(sName)
-        bRes = oRule()
-        if bRes == True:
-            print "Consumed [%s] - %s" % (sName, Parsing.oBaseParser.getTag(sName))
-        return bRes
+        parsing.Parsing.oBaseParser.setTag(name)
+        result = rule()
+        if result is True:
+            print ("Consumed [%s] - %s" %
+                  (name, parsing.Parsing.oBaseParser.getTag(name)))
+        return result

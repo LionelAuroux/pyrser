@@ -3,16 +3,16 @@ from pyrser.grammar import Grammar
 
 
 class CaptureGeneration(Grammar):
-    """
-    parentTest ::= #num :test captureTest
-    ;
+    grammar = """
+      parentTest ::= #num :test captureTest
+      ;
 
-    captureTest ::= #identifier :test #test
-    ;
-    """
-    def __init__(self):
-        super(CaptureGeneration, self).__init__(CaptureGeneration,
-                                                CaptureGeneration.__doc__)
+      captureTest ::= #identifier :test #test
+      ;
+      """
+#      def __init__(self):
+#          super(CaptureGeneration, self).__init__(CaptureGeneration,
+#                                                  CaptureGeneration.__doc__)
 
     def testHook(self, oTreeContext):
         return True

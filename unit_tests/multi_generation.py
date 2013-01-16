@@ -8,47 +8,47 @@ that implies expression imbrications.
 
 
 class MultiDepthGeneration(Grammar):
-    """
-    directive ::= [#identifier #string #num]
-      ;
+    grammar = """
+      directive ::= [#identifier #string #num]
+        ;
 
-    capture ::= [#identifier : c #identifier : c #identifier : c]
-      ;
+      capture ::= [#identifier : c #identifier : c #identifier : c]
+        ;
 
-    hook ::= [#test #test2 #test3]
-      ;
+      hook ::= [#test #test2 #test3]
+        ;
 
-    wrapper ::=  	@test #identifier :test
-                [ ',' @test #identifier :test ]*
-      ;
+      wrapper ::=  	@test #identifier :test
+		  [ ',' @test #identifier :test ]*
+	;
 
-    nonTerminal ::= [directive directive directive]
-      ;
+      nonTerminal ::= [directive directive directive]
+        ;
 
-    range ::= ['a' .. 'z' '0' .. '9' 'A' .. 'Z']
-      ;
+      range ::= ['a' .. 'z' '0' .. '9' 'A' .. 'Z']
+        ;
 
-    until ::= [->'1' ->'2' ->'3']
-      ;
+      until ::= [->'1' ->'2' ->'3']
+        ;
 
-    multiplier ::= [['1']? ['2']? ['3']?]
-      ;
+      multiplier ::= [['1']? ['2']? ['3']?]
+        ;
 
-    not ::= [!"toto" #identifier !"tata" #identifier !"titi" #identifier]
-      ;
+      not ::= [!"toto" #identifier !"tata" #identifier !"titi" #identifier]
+        ;
 
-    alt ::= [[#identifier | #num] [ #char | #string] [#cchar | #notIgnore]]
-      ;
+      alt ::= [[#identifier | #num] [ #char | #string] [#cchar | #notIgnore]]
+        ;
 
-    terminal_range1 ::= ['0'{1} '1'{2} '2'{3}]
-      ;
+      terminal_range1 ::= ['0'{1} '1'{2} '2'{3}]
+        ;
 
-    terminal_range2 ::= ['0'{1, 3} '1'{2, 4} '2'{4, 6}]
-      ;
-    """
-    def __init__(self):
-        super(MultiDepthGeneration, self).__init__(MultiDepthGeneration,
-                                                   MultiDepthGeneration.__doc__)
+      terminal_range2 ::= ['0'{1, 3} '1'{2, 4} '2'{4, 6}]
+        ;
+      """
+#      def __init__(self):
+#          super(MultiDepthGeneration, self).__init__(MultiDepthGeneration,
+#						     MultiDepthGeneration.__doc__)
 
     def testHook(self, oNode):
         return True

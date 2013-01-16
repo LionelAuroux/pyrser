@@ -3,26 +3,28 @@ from pyrser.grammar import Grammar
 
 
 class CompositionMath(Grammar):
-    """
-    operand ::=  #num '+' #num
-    ;
-    """
-    def __init__(self):
-        super(CompositionMath, self).__init__(CompositionMath,
-                                              CompositionMath.__doc__,
-                                              globals())
+    grammar = """
+      operand ::=  #num '+' #num
+      ;
+      """
+#      def __init__(self):
+#          super(CompositionMath, self).__init__(CompositionMath,
+#                                     CompositionMath.__doc__,
+#                                     globals())
 
 
 class Composition(Grammar):
-    """
-    composition ::= CompositionMath::operand
-    ;
-    """
-    def __init__(self):
-        super(Composition, self).__init__(Composition,
-                                          Composition.__doc__,
-                                          globals())
-        CompositionMath()  # for composition we need an instance
+    grammar = """
+      composition ::= CompositionMath::operand
+      ;
+      """
+    globals = globals()
+
+#      def __init__(self):
+#          super(Composition, self).__init__(Composition,
+#                                            Composition.__doc__,
+#                                            globals())
+#          CompositionMath() # for composition we need an instance
 
 
 class generatedCode(unittest.TestCase):

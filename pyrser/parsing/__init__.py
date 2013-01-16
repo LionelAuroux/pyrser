@@ -20,7 +20,7 @@ from pyrser.parsing.cpp.asciiParse import AsciiParseWrapper
 class Parsing(object):
     oParserClass = AsciiParseWrapper
     oBaseParser = oParserClass('')
-    oFinalParser = oBaseParser
+#      oFinalParser = oBaseParser
 
 
 def getParserClass():

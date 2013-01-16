@@ -8,49 +8,49 @@ with no expression imbrications
 
 
 class NoDepthGeneration(Grammar):
-    """
-    directive ::= #identifier
-     ;
+    grammar = """
+      directive ::= #identifier
+       ;
 
-    capture ::= #identifier : capture
-     ;
+      capture ::= #identifier : capture
+       ;
 
-    hook ::= #test
-     ;
+      hook ::= #test
+       ;
 
-    wrapper ::= @test capture
-     ;
+      wrapper ::= @test capture
+       ;
 
-    nonTerminal ::= directive
-     ;
+      nonTerminal ::= directive
+       ;
 
-    range ::= 'a' .. 'z'
-     ;
+      range ::= 'a' .. 'z'
+       ;
 
-    until ::= ->['1']
-     ;
+      until ::= ->['1']
+       ;
 
-    multiplier ::= ['1']?
-     ;
+      multiplier ::= ['1']?
+       ;
 
-    not ::= !"toto" #identifier
-     ;
+      not ::= !"toto" #identifier
+       ;
 
-    complement ::= ~'1' '1'
-     ;
+      complement ::= ~'1' '1'
+       ;
 
-    alt ::= #identifier | #num
-     ;
+      alt ::= #identifier | #num
+       ;
 
-    terminal_range1 ::= '0'{1}
-     ;
+      terminal_range1 ::= '0'{1}
+       ;
 
-    terminal_range2 ::= '0'{1, 3}
-     ;
-    """
-    def __init__(self):
-        super(NoDepthGeneration, self).__init__(NoDepthGeneration,
-                                                NoDepthGeneration.__doc__)
+      terminal_range2 ::= '0'{1, 3}
+       ;
+      """
+#      def __init__(self):
+#          super(NoDepthGeneration, self).__init__(NoDepthGeneration,
+#						  NoDepthGeneration.__doc__)
 
     def testHook(self, oNode):
         return True

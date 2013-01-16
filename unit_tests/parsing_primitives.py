@@ -173,8 +173,3 @@ class AsciiParseUnitTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-# DEBUG
-#	w = AsciiParseWrapper('un bc\n')
-#	print w.readUntil(' ')
-#	print "final %s" % w.index()

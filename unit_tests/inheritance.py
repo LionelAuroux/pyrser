@@ -3,38 +3,39 @@ from pyrser.grammar import Grammar
 
 
 class Father(Grammar):
-    """
-    operand ::= #num
-    ;
+    grammar = """
+      operand ::= #num
+      ;
 
-    sub ::= #identifier
-    ;
-    """
-    def __init__(self):
-        super(Father, self).__init__(Father, Father.__doc__, globals())
+      sub ::= #identifier
+      ;
+      """
+#      def __init__(self):
+#          super(Father, self).__init__(Father, Father.__doc__, globals())
 
 
 class Math(Father, Grammar):
-    """
-    operand ::= Father::operand '+' sub
-    ;
+    grammar = """
+      operand ::= Father::operand '+' sub
+      ;
 
-    sub ::= #num
-    ;
-    """
-    def __init__(self):
-        Grammar.__init__(self, Math, Math.__doc__, globals())
+      sub ::= #num
+      ;
+      """
+    globals = globals()
+#      def __init__(self):
+#          Grammar.__init__(self, Math, Math.__doc__, globals())
 
 
 class MultiMath(Father, Grammar):
-    """
-    operand ::=  Father::operand ['+' Father::operand ]+
-    ;
-    """
-    def __init__(self):
-        Grammar.__init__(self, MultiMath, MultiMath.__doc__, globals())
-
-Father()  # for composition we need an instance
+    grammar = """
+      operand ::=  Father::operand ['+' Father::operand ]+
+      ;
+      """
+    globals = globals()
+#      def __init__(self):
+#          Grammar.__init__(self, MultiMath, MultiMath.__doc__, globals())
+#          Father() # for composition we need an instance
 
 
 class generatedCode(unittest.TestCase):

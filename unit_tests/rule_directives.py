@@ -2,9 +2,6 @@ import unittest
 from functools import wraps
 from pyrser.grammar import Grammar
 
-"""
-"""
-
 
 def test(oRule):
     def wrapper(*lArgs):
@@ -15,13 +12,14 @@ def test(oRule):
 
 
 class RuleDirective(Grammar):
-    """
-    rule_directive @test ::= #identifier
-    ;
-    """
-    def __init__(self):
-        super(RuleDirective, self).__init__(RuleDirective,
-                                            RuleDirective.__doc__, globals())
+    grammar = """
+      rule_directive @test ::= #identifier
+      ;
+      """
+    globals = globals()
+#      def __init__(self):
+#          super(RuleDirective, self).__init__(RuleDirective,
+#					      RuleDirective.__doc__, globals())
 
 
 class generatedCode(unittest.TestCase):

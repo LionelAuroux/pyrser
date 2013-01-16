@@ -9,56 +9,56 @@ This set of test check the generic hook class.
 
 
 class GenericHookTest(GenericHook, Grammar):
-    """
-    _ ::= @_ sub
-    ;
+    grammar = """
+      _ ::= @_ sub
+      ;
 
-    next ::= @next("bar") sub
-    ;
+      next ::= @next("bar") sub
+      ;
 
-    push_at ::= @push_at("subs") sub [ ',' @push_at("subs") sub]*
-    ;
+      push_at ::= @push_at("subs") sub [ ',' @push_at("subs") sub]*
+      ;
 
-    push_capture_at ::= 	@push_capture_at("subs", "sub") sub
-                        [ ',' @push_capture_at("subs", "sub") sub]*
-    ;
+      push_capture_at ::=         @push_capture_at("subs", "sub") sub
+                          [ ',' @push_capture_at("subs", "sub") sub]*
+      ;
 
-    continue ::= [sub]? stack_trace_test
-    ;
+      continue ::= [sub]? stack_trace_test
+      ;
 
-    stack_trace_test ::= @continue("La regle Sub a foire!") sub
-    ;
+      stack_trace_test ::= @continue("La regle Sub a foire!") sub
+      ;
 
-    trace_hook ::= level1
-    ;
+      trace_hook ::= level1
+      ;
 
-    trace_wrapper ::= @trace('trace_wrapper') [level_1 sub level_1]
-    ;
+      trace_wrapper ::= @trace('trace_wrapper') [level_1 sub level_1]
+      ;
 
-    /* These are used for the tests */
-    level1 ::= level2
-    ;
+      /* These are used for the tests */
+      level1 ::= level2
+      ;
 
-    level2 ::= #trace
-    ;
+      level2 ::= #trace
+      ;
 
-    level_1 ::= level_2
-    ;
+      level_1 ::= level_2
+      ;
 
-    level_2 ::= level_3
-    ;
+      level_2 ::= level_3
+      ;
 
-    level_3 ::= #true
-    ;
+      level_3 ::= #true
+      ;
 
-    consumed_wrapper ::= @consumed("test") sub
-    ;
+      consumed_wrapper ::= @consumed("test") sub
+      ;
 
-    sub ::= #identifier :sub
-    ;
-    """
-    def __init__(self):
-        Grammar.__init__(self, GenericHookTest, GenericHookTest.__doc__)
+      sub ::= #identifier :sub
+      ;
+      """
+#      def __init__(self):
+#          Grammar.__init__(self, GenericHookTest, GenericHookTest.__doc__)
 
 
 class GenericHookTests(unittest.TestCase):
@@ -113,10 +113,10 @@ class GenericHookTests(unittest.TestCase):
 
 # Visual tests
 #      def test_trace_hook(self):
-#	  GenericHookTests.oGrammar.parse('', self.oRoot, 'trace_hook')
+#          GenericHookTests.oGrammar.parse('', self.oRoot, 'trace_hook')
 
 #      def test_trace_wrapper(self):
-#	  GenericHookTests.oGrammar.parse('foo', self.oRoot, 'trace_wrapper')
+#          GenericHookTests.oGrammar.parse('foo', self.oRoot, 'trace_wrapper')
 
 #      def test_consumed_wrapper(self):
-#	  GenericHookTests.oGrammar.parse('foo', self.oRoot, 'consumed_wrapper')
+# GenericHookTests.oGrammar.parse('foo', self.oRoot, 'consumed_wrapper')
