@@ -20,8 +20,8 @@ from pyrser.parsing.capture import *
 from pyrser.parsing.bnf_primitives import *
 from pyrser.parsing.directive_functor import *
 from pyrser.node import node
-from dsl_hook import *
-from dsl_error import *
+from pyrser.dsl_parser.dsl_hook import *
+from pyrser.dsl_parser.dsl_error import *
 
 
 def parse(sSource, oRoot, sCurrentFile):

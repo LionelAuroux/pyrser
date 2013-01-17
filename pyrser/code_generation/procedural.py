@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from browse_grammar import BrowseGrammar
+from pyrser.code_generation.browse_grammar import BrowseGrammar
 
 
 class Procedural(BrowseGrammar):

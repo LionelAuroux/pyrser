@@ -109,7 +109,7 @@ class GenericHookTests(unittest.TestCase):
             GenericHookTests.oGrammar.parse(
                 'id1 123 id3', self.oRoot, 'continue')
         except:
-            print "THIS EXCEPTION IS PART OF THE TEST."
+            print("THIS EXCEPTION IS PART OF THE TEST.")
 
 # Visual tests
 #      def test_trace_hook(self):

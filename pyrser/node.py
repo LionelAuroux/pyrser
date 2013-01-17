@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from types import DictType, ListType
+#from types import DictType, ListType
 from copy import copy
 
 from functools import wraps
@@ -40,7 +40,8 @@ def node(sType=None):
     def wrapper(oTarget):
         @wraps(oTarget)
         def wrapped(*lArgs):
-            if type(lArgs[0]) != DictType:
+            #if type(lArgs[0]) != DictType:
+            if type(lArgs[0]) is not dict:
                 oNode = new_node(lArgs[1], sType)
                 bRes = oTarget(lArgs[0], oNode)
             else:
@@ -52,14 +53,16 @@ def node(sType=None):
 
 
 def clean_tree(oParent, sName):
-    if type(oParent) == DictType:
+    #if type(oParent) == DictType:
+    if type(oParent) is dict:
         for iKey, iValue in oParent.iteritems():
             if iKey != 'parent'\
                     and iValue != oParent:
                 clean_tree(iValue, sName)
         if sName in oParent:
             del oParent[sName]
-    elif type(oParent) == ListType:
+    #elif type(oParent) == ListType:
+    elif type(oParent) is list:
         for iValue in oParent:
             if iValue != oParent:
                 clean_tree(iValue, sName)

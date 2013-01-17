@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyrser.parsing.cpp.asciiParse import AsciiParseWrapper
+from pyrser.parsing.python.AsciiParseWrapper import AsciiParseWrapper
 
 
 class Parsing(object):

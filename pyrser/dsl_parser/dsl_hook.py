@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from pyrser.node import new_node
-from dsl_error import GrammarException
+from pyrser.dsl_parser.dsl_error import GrammarException
 
 # FIXME : erase all 'del' : usefull for debug, nothing more
 

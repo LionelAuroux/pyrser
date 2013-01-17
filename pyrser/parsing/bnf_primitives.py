@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from parsing_context import parsingContext
-from dont_consume import dontConsume
+from pyrser.parsing.parsing_context import parsingContext
+from pyrser.parsing.dont_consume import dontConsume
 
 from pyrser.parsing import Parsing
 

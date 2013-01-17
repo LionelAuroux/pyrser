@@ -35,7 +35,7 @@ class GenericHook(object):
         #print(str) :
         Print str.
         """
-        print str_
+        print(str_)
         return True
 
     def id_hook(self, node_, name):
@@ -43,7 +43,7 @@ class GenericHook(object):
         #id :
         Print id of the local node_.
         """
-        print "[%s] - %s" % (name, id(node_))
+        print("[%s] - %s" % (name, id(node_)))
         return True
 
     def exit_hook(self, node_):

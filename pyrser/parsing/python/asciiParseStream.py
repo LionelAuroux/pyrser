@@ -1,11 +1,15 @@
-from asciiParseContext import AsciiParseContext
 from copy import copy
 
 
-class Stream:
-    def __init__(self, sString="", sName="stream", sIgnore=" \r\n\t"):
+class AsciiParseContext:
+    def __init__(self, nIndex = 0, nCol = 1, nLine = 1, sWsList = " \r\n\t"):
+        self.nIndex = nIndex
+        self.nCol = nCol
+        self.nLine = nLine
+        self.sWsList = sWsList
 
-##### private:
+class Stream:
+    def __init__(self, sString = "", sName = "stream", sIgnore = " \r\n\t"):
         self.__neofPos = len(sString)
         self.__sString = sString
         self.__sName = sName
@@ -21,15 +25,13 @@ class Stream:
 
     def restoreContext(self):
         self.__lContext.pop()
+        return False
 
     def validContext(self):
         nCtxt = len(self.__lContext)
-#	  if nCtxt < 2:
-#	    error("Context error. (Context nbr == 1)", self)
         self.__lContext[nCtxt - 2] = self.__context()
         self.__lContext.pop()
-#	  if len(self.__lContext) == 0:
-#	    error("Context error. (No context)", self)
+        return True
 
     def setWsList(self, sWsList):
         self.__context().sWsList = sWsList
@@ -75,14 +77,19 @@ class Stream:
             return self.__sString[self.__context().nIndex - 1]
         return self.__sString[0]
 
-    def getStream(self):
+    def getContent(self):
         return self.__sString
+
+    def getContentAbsolute(self, begin, end):
+        return self.__sString[begin:end]
+
+    def getContentRelative(self, begin):
+        return self.__sString[begin:self.__context().nIndex]
 
     def printStream(self, nIndex):
         while nIndex < self.__neofPos:
             if self.getCharAt(nIndex).isalnum() == False:
-                print '0x%x' % ord(self.getCharAt(nIndex)),
+                print('0x%x' % ord(self.getCharAt(nIndex)))
             else:
-                print self.getCharAt(nIndex),
-            nIndex += 1
-        print
+                print(self.getCharAt(nIndex))
+        nIndex += 1

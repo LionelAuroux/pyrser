@@ -13,13 +13,13 @@ def rule_stack_trace(oInstance):
                 sFile = iCall[0]
                 if sFile == '<string>':
                     sFile = 'generated grammar'
-                print "%s+|In %s line %s: %s::%s (%s)" %\
+                print("%s+|In %s line %s: %s::%s (%s)" %\
                     (nDepth * '-',
                       sFile,
                       iCall[1],
                       oInstance.__class__.__name__,
                       iCall[2],
-                     iManglingEnd)
+                     iManglingEnd))
                 if iManglingEnd == 'Rule':
                     nDepth += 1
 
@@ -41,8 +41,8 @@ def result_stack_trace(oTrace):
             sFile = 'generated grammar'
         if not isinstance(iCall['return'], type(True)):
             iCall['return'] = None
-        print "%s+|In %s line %s: %s::%s (%s) => [%s]"\
-            % (iCall['depth'] * '-', sFile, iCall['line'], iCall['grammar'], iCall['name'], iCall['type'], iCall['return'])
+        print("%s+|In %s line %s: %s::%s (%s) => [%s]"\
+            % (iCall['depth'] * '-', sFile, iCall['line'], iCall['grammar'], iCall['name'], iCall['type'], iCall['return']))
 
 
 class Trace(object):

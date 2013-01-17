@@ -18,14 +18,14 @@ class CaptureGeneration(Grammar):
         return True
 
 
-class generatedCode(unittest.TestCase):
+class Capture_Test(unittest.TestCase):
     @classmethod
-    def setUpClass(cGeneratedCodeClass):
-        cGeneratedCodeClass.oRoot = {}
-        cGeneratedCodeClass.oGrammar = CaptureGeneration()
+    def setUpClass(cCaptureClass):
+        cCaptureClass.oRoot = {}
+        cCaptureClass.oGrammar = CaptureGeneration()
 
     def test_capture(self):
         self.assertEqual(
-            generatedCode.oGrammar.parse('123 id', self.oRoot, 'parentTest'),
+            Capture_Test.oGrammar.parse('123 id', self.oRoot, 'parentTest'),
             True,
             'failed in capture')

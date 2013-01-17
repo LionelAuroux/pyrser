@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from procedural import *
-from docstring import Docstring
+from pyrser.code_generation.procedural import *
+from pyrser.code_generation.docstring import Docstring
 
 
 class Python(Procedural):
