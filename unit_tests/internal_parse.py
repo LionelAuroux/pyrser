@@ -166,21 +166,25 @@ class InternalParse_Test(unittest.TestCase):
         oParse.parsedStream("_ad121dwdw ()[]")
         parseTree = Clauses(\
             Call(oParse.beginTag, 'w1'), 
-            Call(oParse.setIgnore, oParse.ignoreNull),
-                Alt(\
-                    Call(oParse.readChar, '_'),
-                    Call(oParse.readRange, 'a', 'z'),
-                    Call(oParse.readRange, 'A', 'Z'),
-                ),
-                Rep0N(\
+            Scope(
+                begin = Call(oParse.setIgnore, oParse.ignoreNull),
+                end = Call(oParse.setIgnore, oParse.ignoreBlanks),
+                clause = Clauses(
                     Alt(\
                         Call(oParse.readChar, '_'),
                         Call(oParse.readRange, 'a', 'z'),
-                        Call(oParse.readRange, 'A', 'Z'),
-                        Call(oParse.readRange, '0', '9'),
+                        Call(oParse.readRange, 'A', 'Z')
                     ),
-                ),
-            Call(oParse.setIgnore, oParse.ignoreBlanks),
+                    Rep0N(\
+                        Alt(\
+                            Call(oParse.readChar, '_'),
+                            Call(oParse.readRange, 'a', 'z'),
+                            Call(oParse.readRange, 'A', 'Z'),
+                            Call(oParse.readRange, '0', '9')
+                        )
+                    )
+                )
+            ),
             Call(oParse.endTag, 'w1'),
             Call(oParse.beginTag, 'w2'),
                 Rep1N(\
@@ -194,7 +198,7 @@ class InternalParse_Test(unittest.TestCase):
             Call(oParse.endTag, 'w2'), 
             Call(oParse.readEOF)
         )
-        parseTree.dumpParseTree()
+        print("\n" + parseTree.dumpParseTree())
         parseTree()
         self.assertEqual(oParse.getTag("w1"), "_ad121dwdw", "failed in captured w1")
         self.assertEqual(oParse.getTag("w2"), "()[]", "failed in captured w2")

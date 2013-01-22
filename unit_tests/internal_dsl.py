@@ -10,5 +10,4 @@ class InternalDsl_Test(unittest.TestCase):
             empty_clause ::= #num
             ;
         """, {}, "test1")
-        print()
         print(repr(oRoot))

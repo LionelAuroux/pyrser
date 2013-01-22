@@ -385,8 +385,14 @@ class Scope(ParserTree):
     """
     functor to wrap SCOPE/rule directive
     """
-    def __init__(self):
-        pass
+    def __init__(self, begin, end, clause):
+        self.begin = begin
+        self.end = end
+        self.clause = clause
+    def __call__(self):
+        if self.begin() and self.clause() and self.end():
+            return True
+        return False
 
 class Call(ParserTree):
     """
