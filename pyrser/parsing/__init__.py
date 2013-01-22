@@ -14,22 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyrser.parsing.python.AsciiParseWrapper import AsciiParseWrapper
+__all__ = ["python", "parsing_context", "dont_consume", "directive_functor", "capture", "bnf_primitives"]
+
+from pyrser.parsing.python.parserBase import ParserBase
 
 
 class Parsing(object):
-    oParserClass = AsciiParseWrapper
+    oParserClass = ParserBase
     oBaseParser = oParserClass('')
-#      oFinalParser = oBaseParser
-
 
 def getParserClass():
     return Parsing.oParserClass
 
-
 def setBaseParser(oBaseParser):
     Parsing.oBaseParser = oBaseParser
 
-
-def resetBaseParser(sStream="", sIgnore=" \r\n\t", sCLine="//", sCBegin="/*", sCEnd="*/"):
-    setBaseParser(getParserClass()(sStream, sIgnore, sCLine, sCBegin, sCEnd))
+def resetBaseParser(sStream=""):
+    setBaseParser(getParserClass()(sStream))

@@ -21,11 +21,12 @@ def capture(oPredicat, sName, dDict, bConsumeWs=True):
     """
     Capture the bytes consumed by a predicat.
     """
-    if bConsumeWs:
-        Parsing.oBaseParser.readIgnored()
-    Parsing.oBaseParser.setTag(sName)
+    #if bConsumeWs:
+    #    Parsing.oBaseParser.readIgnored()
+    Parsing.oBaseParser.beginTag(sName)
     bRes = oPredicat()
     if bRes:
+        Parsing.oBaseParser.endTag(sName)
         if ((sName in dDict) == False
                 or not isinstance(dDict[sName], type({}))):
             dDict[sName] = Parsing.oBaseParser.getTag(sName)

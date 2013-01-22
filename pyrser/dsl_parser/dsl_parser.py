@@ -19,7 +19,10 @@ from pyrser.parsing.parsing_context import parsingContext
 from pyrser.parsing.capture import *
 from pyrser.parsing.bnf_primitives import *
 from pyrser.parsing.directive_functor import *
+
 from pyrser.node import node
+#from pyrser.dsl_node import node
+
 from pyrser.dsl_parser.dsl_hook import *
 from pyrser.dsl_parser.dsl_error import *
 
@@ -31,9 +34,7 @@ def parse(sSource, oRoot, sCurrentFile):
     Parsing.oBaseParser.parsedStream(sSource, sCurrentFile)
 
     globalDescRule(oRoot)
-    resetBaseParser()
     return oRoot
-
 
 def globalDescRule(oRoot):
     """
@@ -43,9 +44,7 @@ def globalDescRule(oRoot):
     if not oneOrN(NonTerminal(rulesRule, oRoot)):
         raise GrammarException('%s doesn\'t seems to be a valid grammar file.' %
                                Parsing.oBaseParser.getName())
-    Parsing.oBaseParser.readIgnored()
     return Parsing.oBaseParser.readEOF()
-
 
 @node('rule')
 @parsingContext
@@ -69,7 +68,6 @@ def rulesRule(oNode):
 #    and alt(Capture(Parsing.oBaseParser.readIdentifier, 'name', oNode)
 #  		,Error('No name given to current rule.'))\
 
-
 @node('rule_name')
 @parsingContext
 def ruleNameRule(oNode):
@@ -82,7 +80,6 @@ def ruleNameRule(oNode):
             and rule_nameHook(oNode):
         return True
     return False
-
 
 @node('param')
 @parsingContext

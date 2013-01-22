@@ -106,7 +106,7 @@ class Hook:
     """
     Encapsulate hook execution into a functor.
     """
-    __slots__ = ('__oPredicat', '__oNode')
+    __slots__ = ('__oPredicat', '__oNode', '__lArgs')
 
     def __init__(self, oPredicat, oNode, *lArgs):
         self.__oPredicat = oPredicat
