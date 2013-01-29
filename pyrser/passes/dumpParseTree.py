@@ -46,6 +46,7 @@ def     dumpParseTree(self, level = 0):
 @add_method(Alt)
 def     dumpParseTree(self, level = 0):
     res = "\n%s  %s" % ('\t' * level, self.clauses[0].dumpParseTree(0))
+    if len(self.clauses) > 1: res += "\n%s| " % ('\t' * level)
     res += ("\n%s| " % ('\t' * level)).join([clause.dumpParseTree(0) for clause in self.clauses[1:]])
     return res
 
