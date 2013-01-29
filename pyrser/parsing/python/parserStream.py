@@ -20,13 +20,22 @@ class ParserStream:
 ##### public:
 
     def saveContext(self):
+        """
+        save current parsing context
+        """
         self.__lContext.append(copy(self.__context()))
 
     def restoreContext(self):
+        """
+        rollback from previous save context
+        """
         self.__lContext.pop()
         return False
 
     def validContext(self):
+        """
+        commit parsing context modification
+        """
         nCtxt = len(self.__lContext)
         self.__lContext[nCtxt - 2] = self.__context()
         self.__lContext.pop()
@@ -86,9 +95,6 @@ class ParserStream:
     def contentLen(self):
         return len(self.__sString)
 
-#    def peekCharAt(self, nIndex):
-#        return self.__sString[nIndex]
-
     def getContentAbsolute(self, begin, end):
         return self.__sString[begin:end]
 
@@ -117,6 +123,7 @@ class ParserStream:
         return True
 
     def getTag(self, sName):
+        # TODO: search var in all context
         """
         Extract the string previously saved.
         """

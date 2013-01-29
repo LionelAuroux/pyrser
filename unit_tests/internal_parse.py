@@ -167,8 +167,8 @@ class InternalParse_Test(unittest.TestCase):
         parseTree = Clauses(\
             Call(oParse.beginTag, 'w1'), 
             Scope(
-                begin = Call(oParse.setIgnore, oParse.ignoreNull),
-                end = Call(oParse.setIgnore, oParse.ignoreBlanks),
+                begin = Call(oParse.pushIgnore, oParse.ignoreNull),
+                end = Call(oParse.popIgnore),
                 clause = Clauses(
                     Alt(\
                         Call(oParse.readChar, '_'),
@@ -186,7 +186,7 @@ class InternalParse_Test(unittest.TestCase):
                 )
             ),
             Call(oParse.endTag, 'w1'),
-            Call(oParse.beginTag, 'w2'),
+            Capture(oParse, 'w2',
                 Rep1N(\
                     Alt(\
                         Call(oParse.readChar, '('),
@@ -194,8 +194,7 @@ class InternalParse_Test(unittest.TestCase):
                         Call(oParse.readChar, '['),
                         Call(oParse.readChar, ']'),
                     )
-                ),
-            Call(oParse.endTag, 'w2'), 
+                )),
             Call(oParse.readEOF)
         )
         print("\n" + parseTree.dumpParseTree())
@@ -203,4 +202,6 @@ class InternalParse_Test(unittest.TestCase):
         self.assertEqual(oParse.getTag("w1"), "_ad121dwdw", "failed in captured w1")
         self.assertEqual(oParse.getTag("w2"), "()[]", "failed in captured w2")
         
-
+    def test_09_RepHook(self):
+        """
+        """

@@ -22,7 +22,8 @@ class ParserBase:
     """
     def __init__(self, sStream = ""):
         self.__lStream = [ParserStream(sStream, "root")]
-        self.__readIgnored = self.ignoreBlanks
+        self.__stackIgnored = [self.ignoreBlanks]
+        self.__readIgnored = self.__stackIgnored[-1]
 
 ### PUBLIC ACCESSOR
 
@@ -366,11 +367,20 @@ class ParserBase:
             self.incPos()
         return self.validContext()
 
-    def setIgnore(self, func):
+    def pushIgnore(self, func):
         """
         Set the ignore convention
         """
-        self.__readIgnored = func
+        self.__stackIgnored.append(func)
+        self.__readIgnored = self.__stackIgnored[-1]
+        return True
+
+    def popIgnore(self):
+        """
+        Remove the last ignore convention
+        """
+        self.__stackIgnored.pop()
+        self.__readIgnored = self.__stackIgnored[-1]
         return True
 
 ### PARSE TREE
@@ -379,26 +389,59 @@ class ParserTree:
     """
     Dummy Base class for all parse tree classes
     """
-    pass
+    def __init__(self):
+        self.__dTag = [{}]
+
+    def pushVarContext(self):
+        """
+        create a new scope for capture vars
+        """
+        self.__dTag.append({})
+        return True
+
+    def popVarContext(self):
+        """
+        remove last scope of captured vars
+        """
+        self.__dTag.pop()
+        return True
 
 class Scope(ParserTree):
     """
     functor to wrap SCOPE/rule directive
     """
     def __init__(self, begin, end, clause):
+        ParserTree.__init__(self)
         self.begin = begin
         self.end = end
         self.clause = clause
     def __call__(self):
+        self.pushVarContext()
         if self.begin() and self.clause() and self.end():
+            self.popVarContext()
             return True
+        self.popVarContext()
         return False
+
+class Capture(ParserTree):
+    """
+    functor to handle capture variables
+    """
+    def __init__(self, parser, tagname, clause):
+        ParserTree.__init__(self)
+        if not isinstance(parser, ParserBase):
+            raise Exception("Bad Type For parser as parameter 2")
+        self.tagname = tagname
+        self.scope = Scope(Call(parser.beginTag, tagname), Call(parser.endTag, tagname), clause)
+    def __call__(self):
+        return self.scope()
 
 class Call(ParserTree):
     """
     functor to wrap arbitrary call in BNF clause
     """
     def __init__(self, callObject, *params):
+        ParserTree.__init__(self)
         self.callObject = callObject
         self.params = params
     def __call__(self):
@@ -409,11 +452,15 @@ class Clauses(ParserTree):
     [] bnf primitive as a functor
     """
     def __init__(self, *clauses):
+        ParserTree.__init__(self)
         self.clauses = clauses
     def __call__(self):
+        self.pushVarContext()
         for clause in self.clauses:
             if not clause():
+                self.popVarContext()
                 return False
+        self.popVarContext()
         return True
 
 class Alt(ParserTree):
@@ -421,6 +468,7 @@ class Alt(ParserTree):
     [] | [] bnf primitive as a functor
     """
     def __init__(self, *clauses):
+        ParserTree.__init__(self)
         self.clauses = clauses
     def __call__(self):
         for clause in self.clauses:
@@ -433,6 +481,7 @@ class RepOptional(ParserTree):
     []? bnf primitive as a functor
     """
     def __init__(self, clause):
+        ParserTree.__init__(self)
         self.clause = clause
     def __call__(self):
         self.clause()
@@ -443,6 +492,7 @@ class Rep0N(ParserTree):
     []* bnf primitive as a functor
     """
     def __init__(self, clause):
+        ParserTree.__init__(self)
         self.clause = clause
     def __call__(self):
         while self.clause():
@@ -454,6 +504,7 @@ class Rep1N(ParserTree):
     []+ bnf primitive as a functor
     """
     def __init__(self, clause):
+        ParserTree.__init__(self)
         self.clause = clause
     def __call__(self):
         if self.clause():
