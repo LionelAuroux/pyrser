@@ -5,14 +5,13 @@ from pyrser.passes.dumpParseTree import *
 class InternalParse_Test(unittest.TestCase):
     @classmethod
     def setUpClass(cInternalParseClass):
-        cInternalParseClass.oParse = ParserBase()
-        cInternalParseClass.oParse.popStream()
+        cInternalParseClass.oParse = ParserBase
 
     def test_01_readIdentifier(self):
         """
             Basic test for identifier parsing
         """
-        oParse = InternalParse_Test.oParse
+        oParse = InternalParse_Test.oParse()
         oParse.parsedStream("ceci est un test", sName = "root")
         self.assertTrue(
             oParse.beginTag('sujet') and oParse.readIdentifier() and oParse.endTag('sujet'),
@@ -34,7 +33,7 @@ class InternalParse_Test(unittest.TestCase):
         """
             Basic test for integer parsing
         """
-        oParse = InternalParse_Test.oParse
+        oParse = InternalParse_Test.oParse()
         oParse.parsedStream("12 333 44444444444444444444444444", sName = "root")
         self.assertTrue(
             oParse.beginTag('n1') and oParse.readInteger() and oParse.endTag('n1'),
@@ -56,7 +55,7 @@ class InternalParse_Test(unittest.TestCase):
         """
             Basic test for line/col calculation
         """
-        oParse = InternalParse_Test.oParse
+        oParse = InternalParse_Test.oParse()
         oParse.parsedStream("X\nXX\nXXX\n")
         line = oParse.lineNbr
         col = oParse.columnNbr
@@ -86,7 +85,7 @@ class InternalParse_Test(unittest.TestCase):
         """
             Basic test for readCChar
         """
-        oParse = InternalParse_Test.oParse
+        oParse = InternalParse_Test.oParse()
         oParse.parsedStream("'c' '\\t'", sName = "root")
         self.assertTrue(
             oParse.beginTag('c1') and oParse.readCChar() and oParse.endTag('c1'),
@@ -103,7 +102,7 @@ class InternalParse_Test(unittest.TestCase):
         """
             Basic test for readCString
         """
-        oParse = InternalParse_Test.oParse
+        oParse = InternalParse_Test.oParse()
         oParse.parsedStream('"premiere chaine" "deuxieme chaine\\n" "troisieme chainee \\"."', sName = "root")
         self.assertTrue(
             oParse.beginTag('s1') and oParse.readCString() and oParse.endTag('s1'),
@@ -125,7 +124,7 @@ class InternalParse_Test(unittest.TestCase):
         """
             Basic test for call/clauses
         """
-        oParse = InternalParse_Test.oParse
+        oParse = InternalParse_Test.oParse()
         oParse.parsedStream("abc def ghg")
         parseTree = Clauses(\
             Call(oParse.beginTag, 'i1'), oParse.readIdentifier, Call(oParse.endTag, 'i1'),
@@ -141,7 +140,7 @@ class InternalParse_Test(unittest.TestCase):
         """
             Basic test for repeater
         """
-        oParse = InternalParse_Test.oParse
+        oParse = InternalParse_Test.oParse()
         oParse.parsedStream("12343 91219****1323 23")
         parseTree = Clauses(\
             Call(oParse.beginTag, 'i1'), oParse.readInteger, Call(oParse.endTag, 'i1'),
@@ -162,7 +161,7 @@ class InternalParse_Test(unittest.TestCase):
         """
             Basic test for alternatives
         """
-        oParse = InternalParse_Test.oParse
+        oParse = InternalParse_Test.oParse()
         oParse.parsedStream("_ad121dwdw ()[]")
         parseTree = Clauses(\
             Call(oParse.beginTag, 'w1'), 
@@ -201,7 +200,35 @@ class InternalParse_Test(unittest.TestCase):
         parseTree()
         self.assertEqual(oParse.getTag("w1"), "_ad121dwdw", "failed in captured w1")
         self.assertEqual(oParse.getTag("w2"), "()[]", "failed in captured w2")
-        
-    def test_09_RepHook(self):
+    
+    def test_09_RepRules(self):
         """
+            Basic test for Rules
         """
+        def printWord(parser, ctx):
+            print("CTX:<%s><%s>" % (ctx, ctx['tutu']))
+        def printint(parser, ctx):
+            print("CTX:<%s><%s>" % (ctx, ctx['toto']))
+        oParse = InternalParse_Test.oParse()
+        oParse.parsedStream("asbga    12121      njnj 89898")
+        oParse.setHooks({'printWord' : printWord})
+        oParse.setRules({
+            'main' : Rep0N(Alt(Clauses(Rule(oParse, 'word'), Hook(oParse, 'printWord')), Rule(oParse, 'int'))),
+            'word' : Scope(Call(oParse.pushIgnore, oParse.ignoreNull), Call(oParse.popIgnore),
+                        Capture(oParse, 'tutu', Rep1N(\
+                            Alt(\
+                                Call(oParse.readRange, 'a', 'z'),
+                                Call(oParse.readRange, 'A', 'Z')
+                            )
+                        ))),
+            'int' : Clauses(Scope(Call(oParse.pushIgnore, oParse.ignoreNull), Call(oParse.popIgnore),
+                        Capture(oParse, 'toto', Rep1N(Call(oParse.readRange, '0', '9')))
+                        ), Hook(oParse, 'printint'))
+            })
+        bRes = oParse.evalRule('main')
+
+    def test_10_contextVariables(self):
+        """
+        Basic test for context variables
+        """
+        pass

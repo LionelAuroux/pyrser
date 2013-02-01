@@ -19,20 +19,21 @@ class ParserStream:
 
 ##### public:
 
-    def saveContext(self):
+    def saveContext(self) -> bool:
         """
         save current parsing context
         """
         self.__lContext.append(copy(self.__context()))
+        return True
 
-    def restoreContext(self):
+    def restoreContext(self) -> bool:
         """
         rollback from previous save context
         """
         self.__lContext.pop()
         return False
 
-    def validContext(self):
+    def validContext(self) -> bool:
         """
         commit parsing context modification
         """
@@ -43,12 +44,13 @@ class ParserStream:
 
 ###
 
-    def incPos(self):
+    def incPos(self) -> int:
         if self.peekChar == "\n":
             self.__context().nLine += 1
             self.__context().nCol = 0
         self.__context().nCol += 1
         self.__context().nIndex += 1
+        return self.__context().nIndex
 
     def incPosOf(self, nInc):
         while nInc > 0:
@@ -58,47 +60,47 @@ class ParserStream:
 ###
 
     @property
-    def index(self):
+    def index(self) -> int:
         return self.__context().nIndex
 
     @property
-    def peekChar(self):
+    def peekChar(self) -> str:
         return self.__sString[self.__context().nIndex]
 
     @property
-    def eofIndex(self):
+    def eofIndex(self) -> int:
         return self.__eofIndex
 
     @property
-    def columnNbr(self):
+    def columnNbr(self) -> int:
         return self.__context().nCol
 
     @property
-    def lineNbr(self):
+    def lineNbr(self) -> int:
         return self.__context().nLine
 
     @property
-    def name(self):
+    def name(self) -> int:
         return self.__sName
 
     @property
-    def lastRead(self):
+    def lastRead(self) -> str:
         if self.__context().nIndex > 0:
             return self.__sString[self.__context().nIndex - 1]
         return self.__sString[0]
 
     @property
-    def content(self):
+    def content(self) -> str:
         return self.__sString
 
     @property
-    def contentLen(self):
+    def contentLen(self) -> int:
         return len(self.__sString)
 
-    def getContentAbsolute(self, begin, end):
+    def getContentAbsolute(self, begin, end) -> str:
         return self.__sString[begin:end]
 
-    def getContentRelative(self, begin):
+    def getContentRelative(self, begin) -> str:
         return self.__sString[begin:self.__context().nIndex]
 
     def printStream(self, nIndex):
@@ -108,21 +110,21 @@ class ParserStream:
             else:
                 print(car)
 
-    def beginTag(self, sName):
+    def beginTag(self, sName) -> bool:
         """
         Save the current index under the given name.
         """
         self.__dTag[sName] = {'index' : self.index}
         return True
 
-    def endTag(self, sName):
+    def endTag(self, sName) -> bool:
         """
         Extract the string between the saved index value and the current one.
         """
         self.__dTag[sName]['value'] = self.getContentRelative(self.__dTag[sName]['index'])
         return True
 
-    def getTag(self, sName):
+    def getTag(self, sName) -> str:
         # TODO: search var in all context
         """
         Extract the string previously saved.

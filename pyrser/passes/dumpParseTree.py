@@ -35,7 +35,7 @@ def     dumpParseTree(self, level = 0):
 @add_method(Capture)
 def     dumpParseTree(self, level = 0):
     res = "\n%s[\n" % ('\t' * level)
-    res += self.scope.clause.dumpParseTree(level + 1)
+    res += self.clause.dumpParseTree(level + 1)
     res += "\n%s] : %s\n" % ('\t' * level, self.tagname)
     return res
 
