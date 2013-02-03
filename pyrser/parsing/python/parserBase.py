@@ -23,11 +23,12 @@ class ParserBase:
     def __init__(self, sStream = ""):
         self.__lStream = [ParserStream(sStream, "root")]
         self.__stackIgnored = [self.ignoreBlanks]
-        self.__readIgnored = self.__stackIgnored[-1]
-        self.ruleNodes = [{}]
         self.__ruleNode = None
         self.__rules = {}
         self.__hooks = {}
+        # public
+        self.skipIgnore = self.__stackIgnored[-1]
+        self.ruleNodes = [{}]
 
 ### PUBLIC ACCESSOR
 
@@ -133,15 +134,18 @@ class ParserBase:
         """
         Push context variable to store rule nodes
         """
+        # outer scope visible in local
         self.ruleNodes.append(self.ruleNodes[-1].copy())
-        pass
 
     def popRuleNodes(self):
         """
         Pop context variable that store rule nodes
         """
+        # local alteration in outer scope
+        for k, v in self.ruleNodes[-1].items():
+            if len(self.ruleNodes) > 1 and k in self.ruleNodes[-2]:
+                self.ruleNodes[-2][k] = v
         self.ruleNodes.pop()
-        pass
 
 ### STREAM
 
@@ -174,7 +178,7 @@ class ParserBase:
         """
         Save the current index under the given name.
         """
-        self.__readIgnored()
+        #self.__readIgnored()
         return self.getStream().beginTag(sName)
 
     def endTag(self, sName : str) -> bool:
@@ -236,7 +240,7 @@ class ParserBase:
         Consume the c head byte, increment current index and return True
         else return False. It use peekchar and it's the same as '' in BNF.
         """
-        self.__readIgnored()
+        #self.__readIgnored()
         if self.readEOF():
             return False
         self.saveContext()
@@ -249,7 +253,7 @@ class ParserBase:
         """
         Consume a character if possible.
         """
-        self.__readIgnored()
+        #self.__readIgnored()
         if self.readEOF():
             return False
         self.saveContext()
@@ -269,7 +273,7 @@ class ParserBase:
         """
         Return True if the parser can consume an EOL byte sequence.
         """
-        self.__readIgnored()
+        #self.__readIgnored()
         if self.readEOF():
             return False
         self.saveContext()
@@ -283,7 +287,7 @@ class ParserBase:
         Consume the stream while the c byte is not read, else return false
         ex : if stream is " abcdef ", readUntil("d"); consume "abcd".
         """
-        self.__readIgnored()
+        #self.__readIgnored()
         if self.readEOF():
             return False
         self.saveContext()
@@ -301,7 +305,7 @@ class ParserBase:
         """
         Consume all the stream. Same as EOF in BNF
         """
-        self.__readIgnored()
+        #self.__readIgnored()
         if self.readEOF():
             return True
         self.saveContext()
@@ -316,7 +320,7 @@ class ParserBase:
         Same as "" in BNF
         ex : readText("ls");.
         """
-        self.__readIgnored()
+        #self.__readIgnored()
         if self.readEOF():
             return False
         self.saveContext()
@@ -332,7 +336,7 @@ class ParserBase:
         Read following BNF rule else return False
         readInteger ::= ['0'..'9']+ ;
         """
-        self.__readIgnored()
+        #self.__readIgnored()
         if self.readEOF():
             return False
         self.saveContext()
@@ -352,7 +356,7 @@ class ParserBase:
         Read following BNF rule else return False
         readIdentifier ::= ['a'..'z'|'A'..'Z'|'_']['0'..'9'|'a'..'z'|'A'..'Z'|'_']* ;
         """
-        self.__readIgnored()
+        #self.__readIgnored()
         if self.readEOF():
             return False
         self.saveContext()
@@ -372,7 +376,7 @@ class ParserBase:
         Consume head byte if it is >= begin and <= end else return false
         Same as 'a'..'z' in BNF
         """
-        self.__readIgnored()
+        #self.__readIgnored()
         if self.readEOF():
             return False
         self.saveContext()
@@ -387,7 +391,7 @@ class ParserBase:
         Read following BNF rule else return False
         '"' -> ['/'| '"']
         """
-        self.__readIgnored()
+        #self.__readIgnored()
         self.saveContext()
         if self.readChar('\"') and self.readUntil('\"', '\\'):
             return self.validContext()
@@ -399,7 +403,7 @@ class ParserBase:
         Read following BNF rule else return False
         "'" -> [~"/" "'"]
         """
-        self.__readIgnored()
+        #self.__readIgnored()
         self.saveContext()
         if self.readChar('\'') and self.readUntil('\'', '\\'):
             return self.validContext()
@@ -429,7 +433,7 @@ class ParserBase:
         Set the ignore convention
         """
         self.__stackIgnored.append(ignoreConvention)
-        self.__readIgnored = self.__stackIgnored[-1]
+        self.skipIgnore = self.__stackIgnored[-1]
         return True
 
     def popIgnore(self) -> bool:
@@ -437,7 +441,7 @@ class ParserBase:
         Remove the last ignore convention
         """
         self.__stackIgnored.pop()
-        self.__readIgnored = self.__stackIgnored[-1]
+        self.skipIgnore = self.__stackIgnored[-1]
         return True
 
 ### PARSE TREE
@@ -451,11 +455,13 @@ class Clauses(ParserTree):
     """
     A B C bnf primitive as a functor
     """
-    def __init__(self, *clauses):
+    def __init__(self, parser : ParserBase, *clauses):
         ParserTree.__init__(self)
+        self.parser = parser
         self.clauses = clauses
     def __call__(self) -> bool:
         for clause in self.clauses:
+            self.parser.skipIgnore()
             if not clause():
                 return False
         return True
@@ -521,11 +527,13 @@ class Alt(ParserTree):
     [] | [] bnf primitive as a functor
     """
     # TODO: at each alt, pop/push ruleNodes
-    def __init__(self, *clauses : Clauses):
+    def __init__(self, parser : ParserBase, *clauses : Clauses):
         ParserTree.__init__(self)
+        self.parser = parser
         self.clauses = clauses
     def __call__(self) -> bool:
         for clause in self.clauses:
+            self.parser.skipIgnore()
             if clause():
                 return True
         return False
@@ -546,12 +554,14 @@ class Rep0N(ParserTree):
     []* bnf primitive as a functor
     """
     # TODO: at each turn, pop/push ruleNodes
-    def __init__(self, clause : Clauses):
+    def __init__(self, parser : ParserBase, clause : Clauses):
         ParserTree.__init__(self)
+        self.parser = parser
         self.clause = clause
     def __call__(self) -> bool:
+        self.parser.skipIgnore()
         while self.clause():
-            pass
+            self.parser.skipIgnore()
         return True
 
 class Rep1N(ParserTree):
@@ -559,13 +569,16 @@ class Rep1N(ParserTree):
     []+ bnf primitive as a functor
     """
     # TODO: at each turn, pop/push ruleNodes
-    def __init__(self, clause : Clauses):
+    def __init__(self, parser : ParserBase, clause : Clauses):
         ParserTree.__init__(self)
+        self.parser = parser
         self.clause = clause
     def __call__(self) -> bool:
+        self.parser.skipIgnore()
         if self.clause():
+            self.parser.skipIgnore()
             while self.clause():
-                pass
+                self.parser.skipIgnore()
             return True
         return False
 

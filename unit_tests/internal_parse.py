@@ -17,11 +17,13 @@ class InternalParse_Test(unittest.TestCase):
             oParse.beginTag('sujet') and oParse.readIdentifier() and oParse.endTag('sujet'),
             'failed in readIdentifier for sujet')
         sujet = oParse.getTag('sujet')
+        oParse.skipIgnore()
         self.assertEqual(sujet, "ceci", "failed in capture sujet")
         self.assertTrue(
             oParse.beginTag('verbe') and oParse.readIdentifier() and oParse.endTag('verbe'),
             'failed in readIdentifier for verbe')
         verbe = oParse.getTag('verbe')
+        oParse.skipIgnore()
         self.assertEqual(verbe, "est", "failed in capture verbe")
         self.assertTrue(
             oParse.beginTag('other') and oParse.readUntilEOF() and oParse.endTag('other'),
@@ -39,11 +41,13 @@ class InternalParse_Test(unittest.TestCase):
             oParse.beginTag('n1') and oParse.readInteger() and oParse.endTag('n1'),
             'failed in readInteger for n1')
         n1 = oParse.getTag('n1')
+        oParse.skipIgnore()
         self.assertEqual(n1, "12", "failed in capture n1")
         self.assertTrue(
             oParse.beginTag('n2') and oParse.readInteger() and oParse.endTag('n2'),
             'failed in readInteger for n2')
         n2 = oParse.getTag('n2')
+        oParse.skipIgnore()
         self.assertEqual(n2, "333", "failed in capture n2")
         self.assertTrue(
             oParse.beginTag('n3') and oParse.readInteger() and oParse.endTag('n3'),
@@ -91,6 +95,7 @@ class InternalParse_Test(unittest.TestCase):
             oParse.beginTag('c1') and oParse.readCChar() and oParse.endTag('c1'),
             'failed in readCChar for c1')
         c1 = oParse.getTag('c1')
+        oParse.skipIgnore()
         self.assertEqual(c1, "'c'", "failed in capture c1")
         self.assertTrue(
             oParse.beginTag('c2') and oParse.readCChar() and oParse.endTag('c2'),
@@ -108,11 +113,13 @@ class InternalParse_Test(unittest.TestCase):
             oParse.beginTag('s1') and oParse.readCString() and oParse.endTag('s1'),
             'failed in readCString for s1')
         s1 = oParse.getTag('s1')
+        oParse.skipIgnore()
         self.assertEqual(s1, '"premiere chaine"', "failed in capture s1")
         self.assertTrue(
             oParse.beginTag('s2') and oParse.readCString() and oParse.endTag('s2'),
             'failed in readCString for s2')
         s2 = oParse.getTag('s2')
+        oParse.skipIgnore()
         self.assertEqual(s2, '"deuxieme chaine\\n"', "failed in capture s2")
         self.assertTrue(
             oParse.beginTag('s3') and oParse.readCString() and oParse.endTag('s3'),
@@ -126,14 +133,15 @@ class InternalParse_Test(unittest.TestCase):
         """
         oParse = InternalParse_Test.oParse()
         oParse.parsedStream("abc def ghg")
-        parseTree = Clauses(\
+        parseTree = Clauses(oParse,
             Call(oParse.beginTag, 'i1'), oParse.readIdentifier, Call(oParse.endTag, 'i1'),
             Call(oParse.beginTag, 'i2'), oParse.readIdentifier, Call(oParse.endTag, 'i2'),
             Call(oParse.beginTag, 'i3'), oParse.readIdentifier, Call(oParse.endTag, 'i3'),
         )
         parseTree()
-        self.assertEqual(oParse.getTag("i1"), "abc", "failed in captured i1")
-        self.assertEqual(oParse.getTag("i2"), "def", "failed in captured i2")
+        # Warning! skipIgnore is called between each Clauses
+        self.assertEqual(oParse.getTag("i1"), "abc ", "failed in captured i1")
+        self.assertEqual(oParse.getTag("i2"), "def ", "failed in captured i2")
         self.assertEqual(oParse.getTag("i3"), "ghg", "failed in captured i3")
 
     def test_07_RepXN(self):
@@ -142,20 +150,21 @@ class InternalParse_Test(unittest.TestCase):
         """
         oParse = InternalParse_Test.oParse()
         oParse.parsedStream("12343 91219****1323 23")
-        parseTree = Clauses(\
+        parseTree = Clauses(oParse,
             Call(oParse.beginTag, 'i1'), oParse.readInteger, Call(oParse.endTag, 'i1'),
-            Rep0N(Call(oParse.readChar, '*')),
+            Rep0N(oParse, Call(oParse.readChar, '*')),
             Call(oParse.beginTag, 'i2'), 
-                Rep1N(Call(oParse.readRange, '0', '9')),
+                Rep1N(oParse, Call(oParse.readRange, '0', '9')),
             Call(oParse.endTag, 'i2'),
-            Rep0N(Call(oParse.readChar, '*')),
+            Rep0N(oParse, Call(oParse.readChar, '*')),
             Call(oParse.beginTag, 'i3'), oParse.readInteger, Call(oParse.endTag, 'i3'),
             Call(oParse.readEOF)
         )
         parseTree()
-        self.assertEqual(oParse.getTag("i1"), "12343", "failed in captured i1")
+        # Warning! skipIgnore is called between each Clauses
+        self.assertEqual(oParse.getTag("i1"), "12343 ", "failed in captured i1")
         self.assertEqual(oParse.getTag("i2"), "91219", "failed in captured i2")
-        self.assertEqual(oParse.getTag("i3"), "1323", "failed in captured i3")
+        self.assertEqual(oParse.getTag("i3"), "1323 ", "failed in captured i3")
 
     def test_08_RepAlt(self):
         """
@@ -163,19 +172,19 @@ class InternalParse_Test(unittest.TestCase):
         """
         oParse = InternalParse_Test.oParse()
         oParse.parsedStream("_ad121dwdw ()[]")
-        parseTree = Clauses(\
+        parseTree = Clauses(oParse,
             Call(oParse.beginTag, 'w1'), 
             Scope(
                 begin = Call(oParse.pushIgnore, oParse.ignoreNull),
                 end = Call(oParse.popIgnore),
-                clause = Clauses(
-                    Alt(\
+                clause = Clauses(oParse,
+                    Alt(oParse,
                         Call(oParse.readChar, '_'),
                         Call(oParse.readRange, 'a', 'z'),
                         Call(oParse.readRange, 'A', 'Z')
                     ),
-                    Rep0N(\
-                        Alt(\
+                    Rep0N(oParse,
+                        Alt(oParse,
                             Call(oParse.readChar, '_'),
                             Call(oParse.readRange, 'a', 'z'),
                             Call(oParse.readRange, 'A', 'Z'),
@@ -186,8 +195,8 @@ class InternalParse_Test(unittest.TestCase):
             ),
             Call(oParse.endTag, 'w1'),
             Capture(oParse, 'w2',
-                Rep1N(\
-                    Alt(\
+                Rep1N(oParse,
+                    Alt(oParse,
                         Call(oParse.readChar, '('),
                         Call(oParse.readChar, ')'),
                         Call(oParse.readChar, '['),
@@ -198,7 +207,8 @@ class InternalParse_Test(unittest.TestCase):
         )
         print("\n" + parseTree.dumpParseTree())
         parseTree()
-        self.assertEqual(oParse.getTag("w1"), "_ad121dwdw", "failed in captured w1")
+        # Warning! skipIgnore is called between each Clauses
+        self.assertEqual(oParse.getTag("w1"), "_ad121dwdw ", "failed in captured w1")
         self.assertEqual(oParse.getTag("w2"), "()[]", "failed in captured w2")
     
     def test_09_RepRules(self):
@@ -206,24 +216,36 @@ class InternalParse_Test(unittest.TestCase):
             Basic test for Rules
         """
         def printWord(parser, ctx):
-            print("CTX:<%s><%s>" % (ctx, ctx['tutu']))
+            ctx['test'].assertEqual(ctx['tutu'].value, "asbga", "failed access captured variable string")
         def printint(parser, ctx):
-            print("CTX:<%s><%s>" % (ctx, ctx['toto']))
+            ctx['test'].assertEqual(ctx['toto'].value, "12121", "failed access captured variable int")
         oParse = InternalParse_Test.oParse()
         oParse.parsedStream("asbga    12121      njnj 89898")
-        oParse.setHooks({'printWord' : printWord})
+        oParse.ruleNodes[-1]['test'] = self
+        oParse.setHooks({'printWord' : printWord, 'printint' : printint})
         oParse.setRules({
-            'main' : Rep0N(Alt(Clauses(Rule(oParse, 'word'), Hook(oParse, 'printWord')), Rule(oParse, 'int'))),
+            'main' : Rep0N(oParse, 
+                        Alt(oParse, 
+                            Clauses(oParse, Rule(oParse, 'word'), Hook(oParse, 'printWord')),
+                            Rule(oParse, 'int')
+                        )
+                    ),
             'word' : Scope(Call(oParse.pushIgnore, oParse.ignoreNull), Call(oParse.popIgnore),
-                        Capture(oParse, 'tutu', Rep1N(\
-                            Alt(\
-                                Call(oParse.readRange, 'a', 'z'),
-                                Call(oParse.readRange, 'A', 'Z')
+                        Capture(oParse, 'tutu', 
+                            Rep1N(oParse,
+                                Alt(oParse,
+                                    Call(oParse.readRange, 'a', 'z'),
+                                    Call(oParse.readRange, 'A', 'Z')
+                                )
                             )
-                        ))),
-            'int' : Clauses(Scope(Call(oParse.pushIgnore, oParse.ignoreNull), Call(oParse.popIgnore),
-                        Capture(oParse, 'toto', Rep1N(Call(oParse.readRange, '0', '9')))
-                        ), Hook(oParse, 'printint'))
+                        )
+                    ),
+            'int' : Clauses(oParse, 
+                        Scope(Call(oParse.pushIgnore, oParse.ignoreNull), Call(oParse.popIgnore),
+                            Capture(oParse, 'toto', Rep1N(oParse, Call(oParse.readRange, '0', '9')))
+                        ), 
+                        Hook(oParse, 'printint')
+                    )
             })
         bRes = oParse.evalRule('main')
 
@@ -231,4 +253,16 @@ class InternalParse_Test(unittest.TestCase):
         """
         Basic test for context variables
         """
-        pass
+        oParse = InternalParse_Test.oParse()
+        oParse.ruleNodes[-1].update({'coucou':42, 'toto':[12, 33]})
+        self.assertEqual(oParse.ruleNodes[-1]['toto'], [12, 33], "failed comparing list")
+        #print("ruleNodes:%s" % oParse.ruleNodes)
+        oParse.pushRuleNodes()
+        oParse.ruleNodes[-1].update({'local1':666, 'local2':777})
+        oParse.ruleNodes[-1]['toto'] = [1, 2, 3, 4]
+        self.assertEqual(oParse.ruleNodes[-1]['coucou'], 42, "failed outer scope not visible in local")
+        #print("ruleNodes:%s" % oParse.ruleNodes)
+        oParse.popRuleNodes()
+        self.assertEqual(oParse.ruleNodes[-1]['toto'], [1, 2, 3, 4], "failed local scope can't alter outer scope")
+        #print("ruleNodes:%s" % oParse.ruleNodes)
+
