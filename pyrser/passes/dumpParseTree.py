@@ -6,6 +6,26 @@ from pyrser.meta import *
 from pyrser.parsing.python.parserBase import *
 import inspect
 
+@add_method(ParserBase)
+def dumpParseTree(self):
+    res = "{"
+    for k,v in self.rules.items():
+        if isinstance(v, ParserTree):
+            res += "\n\t%s : %s" % (repr(k), v.dumpParseTree(1))
+            res += "\t,"
+        else:
+            res += "\n\t%s : %s," % (repr(k), repr(v))
+    res += "\n}"
+    return res
+
+@add_method(Rule)
+def     dumpParseTree(self, level = 0):
+    return "%s%s" % ('\t' * level, self.name)
+
+@add_method(Hook)
+def     dumpParseTree(self, level = 0):
+    return "%s#%s" % ('\t' * level, self.name)
+
 @add_method(Call)
 def     dumpParseTree(self, level = 0):
     # TODO: Think of remaping of method to hook

@@ -5,6 +5,8 @@ class ParserContext:
         self.nIndex = nIndex
         self.nCol = nCol
         self.nLine = nLine
+    def __str__(self):
+        return "%s,%s (%s)" % (self.nLine, self.nCol, self.nIndex)
 
 class ParserStream:
     def __init__(self, sString = "", sName = "stream"):
@@ -45,7 +47,7 @@ class ParserStream:
 ###
 
     def incPos(self) -> int:
-        if self.peekChar == "\n":
+        if self.__sString[self.__context().nIndex] == "\n":
             self.__context().nLine += 1
             self.__context().nCol = 0
         self.__context().nCol += 1
@@ -102,6 +104,9 @@ class ParserStream:
 
     def getContentRelative(self, begin) -> str:
         return self.__sString[begin:self.__context().nIndex]
+
+    def dumpContext(self):
+        return "%s:%s\n" % (self.__sName, "\n".join(["%s" % _ for _ in self.__lContext]))
 
     def printStream(self, nIndex):
         for car in self.__sString[nIndex:]:

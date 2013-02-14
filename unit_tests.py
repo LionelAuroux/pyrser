@@ -6,7 +6,7 @@ if __name__ == '__main__':
 
     import unittest
     from unit_tests.internal_parse import InternalParse_Test as _01
-    #from unit_tests.internal_dsl import InternalDsl_Test as _02
+    from unit_tests.internal_dsl import InternalDsl_Test as _02
     #from unit_tests.capture import Capture_Test as _0X
     #from unit_tests.no_depth_generation import generatedCode as NoDepthGeneration
     #from unit_tests.multi_generation import generatedCode as MultiDepthGeneration

@@ -215,30 +215,30 @@ class InternalParse_Test(unittest.TestCase):
         """
             Basic test for Rules
         """
-        def printWord(parser, ctx):
+        @add_method(ParserBase)
+        def printWord(self, ctx):
             ctx['test'].assertEqual(ctx['tutu'].value, "asbga", "failed access captured variable string")
-        def printint(parser, ctx):
+        @add_method(ParserBase)
+        def printint(self, ctx):
             ctx['test'].assertEqual(ctx['toto'].value, "12121", "failed access captured variable int")
         oParse = InternalParse_Test.oParse()
         oParse.parsedStream("asbga    12121      njnj 89898")
         oParse.ruleNodes[-1]['test'] = self
-        oParse.setHooks({'printWord' : printWord, 'printint' : printint})
+        oParse.setHooks({'printWord' : oParse.printWord, 'printint' : oParse.printint})
         oParse.setRules({
             'main' : Rep0N(oParse, 
                         Alt(oParse, 
-                            Clauses(oParse, Rule(oParse, 'word'), Hook(oParse, 'printWord')),
+                            Clauses(oParse, Capture(oParse, 'tutu', Rule(oParse, 'word')), Hook(oParse, 'printWord')),
                             Rule(oParse, 'int')
                         )
                     ),
             'word' : Scope(Call(oParse.pushIgnore, oParse.ignoreNull), Call(oParse.popIgnore),
-                        Capture(oParse, 'tutu', 
                             Rep1N(oParse,
                                 Alt(oParse,
                                     Call(oParse.readRange, 'a', 'z'),
                                     Call(oParse.readRange, 'A', 'Z')
                                 )
                             )
-                        )
                     ),
             'int' : Clauses(oParse, 
                         Scope(Call(oParse.pushIgnore, oParse.ignoreNull), Call(oParse.popIgnore),
@@ -248,6 +248,7 @@ class InternalParse_Test(unittest.TestCase):
                     )
             })
         bRes = oParse.evalRule('main')
+        self.assertTrue(bRes, "failed to parse")
 
     def test_10_contextVariables(self):
         """
@@ -265,4 +266,34 @@ class InternalParse_Test(unittest.TestCase):
         oParse.popRuleNodes()
         self.assertEqual(oParse.ruleNodes[-1]['toto'], [1, 2, 3, 4], "failed local scope can't alter outer scope")
         #print("ruleNodes:%s" % oParse.ruleNodes)
+
+    def test_11_namespaceRules(self):
+        """
+        Test the namespace handling
+        """
+        oParse = InternalParse_Test.oParse()
+        @add_method(ParserBase)
+        def dummy(self):
+            res = Node()
+            res.text = "cool"
+            return res
+        oParse.setOneRule("A::B::C::test", Call(oParse.dummy))
+        bRes = oParse.evalRule('test')
+        self.assertEqual(bRes.text, "cool", "failed rule node in global namespace")
+        bRes = oParse.evalRule('C::test')
+        self.assertEqual(bRes.text, "cool", "failed rule node in global namespace")
+        bRes = oParse.evalRule('B::C::test')
+        self.assertEqual(bRes.text, "cool", "failed rule node in global namespace")
+        bRes = oParse.evalRule('A::B::C::test')
+        self.assertEqual(bRes.text, "cool", "failed rule node in global namespace")
+
+    def test_12_defaultRules(self):
+        """
+        Test the presence of default rules
+        """
+        oParse = InternalParse_Test.oParse()
+        self.assertTrue("num" in oParse.rules, "failed no found Base::num")
+        self.assertTrue("Base::num" in oParse.rules, "failed no found Base::num")
+        self.assertTrue("string" in oParse.rules, "failed no found Base::string")
+        self.assertTrue("Base::string" in oParse.rules, "failed no found Base::string")
 

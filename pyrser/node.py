@@ -100,3 +100,29 @@ def next_clean(oNode):
 
 def has_next(oNode):
     return id(oNode) in oNode
+
+
+#### ADD A BASE CLASS FOR NODES
+
+class ParserTree:
+    pass
+
+class Node(dict):
+    """
+    Base class for node manipulation
+    """
+    def __init__(self, val = True):
+        self._bool = val
+    def __bool__(self):
+        return self._bool
+    def __str__(self):
+        items = []
+        if len(self) > 0:
+            items.append(repr(self))
+        for k, v in vars(self).items():
+            if isinstance(v, ParserTree):
+                items.append(".%s = %s" % (k, v.dumpParseTree()))
+            else:
+                items.append(".%s = %s" % (k, repr(v)))
+        return ", ".join(items)
+
