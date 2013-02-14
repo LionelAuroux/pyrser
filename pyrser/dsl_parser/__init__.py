@@ -1,8 +1,18 @@
-"""
-This package contains a DSL parser and the hooks that help to build the AST
+# Copyright (C) 2012 Candiotti Adrien
+# Copyright (C) 2013 Lionel Auroux
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-dsl_parser contains the DSL parser.
-dsl_hooks contains the hooks that help to build the AST.
-dsl_error contains exception class defined for the DSL parsing.
-"""
 __all__ = ["dsl_parser", "dsl_hooks", "dsl_error"]

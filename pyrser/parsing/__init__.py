@@ -1,4 +1,6 @@
 # Copyright (C) 2012 Candiotti Adrien
+# Copyright (C) 2013 Pascal Bertrand
+# Copyright (C) 2013 Lionel Auroux
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
