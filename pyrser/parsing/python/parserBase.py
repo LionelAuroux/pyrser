@@ -510,27 +510,24 @@ class Scope(ParserTree):
         return False
 
 class Call(ParserTree):
-    """
-    functor to wrap arbitrary call to method of ParserBase in BNF clause
-    """
+    """Functor to wrap arbitrary call to method of ParserBase in BNF clause."""
+
     def __init__(self, callObject, *params):
         ParserTree.__init__(self)
         self.callObject = callObject
         self.params = params
+
     def __call__(self) -> Node:
         return self.callObject(*self.params)
 
-class CallTrue(ParserTree):
-    """
-    functor to wrap arbitrary callable object in BNF clause
-    """
-    def __init__(self, callObject, *params):
-        ParserTree.__init__(self)
-        self.callObject = callObject
-        self.params = params
+
+class CallTrue(Call):
+    """Functor to wrap arbitrary callable object in BNF clause."""
+
     def __call__(self) -> Node:
         self.callObject(*self.params)
         return True
+
 
 class Capture(ParserTree):
     """
