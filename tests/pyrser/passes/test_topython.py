@@ -151,7 +151,8 @@ class TestToPythonPasse(unittest.TestCase):
 ###
 
     def test_topython_generates_code_for_repoptional(self):
-        rep = parserBase.RepOptional(ParseTreeStub('a'))
+        parser = None
+        rep = parserBase.RepOptional(parser, ParseTreeStub('a'))
         res = codegen.to_source(rep.topython())
         self.assertEqual(res, "lambda : (a or True)")
 

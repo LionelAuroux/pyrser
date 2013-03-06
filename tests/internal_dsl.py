@@ -115,7 +115,7 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertTrue(isinstance(res['the_rule'], Call), "failed in ParserTree type for node Call")
         self.assertTrue(res['the_rule'].callObject.__name__ == ParserBase.readChar.__name__, "failed in ParserTree type for call to readChar")
-        self.assertTrue(res['the_rule'].params[0] == 'a', "failed in ParserTree type for param[0] to 'a'")
+        self.assertTrue(res['the_rule'].params[0] == 'a', "failed in ParserTree type for params[0] to 'a'")
 
     def test_07_string(self):
         """
@@ -129,7 +129,7 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertTrue(isinstance(res['the_rule'], Call), "failed in ParserTree type for node Call")
         self.assertTrue(res['the_rule'].callObject.__name__ == ParserBase.readText.__name__, "failed in ParserTree type for call to readText")
-        self.assertTrue(res['the_rule'].params[0] == "bonjour le monde", 'failed in ParserTree type for param[0] to "bonjour le monde"')
+        self.assertTrue(res['the_rule'].params[0] == "bonjour le monde", 'failed in ParserTree type for params[0] to "bonjour le monde"')
 
     def test_08_range(self):
         """
@@ -143,5 +143,43 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertTrue(isinstance(res['the_rule'], Call), "failed in ParserTree type for node Call")
         self.assertTrue(res['the_rule'].callObject.__name__ == ParserBase.readRange.__name__, "failed in ParserTree type for call to readRange")
-        self.assertTrue(res['the_rule'].params[0] == 'a', "failed in ParserTree type for param[0] to 'a'")
-        self.assertTrue(res['the_rule'].params[1] == 'z', "failed in ParserTree type for param[1] to 'z'")
+        self.assertTrue(res['the_rule'].params[0] == 'a', "failed in ParserTree type for params[0] to 'a'")
+        self.assertTrue(res['the_rule'].params[1] == 'z', "failed in ParserTree type for params[1] to 'z'")
+
+    def test_09_complexe(self):
+        """
+        Test default
+        """
+        bnf = InternalDsl_Test.oParse("""
+            the_rule ::= 'a'..'z' "tutu" 'a' | a b | z
+            ;
+        """)
+        res = bnf.evalRule('bnf_dsl')
+        self.assertTrue('the_rule' in res, "failed to fetch the rule name")
+        self.assertTrue(isinstance(res['the_rule'], Alt), "failed in ParserTree type for node Alt")
+        self.assertTrue(isinstance(res['the_rule'].clauses[0], Clauses), "failed in ParserTree type for node Clauses")
+        self.assertTrue(isinstance(res['the_rule'].clauses[0].clauses[0], Call), "failed in ParserTree type for node Call")
+        self.assertTrue(res['the_rule'].clauses[0].clauses[0].callObject.__name__ == ParserBase.readRange.__name__, "failed in ParserTree type for call to readRange")
+        self.assertTrue(res['the_rule'].clauses[0].clauses[0].params[0] == 'a', "failed in ParserTree type for params[0] to 'a'")
+        self.assertTrue(res['the_rule'].clauses[0].clauses[0].params[1] == 'z', "failed in ParserTree type for params[1] to 'z'")
+        self.assertTrue(isinstance(res['the_rule'].clauses[0].clauses[1], Call), "failed in ParserTree type for node Call")
+        self.assertTrue(res['the_rule'].clauses[0].clauses[1].callObject.__name__ == ParserBase.readText.__name__, "failed in ParserTree type for call to readText")
+        self.assertTrue(res['the_rule'].clauses[0].clauses[1].params[0] == "tutu", 'failed in ParserTree type for params[0] to "tutu"')
+        self.assertTrue(isinstance(res['the_rule'].clauses[0].clauses[2], Call), "failed in ParserTree type for node Call")
+        self.assertTrue(res['the_rule'].clauses[0].clauses[2].callObject.__name__ == ParserBase.readChar.__name__, "failed in ParserTree type for call to readChar")
+        self.assertTrue(isinstance(res['the_rule'].clauses[1], Clauses), "failed in ParserTree type for node Clauses")
+        self.assertTrue(isinstance(res['the_rule'].clauses[1].clauses[0], Rule), "failed in ParserTree type for node Rule")
+        self.assertTrue(res['the_rule'].clauses[1].clauses[0].name == "a", "failed in name of rule 'a'")
+        self.assertTrue(res['the_rule'].clauses[1].clauses[1].name == "b", "failed in name of rule 'b'")
+        self.assertTrue(isinstance(res['the_rule'].clauses[2], Rule), "failed in ParserTree type for node Rule")
+        self.assertTrue(res['the_rule'].clauses[2].name == "z", "failed in name of rule 'z'")
+
+    def test_10_repoption(self):
+        """
+        Test default
+        """
+        bnf = InternalDsl_Test.oParse("""
+            the_rule ::= [ ]?
+            ;
+        """)
+        res = bnf.evalRule('bnf_dsl')

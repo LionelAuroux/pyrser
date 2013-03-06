@@ -135,6 +135,7 @@ def topython(self, in_loop: bool=False, in_try: bool=False) -> [ast.stmt]:
     except AltTrue:
         pass
     """
+    print("AST: %s" % dir(ast))
     res = ast.Try(
         [],
         [ast.ExceptHandler(

@@ -71,9 +71,25 @@ class ParserStream:
         self.__context().nIndex += 1
         return self.__context().nIndex
 
+    def decPos(self) -> int:
+    # TODO: found a better way, col is wrong
+        if self.__sString[self.__context().nIndex] == "\n":
+            self.__context().nLine -= 1
+            self.__context().nCol = -1
+        self.__context().nCol -= 1
+        self.__context().nIndex -= 1
+        return self.__context().nIndex
+
     def incPosOf(self, nInc):
+    # TODO: found a better way to do it
         while nInc > 0:
             self.incPos()
+            nInc -= 1
+
+    def decPosOf(self, nInc):
+    # TODO: found a better way to do it
+        while nInc > 0:
+            self.decPos()
             nInc -= 1
 
 ###

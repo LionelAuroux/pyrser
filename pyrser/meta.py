@@ -18,6 +18,16 @@
 
 from functools import wraps
 
+### PRIVATE FUNC
+
+def _get_base_class(cls):
+    base = cls
+    while True:
+        newbase = base.__bases__[0]
+        if len(newbase.__bases__) == 0:
+            return base
+        base = newbase
+
 ### CHECK PROTO FUNCTION
 # No argument
 def strict(f):
@@ -40,23 +50,55 @@ def strict(f):
 
 ### ADD Method to class AS PARTIAL CLASS
 # one argument, the class
-def add_method(class_name):
+def add_method(cls):
     def _wrapper(f):
         # add the method name into the class
-        setattr(class_name, f.__name__, f)
+        if hasattr(cls, f.__name__):
+            raise Exception("Already have the " + f.__name__ + " method")
+        setattr(cls, f.__name__, f)
         def _wrapped(self, *args, **kvargs):
             # call the method
             return f(self, *args, **kvargs)
         return wraps(f)(_wrapped)
     return _wrapper
 
-### SET Method as rule if the class is kind of ParserBase
-# TODO: didn't work
-# to get class name from self -> self.__class__.__name__
-#def rule(rule_name):
-#    def _wrapper(f):
-#        def _wrapped(self, *args, **kvargs):
-#            if self
-#            return f(self, *args, **kvargs)
-#        return wraps(f)(_wrapped)
-#    return _wrapper
+# forward decl
+class ParserBase:
+    pass
+### ADD A hook in a parserBase child class
+def     hook(cls, txt=None):
+    rootparser = _get_base_class(cls)
+    if not hasattr(rootparser, 'class_hook_list'):
+        setattr(rootparser, 'class_hook_list', {})
+    def _wrapper(f):
+        if hasattr(cls, f.__name__):
+            raise Exception("Already have the " + f.__name__ + " method")
+        setattr(cls, f.__name__, f)
+        bindname = txt
+        if bindname == None:
+            bindname = f.__name__
+        rootparser.class_hook_list[bindname] = f
+        def _wrapped(*args, **kv):
+            print("BIND!!!: <%s>" % globals())
+            return f(*args, **kv)
+        return wraps(f)(_wrapped)
+    return _wrapper
+
+### ADD A rule in a parserBase child class
+def     rule(cls, txt=None):
+    rootparser = _get_base_class(cls)
+    # the class_rule_list is unique in ParserBase
+    if not hasattr(rootparser, 'class_rule_list'):
+        setattr(rootparser, 'class_rule_list', {})
+    def _wrapper(f):
+        if hasattr(cls, f.__name__):
+            raise Exception("Already have the " + f.__name__ + " method")
+        setattr(cls, f.__name__, f)
+        bindname = txt
+        if bindname == None:
+            bindname = f.__name__
+        rootparser.class_rule_list[bindname] = f
+        def _wrapped(*args, **kv):
+            return f(*args, **kv)
+        return wraps(f)(_wrapped)
+    return _wrapper

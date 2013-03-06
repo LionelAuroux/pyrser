@@ -113,7 +113,12 @@ class Node(dict):
     Base class for node manipulation
     """
     def __init__(self, val = True):
-        self._bool = val
+        if type(val) == bool:
+            self._bool = val
+        elif type(val) == Node:
+            self._bool = val._bool
+        else:
+            raise Exception("Construction Node from Node or Boolean")
     def __bool__(self):
         return self._bool
     def __str__(self):
@@ -126,4 +131,3 @@ class Node(dict):
             else:
                 items.append(".%s = %s" % (k, repr(v)))
         return ", ".join(items)
-

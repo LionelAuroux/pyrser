@@ -17,8 +17,9 @@
 
 from pyrser.parsing.python.parserStream import ParserStream
 from pyrser.node import Node
+from pyrser import meta
 
-class ParserBase:
+class ParserBase(object):
     """
     An ascii parsing primitive library.
     """
@@ -27,16 +28,20 @@ class ParserBase:
         self.__stackIgnored = [self.ignoreBlanks]
         self.__rules = {}
         self.__hooks = {}
+        self._lastIgnoreIndex = 0
+        self._skipIgnore = self.__stackIgnored[-1]
         # public
-        self.skipIgnore = self.__stackIgnored[-1]
-        self.ruleNodes = [Node()]
-        # Basic rules handling
-        self.setOneRule("Base::num", self.readInteger)
-        self.setOneRule("Base::id", self.readIdentifier)
-        self.setOneRule("Base::char", self.readCChar)
-        self.setOneRule("Base::string", self.readCString)
-        self.setOneRule("Base::eof", self.readEOF)
-        self.setOneRule("Base::eol", self.readEOL)
+        self.ruleNodes = [{}]
+        # decorator rule handling
+        if hasattr(ParserBase, 'class_rule_list'):
+            for k,v in ParserBase.class_rule_list.items():
+                bound_method = v.__get__(self, ParserBase)
+                self.setOneRule(k, bound_method)
+        # decorator hook handling
+        if hasattr(ParserBase, 'class_hook_list'):
+            for k,v in ParserBase.class_hook_list.items():
+                bound_method = v.__get__(self, ParserBase)
+                self.setHooks({k : bound_method})
 
 ### PUBLIC ACCESSOR
 
@@ -137,25 +142,22 @@ class ParserBase:
 
 ### Rule Nodes
 
-    def pushRuleNodes(self):
+    def pushRuleNodes(self) -> bool:
         """
         Push context variable to store rule nodes
         """
         # outer scope visible in local
         if (len(self.ruleNodes) > 0):
             self.ruleNodes.append(self.ruleNodes[-1].copy())
+        return True
 
-    def popRuleNodes(self):
+    def popRuleNodes(self) -> bool:
         """
         Pop context variable that store rule nodes
         """
-        # local alteration in outer scope
-        if (len(self.ruleNodes) > 1):
-            for k, v in self.ruleNodes[-1].items():
-                if len(self.ruleNodes) > 1 and k in self.ruleNodes[-2]:
-                    self.ruleNodes[-2][k] = v
         if (len(self.ruleNodes) > 0):
             self.ruleNodes.pop()
+        return True
 
 ### STREAM
 
@@ -227,34 +229,42 @@ class ParserBase:
             self.__rules[strname] = callobject
         return True
 
-    def setHooks(self, hooks : dict) -> bool:
+    def setHooks(self, hook : dict) -> bool:
         """
-        Merge internal hooks set with the given hooks
+        Merge internal hooks set with the given hook
         """
-        self.__hooks.update(hooks)
+        self.__hooks.update(hook)
         return True
 
+    def handleVarCtx(self, res : Node, name : str) -> Node:
+        unnsname = name.split("::")[-1]
+        # default behavior the returned node is transfered
+        # if a ruleNodes have the name $$, it's use for return
+        if (res and (unnsname in self.ruleNodes[-1])):
+            res = self.ruleNodes[-1][unnsname]
+            #print("HANDLE %s: %s" % (unnsname, res))
+        return res
+
+    # TODO: define what's could be send globally to all rules
     def evalRule(self, name : str, *args, **kvargs) -> Node:
         """
         Evaluate the rule by its name
         """
         self.pushRuleNodes()
+        # create a slot value for the result
+        self.ruleNodes[-1][name] = Node()
         res = self.__rules[name](*args, **kvargs)
-        # default behavior the returned node is transfered
-        # if a ruleNodes have the same name than the rule, it's use for return
-        #print("CTX RULE <%s>" % self.ruleNodes[-1])
-        if (res and name in self.ruleNodes[-1]):
-            res = self.ruleNodes[-1][name]
+        res = self.handleVarCtx(res, name)
         self.popRuleNodes()
-        # TODO: check GC but res will not be destroyed
         return res
 
-    def evalHook(self, name : str, ctx : Node) -> Node:
+    def evalHook(self, name : str, ctx : list) -> Node:
         """
         Evaluate the hook by its name
         """
         # TODO: think of hooks prototype!!!
-        return self.__hooks[name](ctx)
+        res = self.__hooks[name](*ctx)
+        return res
 
 ### PARSING PRIMITIVES
 
@@ -293,24 +303,6 @@ class ParserBase:
         if self.index + 1 < self.eofIndex:
             cC = self.peekChar
             self.incPos()
-            return self.validContext()
-        return self.restoreContext()
-
-    def readEOF(self) -> bool:
-        """
-        Returns true if reach end of the stream.
-        """
-        return self.index == self.eofIndex
-
-    def readEOL(self) -> bool:
-        """
-        Return True if the parser can consume an EOL byte sequence.
-        """
-        if self.readEOF():
-            return False
-        self.saveContext()
-        self.readChar('\r')
-        if self.readChar('\n'):
             return self.validContext()
         return self.restoreContext()
 
@@ -360,44 +352,6 @@ class ParserBase:
             return self.validContext()
         return self.restoreContext()
 
-    def readInteger(self) -> bool:
-        """
-        Read following BNF rule else return False
-        readInteger ::= ['0'..'9']+ ;
-        """
-        if self.readEOF():
-            return False
-        self.saveContext()
-        cC = self.peekChar
-        if cC.isdigit():
-                self.incPos()
-                while not self.readEOF():
-                    cC = self.peekChar
-                    if not cC.isdigit():
-                        break
-                    self.incPos()
-                return self.validContext()
-        return self.restoreContext()
-
-    def readIdentifier(self) -> bool:
-        """
-        Read following BNF rule else return False
-        readIdentifier ::= ['a'..'z'|'A'..'Z'|'_']['0'..'9'|'a'..'z'|'A'..'Z'|'_']* ;
-        """
-        if self.readEOF():
-            return False
-        self.saveContext()
-        cC = self.peekChar
-        if (cC.isalpha() or cC == '_'):
-                self.incPos()
-                while not self.readEOF():
-                    cC = self.peekChar
-                    if not (cC.isalpha() or cC.isdigit() or cC == '_'):
-                        break
-                    self.incPos()
-                return self.validContext()
-        return self.restoreContext()
-
     def readRange(self, begin : str, end : str) -> int:
         """
         Consume head byte if it is >= begin and <= end else return false
@@ -409,27 +363,6 @@ class ParserBase:
         cC = self.peekChar
         if cC >= begin and cC <= end:
             self.incPos()
-            return self.validContext()
-        return self.restoreContext()
-
-    def readCString(self) -> bool:
-        """
-        Read following BNF rule else return False
-        '"' -> ['/'| '"']
-        """
-        self.saveContext()
-        if self.readChar('\"') and self.readUntil('\"', '\\'):
-            return self.validContext()
-        return self.restoreContext()
-
-    def readCChar(self) -> bool:
-        # TODO: octal digit, hex digit
-        """
-        Read following BNF rule else return False
-        "'" -> [~"/" "'"]
-        """
-        self.saveContext()
-        if self.readChar('\'') and self.readUntil('\'', '\\'):
             return self.validContext()
         return self.restoreContext()
 
@@ -457,7 +390,7 @@ class ParserBase:
         Set the ignore convention
         """
         self.__stackIgnored.append(ignoreConvention)
-        self.skipIgnore = self.__stackIgnored[-1]
+        self._skipIgnore = self.__stackIgnored[-1]
         return True
 
     def popIgnore(self) -> bool:
@@ -465,8 +398,114 @@ class ParserBase:
         Remove the last ignore convention
         """
         self.__stackIgnored.pop()
-        self.skipIgnore = self.__stackIgnored[-1]
+        self._skipIgnore = self.__stackIgnored[-1]
         return True
+
+    def skipIgnore(self) -> bool:
+        self._lastIgnoreIndex = self.index
+        self._skipIgnore()
+        self._lastIgnore = (self.index != self._lastIgnoreIndex)
+        return True
+
+    def undoIgnore(self) -> bool:
+        if self._lastIgnore:
+            delta = self.index - self._lastIgnoreIndex
+            if delta > 0:
+                self.getStream().decPosOf(delta)
+                self._lastIgnoreIndex = self.index
+        return True
+
+### BASE RULES
+@meta.rule(ParserBase, "Base::eof")
+def readEOF(self) -> bool:
+    """
+    Returns true if reach end of the stream.
+    """
+    return self.index == self.eofIndex
+
+@meta.rule(ParserBase, "Base::eol")
+def readEOL(self) -> bool:
+    """
+    Return True if the parser can consume an EOL byte sequence.
+    """
+    if self.readEOF():
+        return False
+    self.saveContext()
+    self.readChar('\r')
+    if self.readChar('\n'):
+        return self.validContext()
+    return self.restoreContext()
+
+@meta.rule(ParserBase, "Base::num")
+def readInteger(self) -> bool:
+    """
+    Read following BNF rule else return False
+    readInteger ::= ['0'..'9']+ ;
+    """
+    if self.readEOF():
+        return False
+    self.saveContext()
+    cC = self.peekChar
+    if cC.isdigit():
+            self.incPos()
+            while not self.readEOF():
+                cC = self.peekChar
+                if not cC.isdigit():
+                    break
+                self.incPos()
+            return self.validContext()
+    return self.restoreContext()
+
+@meta.rule(ParserBase, "Base::id")
+def readIdentifier(self) -> bool:
+    """
+    Read following BNF rule else return False
+    readIdentifier ::= ['a'..'z'|'A'..'Z'|'_']['0'..'9'|'a'..'z'|'A'..'Z'|'_']* ;
+    """
+    if self.readEOF():
+        return False
+    self.saveContext()
+    cC = self.peekChar
+    if (cC.isalpha() or cC == '_'):
+            self.incPos()
+            while not self.readEOF():
+                cC = self.peekChar
+                if not (cC.isalpha() or cC.isdigit() or cC == '_'):
+                    break
+                self.incPos()
+            return self.validContext()
+    return self.restoreContext()
+
+@meta.rule(ParserBase, "Base::string")
+def readCString(self) -> bool:
+    """
+    Read following BNF rule else return False
+    '"' -> ['/'| '"']
+    """
+    self.saveContext()
+    idx = self.index
+    if self.readChar('\"') and self.readUntil('\"', '\\'):
+        txt = self.getStream().getContentRelative(idx)
+        res = Node(self.validContext())
+        res.value = txt.strip('"')
+        return res
+    return self.restoreContext()
+
+@meta.rule(ParserBase, "Base::char")
+def readCChar(self) -> bool:
+    # TODO: octal digit, hex digit
+    """
+    Read following BNF rule else return False
+    "'" -> [~"/" "'"]
+    """
+    self.saveContext()
+    idx = self.index
+    if self.readChar('\'') and self.readUntil('\'', '\\'):
+        txt = self.getStream().getContentRelative(idx)
+        res = Node(self.validContext())
+        res.value = txt.strip("'")
+        return res
+    return self.restoreContext()
 
 ### PARSE TREE
 
@@ -496,15 +535,17 @@ class Scope(ParserTree):
     """
     functor to wrap SCOPE/rule directive or just []
     """
-    # TODO: pop/push ruleNodes
-    def __init__(self, begin : Clauses, end : Clauses, clause : Clauses):
+    def __init__(self, parser : ParserBase, begin : Clauses, end : Clauses, clause : Clauses):
         ParserTree.__init__(self)
+        self.parser = parser
         self.begin = begin
         self.end = end
         self.clause = clause
     def __call__(self) -> Node:
         if self.begin():
+            self.parser.pushRuleNodes()
             res = self.clause()
+            self.parser.popRuleNodes()
             if res and self.end():
                 return res
         return False
@@ -542,30 +583,28 @@ class Capture(ParserTree):
         self.clause = clause
     def __call__(self) -> Node:
         if self.parser.beginTag(self.tagname):
+            self.parser.pushRuleNodes()
+            self.parser.ruleNodes[-1][self.tagname] = Node()
             res = self.clause()
-            if res and self.parser.endTag(self.tagname):
+            self.parser.popRuleNodes()
+            if res and self.parser.undoIgnore() and self.parser.endTag(self.tagname):
                 text = self.parser.getTag(self.tagname)
                 # wrap it in a Node instance
                 if type(res) == bool:
                     res = Node(res)
-                if (not hasattr(res, 'value')):
-                    # special case: capture for Base::string & Base::char return the inside value
-                    # TODO: find a better test
-                    if (isinstance(self.clause, Rule) and (self.clause.name.endswith("string") or self.clause.name.endswith("char"))) \
-                        or (isinstance(self.clause, Call) \
-                        and (self.clause.callObject.__name__ == ParserBase.readCString.__name__ or self.clause.callObject.__name__ == ParserBase.readCChar)):
-                            res.value = text.strip('"\'')
-                    else:
-                        res.value = text
+                # TODO: better than a bare copy, just an instance of a future capture object (for multi-stream capture)
+                if not hasattr(res, 'value'):
+                    res.value = text
                 if (len(self.parser.ruleNodes) == 0):
                     raise BaseException("Fuck! No context for rule Nodes")
+                #print("Capture %s as %s" % (self.tagname, res))
                 self.parser.ruleNodes[-1][self.tagname] = res
                 return res
         return False
 
 class Alt(ParserTree):
     """
-    [] | [] bnf primitive as a functor
+    A | B bnf primitive as a functor
     """
     def __init__(self, parser : ParserBase, *clauses : Clauses):
         ParserTree.__init__(self)
@@ -586,10 +625,12 @@ class RepOptional(ParserTree):
     """
     []? bnf primitive as a functor
     """
-    def __init__(self, clause : Clauses):
+    def __init__(self, parser : ParserBase, clause : Clauses):
         ParserTree.__init__(self)
+        self.parser = parser
         self.clause = clause
     def __call__(self) -> bool:
+        self.parser.skipIgnore()
         self.clause()
         return True
 
@@ -630,6 +671,7 @@ class Rule(ParserTree):
     """
     call a rule by his name
     """
+    # TODO: Handle additionnal value
     def __init__(self, parser : ParserBase, name : str):
         ParserTree.__init__(self)
         self.parser = parser
@@ -641,9 +683,26 @@ class Hook(ParserTree):
     """
     call a hook by his name
     """
-    def __init__(self, parser : ParserBase, name : str):
+    def __init__(self, parser : ParserBase, name : str, param : list):
         ParserTree.__init__(self)
         self.parser = parser
         self.name = name
+        # compose the list of value param, check type
+        self.param = []
+        for vt in param:
+            v, t = vt
+            if type(t) is not type:
+                raise Exception("Must be pair of value and type (i.e: int, str, Node)")
+            self.param.append(vt)
     def __call__(self) -> bool:
-        return self.parser.evalHook(self.name, self.parser.ruleNodes[-1])
+        valueparam = []
+        for vt in self.param:
+            v, t = vt
+            if t is Node:
+                import weakref
+                valueparam.append(weakref.proxy(self.parser.ruleNodes[-1][v]))
+            elif type(v) is t:
+                valueparam.append(v)
+            else:
+                raise Exception("Type mismatch get a %s, expected %s" % (type(v), t))
+        return self.parser.evalHook(self.name, valueparam)
