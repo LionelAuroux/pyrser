@@ -150,7 +150,7 @@ class   ParserDsl(ParserBase):
                                 Hook(self, 'add_optional', [("repeat", Node)])
                             ),
                             Clauses(self, 
-                                Call(self.readChar, '?*'),
+                                Call(self.readChar, '*'),
                                 Hook(self, 'add_0N', [("repeat", Node)])
                             ),
                             Clauses(self, 
@@ -227,4 +227,30 @@ def add_text(self, clause, txt):
 @meta.hook(ParserDsl)
 def add_range(self, clause, begin, end):
     clause.parser_tree = Call(self.readRange, begin.value, end.value)
+    return True
+
+@meta.hook(ParserDsl)
+def add_rpt(self, clause, pt):
+    oldnode = clause
+    clause.parser_tree = pt.functor(self, oldnode.parser_tree)
+    return True
+
+@meta.hook(ParserDsl)
+def add_subclause(self, clause, subclause):
+    clause.parser_tree = subclause.parser_tree
+    return True
+
+@meta.hook(ParserDsl)
+def add_optional(self, repeat):
+    repeat.functor = RepOptional
+    return True
+
+@meta.hook(ParserDsl)
+def add_0N(self, repeat):
+    repeat.functor = Rep0N
+    return True
+
+@meta.hook(ParserDsl)
+def add_1N(self, repeat):
+    repeat.functor = Rep1N
     return True

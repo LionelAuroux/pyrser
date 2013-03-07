@@ -179,7 +179,37 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = InternalDsl_Test.oParse("""
-            the_rule ::= [ ]?
+            the_rule ::= a?
             ;
         """)
         res = bnf.evalRule('bnf_dsl')
+        self.assertTrue('the_rule' in res, "failed to fetch the rule name")
+        self.assertTrue(isinstance(res['the_rule'], RepOptional), "failed in ParserTree type for node RepOptional")
+        self.assertTrue(res['the_rule'].clause.name == 'a', "failed in name of rule 'a'")
+
+    def test_11_rep0N(self):
+        """
+        Test default
+        """
+        bnf = InternalDsl_Test.oParse("""
+            the_rule ::= [a]*
+            ;
+        """)
+        res = bnf.evalRule('bnf_dsl')
+        self.assertTrue('the_rule' in res, "failed to fetch the rule name")
+        self.assertTrue(isinstance(res['the_rule'], Rep0N), "failed in ParserTree type for node Rep0N")
+        self.assertTrue(res['the_rule'].clause.name == 'a', "failed in name of rule 'a'")
+
+    def test_12_rep1N(self):
+        """
+        Test default
+        """
+        bnf = InternalDsl_Test.oParse("""
+            the_rule ::= [a "toto"]+
+            ;
+        """)
+        res = bnf.evalRule('bnf_dsl')
+        self.assertTrue('the_rule' in res, "failed to fetch the rule name")
+        self.assertTrue(isinstance(res['the_rule'], Rep1N), "failed in ParserTree type for node Rep1N")
+        self.assertTrue(res['the_rule'].clause.clauses[0].name == 'a', "failed in name of rule 'a'")
+        self.assertTrue(res['the_rule'].clause.clauses[1].params[0] == "toto", 'failed in name of rule "toto"')
