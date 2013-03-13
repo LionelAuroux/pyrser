@@ -1,20 +1,3 @@
-# Copyright (C) 2012 Candiotti Adrien
-# Copyright (C) 2013 Lionel Auroux
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-#
-# See the GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 #from types import DictType, ListType
 from copy import copy
 
@@ -22,8 +5,7 @@ from functools import wraps
 
 
 def new_node(oParent, sType=None):
-    if oParent != None\
-            and id(oParent) in oParent:
+    if oParent is not None and id(oParent) in oParent:
         oNode = oParent[id(oParent)]
         oNode['parent'] = oParent
 # FIXME : faire tests pour savoir si c'est bon
@@ -31,8 +13,7 @@ def new_node(oParent, sType=None):
     else:
         oNode = {'parent': oParent}
 
-    if sType != None\
-            and 'type' not in oNode:
+    if sType is not None and 'type' not in oNode:
         oNode['type'] = sType
     return oNode
 
@@ -108,19 +89,22 @@ def has_next(oNode):
 class ParserTree:
     pass
 
+
 class Node(dict):
     """
     Base class for node manipulation
     """
-    def __init__(self, val = True):
+    def __init__(self, val=True):
         if type(val) == bool:
             self._bool = val
         elif type(val) == Node:
             self._bool = val._bool
         else:
             raise Exception("Construction Node from Node or Boolean")
+
     def __bool__(self):
         return self._bool
+
     def __str__(self):
         items = []
         if len(self) > 0:

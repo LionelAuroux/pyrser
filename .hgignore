@@ -7,3 +7,4 @@
 # Vim swap files.
 ^\.sw.$
 .[^/]*\.sw.$
+.coverage

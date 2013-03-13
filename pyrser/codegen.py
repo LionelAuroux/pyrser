@@ -118,6 +118,7 @@ class SourceGenerator(NodeVisitor):
 
     def signature(self, node):
         want_comma = []
+
         def write_comma():
             if want_comma:
                 self.write(', ')
@@ -190,6 +191,7 @@ class SourceGenerator(NodeVisitor):
 
     def visit_ClassDef(self, node):
         have_args = []
+
         def paren_or_comma():
             if have_args:
                 self.write(', ')
@@ -372,6 +374,7 @@ class SourceGenerator(NodeVisitor):
 
     def visit_Call(self, node):
         want_comma = []
+
         def write_comma():
             if want_comma:
                 self.write(', ')

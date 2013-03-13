@@ -1,299 +1,282 @@
-# Copyright (C) 2013 Pascal Bertrand
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-#
-# See the GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import ast
 
 from pyrser import meta
-from pyrser.parsing.python import parserBase
+from pyrser import parsing
 
 
-def exit_scope(in_loop: bool, in_try: bool) -> ast.stmt:
-    """Create the appropriate scope exiting statement.
-    
-    The documentation only shows one level and always uses
-    'return False' in examples.
+class RuleVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.in_optional, self.in_loop, self.in_try = 0, 0, 0
 
-    'raise AltFalse()' within a try.
-    'break' within a loop.
-    'return False' otherwise.
-    """
-    if in_try:
-        return ast.Raise(ast.Call(ast.Name('AltFalse', ast.Load()),
-            [], [], None, None), None)
-    if in_loop:
-        return ast.Break()
-    return ast.Return(ast.Name('False', ast.Load()))
+    def generic_visit(self, node):
+        raise TypeError("Unhandled {} node".format(node.__class__.__name__))
 
+    def __exit_scope(self) -> ast.stmt:
+        """Create the appropriate scope exiting statement.
 
-#TODO(bps): find a better name to describe what it does
-def clause_(clause: parserBase.ParserTree, in_loop: bool, in_try: bool) -> [ast.stmt]:
-    """Normalize a test expression into a statements list.
-    
-    Statements list are returned as-is.
-    Expression is packaged as:
-    if not expr:
-        return False
-    """
-    res = clause.topython(in_loop, in_try)
-    if isinstance(res, list):
-        return res
-    return [ast.If(ast.UnaryOp(ast.Not(), res), [exit_scope(in_loop, in_try)],
-        [])]
+        The documentation only shows one level and always uses
+        'return False' in examples.
 
+        'raise AltFalse()' within a try.
+        'break' within a loop.
+        'return False' otherwise.
+        """
+        if self.in_optional:
+            return ast.Pass()
+        if self.in_try:
+            return ast.Raise(
+                ast.Call(ast.Name('AltFalse', ast.Load()), [], [], None, None),
+                None)
+        if self.in_loop:
+            return ast.Break()
+        return ast.Return(ast.Name('False', ast.Load()))
 
-@meta.add_method(parserBase.Call)
-def topython(self, in_loop: bool=False, in_try: bool=False) -> ast.expr:
-    """Generates python code calling the function.
+    #TODO(bps): find a better name to describe what this does
+    def _clause(self, clause: parsing.ParserTree) -> [ast.stmt]:
+        """Normalize a test expression into a statements list.
 
-    fn(*args)
-    """
-    return ast.Call(
-        ast.Attribute(
-            ast.Name('self', ast.Load),
-            self.callObject.__name__,
-            ast.Load()),
-        [ast.Str(param) for param in self.params],
-        [],
-        None,
-        None)
+        Statements list are returned as-is.
+        Expression is packaged as:
+        if not expr:
+            return False
+        """
+        if isinstance(clause, list):
+            return clause
+        return [ast.If(ast.UnaryOp(ast.Not(), clause),
+                       [self.__exit_scope()],
+                       [])]
 
-@meta.add_method(parserBase.CallTrue)
-def topython(self, in_loop: bool=False, in_try: bool=False) -> ast.expr:
-    """Generates python code calling the function and returning True.
+    def visit_Call(self, node: parsing.Call) -> ast.expr:
+        """Generates python code calling the function.
 
-    lambda: fn(*args) or True
-    """
-    return ast.Lambda(
-        ast.arguments([], None, None, [], None, None, [], []),
-        ast.BoolOp(
-            ast.Or(),
+        fn(*args)
+        """
+        return ast.Call(
+            ast.Attribute(
+                ast.Name('self', ast.Load),
+                node.callObject.__name__,
+                ast.Load()),
+            [ast.Str(param) for param in node.params],
+            [],
+            None,
+            None)
+
+    def visit_CallTrue(self, node: parsing.CallTrue) -> ast.expr:
+        """Generates python code calling the function and returning True.
+
+        lambda: fn(*args) or True
+        """
+        return ast.Lambda(
+            ast.arguments([], None, None, [], None, None, [], []),
+            ast.BoolOp(
+                ast.Or(),
+                [
+                    self.visit_Call(node),
+                    ast.Name('True', ast.Load())]))
+
+    def visit_Hook(self, node: parsing.Hook) -> ast.expr:
+        """Generates python code calling a hook.
+
+        self.evalHook('hookname', self.ruleNodes[-1])
+        """
+        return ast.Call(
+            ast.Attribute(
+                ast.Name('self', ast.Load()), 'evalHook', ast.Load()),
             [
-                super(parserBase.CallTrue, self).topython(in_loop, in_try),
-                ast.Name('True', ast.Load())]))
+                ast.Str(node.name),
+                ast.Subscript(
+                    ast.Attribute(
+                        ast.Name('self', ast.Load()), 'ruleNodes', ast.Load()),
+                    ast.Index(ast.UnaryOp(ast.USub(), ast.Num(1))),
+                    ast.Load())],
+            [],
+            None,
+            None)
 
+    def visit_Rule(self, node: parsing.Rule) -> ast.expr:
+        """Generates python code calling a rule.
 
-@meta.add_method(parserBase.Hook)
-def topython(self, in_loop: bool=False, in_try: bool=False) -> ast.expr:
-    """Generates python code calling a hook.
+        self.evalRule('rulename')
+        """
+        return ast.Call(
+            ast.Attribute(ast.Name('self', ast.Load()),
+                          'evalRule', ast.Load()),
+            [ast.Str(node.name)], [], None, None)
 
-    self.evalHook('hookname', self.ruleNodes[-1])
-    """
-    return ast.Call(
-        ast.Attribute(ast.Name('self', ast.Load()), 'evalHook', ast.Load()),
-        [
-            ast.Str(self.name),
-            ast.Subscript(
-                ast.Attribute(ast.Name('self', ast.Load()), 'ruleNodes', ast.Load()),
-                ast.Index(ast.UnaryOp(ast.USub(), ast.Num(1))),
-                ast.Load())],
-        [],
-        None,
-        None)
+    def visit_Capture(self, node: parsing.Capture) -> [ast.stmt] or ast.expr:
+        """Generates python code to capture text consumed by a clause.
 
+        #If all clauses can be inlined
+        self.beginTag('tagname') and clause and self.endTag('tagname')
 
-@meta.add_method(parserBase.Rule)
-def topython(self, in_loop: bool=False, in_try: bool=False) -> ast.expr:
-    """Generates python code calling a rule.
+        if not self.beginTag('tagname'):
+            return False
+        <code for the clause>
+        if not self.endTag('tagname'):
+            return False
+        """
+        begintag = ast.Attribute(
+            ast.Name('self', ast.Load()), 'beginTag', ast.Load())
+        endtag = ast.Attribute(
+            ast.Name('self', ast.Load()), 'endTag', ast.Load())
+        begin = ast.Call(begintag, [ast.Str(node.tagname)], [], None, None)
+        end = ast.Call(endtag, [ast.Str(node.tagname)], [], None, None)
+        result = [begin, self.visit(node.clause), end]
+        for clause in result:
+            if not isinstance(clause, ast.expr):
+                break
+        else:
+            return ast.BoolOp(ast.And(), result)
+        res = []
+        for stmt in map(self._clause, result):
+            res.extend(stmt)
+        return res
 
-    self.evalRule('rulename')
-    """
-    return ast.Call(
-        ast.Attribute(ast.Name('self', ast.Load), 'evalRule', ast.Load()),
-        [ast.Str(self.name)],
-        [],
-        None,
-        None)
+    def visit_Scope(self, node: parsing.Capture) -> [ast.stmt] or ast.expr:
+        """Generates python code for a scope.
 
+        if not self.begin():
+            return False
+        res = self.clause()
+        if not res:
+            return False
+        if not self.end():
+            return False
+        return res
+        """
+        raise NotImplementedError()
 
-#TODO(bps): Handle more cases or patch ParserTree nodes accordingly.
-#TODO(bps): forbid nested alt
-@meta.add_method(parserBase.Alt)
-def topython(self, in_loop: bool=False, in_try: bool=False) -> [ast.stmt]:
-    """Generates python code for alternatives.
+    #TODO(bps): forbid nested alt
+    def visit_Alt(self, node: parsing.Alt) -> [ast.stmt]:
+        """Generates python code for alternatives.
 
-    try:
         try:
-            <code for clause>  #raise AltFalse when alternative is False
-            raise AltTrue()
-        except AltFalse:
+            try:
+                <code for clause>  #raise AltFalse when alternative is False
+                raise AltTrue()
+            except AltFalse:
+                pass
+            return False
+        except AltTrue:
+            pass
+        """
+        clauses = [self.visit(clause) for clause in node.clauses]
+        for clause in clauses:
+            if not isinstance(clause, ast.expr):
+                break
+        else:
+            return ast.BoolOp(ast.Or(), clauses)
+        res = ast.Try([],
+                      [ast.ExceptHandler(ast.Name('AltTrue', ast.Load()),
+                                         None, [ast.Pass()])], [], [])
+        alt_true = [ast.Raise(ast.Call(ast.Name('AltTrue', ast.Load()), [], [],
+                    None, None), None)]
+        alt_false = [ast.ExceptHandler(ast.Name('AltFalse', ast.Load()), None,
+                     [ast.Pass()])]
+        self.in_try += 1
+        for clause in node.clauses:
+            res.body.append(
+                ast.Try(self._clause(self.visit(clause)) + alt_true, alt_false,
+                        [], []))
+        self.in_try -= 1
+        res.body.append(self.__exit_scope())
+        return [res]
+
+    def visit_Clauses(self, node: parsing.Clauses) -> [ast.stmt] or ast.expr:
+        """Generates python code for clauses.
+
+        #If all clauses can be inlined
+        clause and clause
+
+        if not clause:
+            return False
+        if not clause:
+            return False
+        """
+        exprs, stmts = [], []
+        for clause in node.clauses:
+            clause_ast = self.visit(clause)
+            if isinstance(clause_ast, ast.expr):
+                exprs.append(clause_ast)
+            else:
+                if exprs:
+                    stmts.extend(self._clause(ast.BoolOp(ast.And(), exprs)))
+                    exprs = []
+                stmts.extend(self._clause(clause_ast))
+        if not stmts:
+            return ast.BoolOp(ast.And(), exprs)
+        if exprs:
+            if len(exprs) == 1:
+                stmts.extend(self._clause(exprs[0]))
+            else:
+                stmts.extend(self._clause(ast.BoolOp(ast.And(), exprs)))
+        return stmts
+
+    def visit_RepOptional(self, node: parsing.RepOptional) -> ([ast.stmt] or
+                                                               ast.expr):
+        """Generates python code for an optional clause.
+
+        <code for the clause>
+        """
+        cl_ast = self.visit(node.clause)
+        if isinstance(cl_ast, ast.expr):
+            return ast.BoolOp(ast.Or(), [cl_ast, ast.Name('True', ast.Load())])
+        self.in_optional += 1
+        cl_ast = self.visit(node.clause)
+        self.in_optional -= 1
+        return cl_ast
+
+    def visit_Rep0N(self, node: parsing.Rep0N) -> [ast.stmt]:
+        """Generates python code for a clause repeated 0 or more times.
+
+        #If all clauses can be inlined
+        while clause:
             pass
 
-        return False
-    except AltTrue:
-        pass
-    """
-    print("AST: %s" % dir(ast))
-    res = ast.Try(
-        [],
-        [ast.ExceptHandler(
-            ast.Name('AltTrue', ast.Load()),
-            None,
-            [ast.Pass()])],
-        [],
-        [])
-    for clause in self.clauses:
-        res.body.append(
-            ast.Try(
-                (clause_(clause, in_loop, in_try=True) +
-                 [ast.Raise(
-                     ast.Call(
-                         ast.Name('AltTrue', ast.Load()),
-                         [],
-                         [],
-                         None,
-                         None),
-                     None)]),
-                [ast.ExceptHandler(
-                    ast.Name('AltFalse', ast.Load()),
-                    None,
-                    [ast.Pass()])],
-                [],
-                []))
-    res.body.append(exit_scope(in_loop, in_try))
-    return [res]
+        while True:
+            <code for the clause>
+        """
+        cl_ast = self.visit(node.clause)
+        if isinstance(cl_ast, ast.expr):
+            return [ast.While(cl_ast, [ast.Pass()], [])]
+        self.in_loop += 1
+        clause = self._clause(self.visit(node.clause))
+        self.in_loop -= 1
+        return [ast.While(ast.Name('True', ast.Load()), clause, [])]
 
+    def visit_Rep1N(self, node: parsing.Rep0N) -> [ast.stmt]:
+        """Generates python code for a clause repeated 1 or more times.
 
-@meta.add_method(parserBase.Clauses)
-def topython(self, in_loop: bool=False, in_try: bool=False) -> [ast.stmt]:
-    """Generates python code for clauses.
-
-    if not clause:
-        return False
-    if not clause:
-        return False
-    """
-    res = []
-    for clause in self.clauses:
-        res.extend(clause_(clause, in_loop, in_try))
-    return res
-
-
-@meta.add_method(parserBase.Capture)
-def topython(self, in_loop: bool=False, in_try: bool=False) -> [ast.stmt]:
-    """Generates python code to capture text consumed by a clause.
-
-    if not self.beginTag('tagname'):
-        return False
-    <code for the clause>
-    if not self.endTag('tagname'):
-        return False
-    """
-    return [
-        ast.If(
-            ast.UnaryOp(
-                ast.Not(),
-                ast.Call(
-                    ast.Attribute(
-                        ast.Name('self', ast.Load()),
-                        'beginTag',
-                        ast.Load()),
-                    [ast.Str(self.tagname)],
-                    [],
-                    None,
-                    None)),
-            [exit_scope(in_loop, in_try)],
-            []),
-        ast.If(
-            ast.UnaryOp(ast.Not(), self.clause.topython(in_loop, in_try)),
-            [exit_scope(in_loop, in_try)],
-            []),
-        ast.If(
-            ast.UnaryOp(
-                ast.Not(),
-                ast.Call(
-                    ast.Attribute(
-                        ast.Name('self', ast.Load()),
-                        'endTag',
-                        ast.Load()),
-                    [ast.Str(self.tagname)],
-                    [],
-                    None,
-                    None)),
-            [exit_scope(in_loop, in_try)],
-            [])]
-
-
-@meta.add_method(parserBase.Rep0N)
-def topython(self, in_loop: bool=False, in_try: bool=False) -> [ast.stmt]:
-    """Generates python code for a clause repeated 0 or more times.
-
-    while True:
         <code for the clause>
-    """
-    return [ast.While(ast.Name('True', ast.Load()),
-                clause_(self.clause, in_loop=True, in_try=in_try), [])]
+        while True:
+            <code for the clause>
+        """
+        clause = self.visit(node.clause)
+        if isinstance(clause, ast.expr):
+            return (self._clause(clause) + self.visit_Rep0N(node))
+        self.in_loop += 1
+        clause = self._clause(self.visit(node.clause))
+        self.in_loop -= 1
+        return self._clause(self.visit(node.clause)) + [
+            ast.While(ast.Name('True', ast.Load()), clause, [])]
 
 
-@meta.add_method(parserBase.Rep1N)
-def topython(self, in_loop: bool=False, in_try: bool=False) -> [ast.stmt]:
-    """Generates python code for a clause repeated 1 or more times.
-
-    <code for the clause>
-    while True:
-        <code for the clause>
-    """
-    return clause_(self.clause, in_loop, in_try) + [
-        ast.While(
-            ast.Name('True', ast.Load()),
-            clause_(self.clause, in_loop=True, in_try=in_try),
-            [])]
+def rule_topython(rule: parsing.ParserTree) -> [ast.stmt]:
+    return RuleVisitor().visit(rule)
 
 
-@meta.add_method(parserBase.RepOptional)
-def topython(self, in_loop: bool=False, in_try: bool=False) -> [ast.stmt]:
-    """Generates python code for an optional clause.
-
-    <code for the clause>
-    """
-    return ast.Lambda(
-        ast.arguments([], None, None, [], None, None, [], []),
-        ast.BoolOp(ast.Or(), [
-            self.clause.topython(in_loop, in_try),
-            ast.Name('True', ast.Load())]))
-
-
-@meta.add_method(parserBase.Scope)
-def topython(self, in_loop: bool=False, in_try: bool=False) -> [ast.stmt]:
-    """Generates python code for a scope.
-
-    if not self.begin():
-        return False
-    res = self.clause()
-    if not res:
-        return False
-    if not self.end():
-        return False
-    return res
-    """
-    raise NotImplementedError
-
-
-@meta.add_method(parserBase.ParserBase)
-def rule_topython(self, rule_name: str) -> ast.FunctionDef:
+def parserrule_topython(parser: parsing.BasicParser,
+                        rulename: str) -> ast.FunctionDef:
     """Generates code for a rule.
 
-    func rulename(self):
+    def rulename(self):
         <code for the rule>
         return True
     """
-    rule = self._ParserBase__rules[rule_name]
-    return ast.FunctionDef(
-        rule_name,
-        ast.arguments([ast.arg('self', None)], None, None, [], None, None, [],
-            []),
-        rule.topython() + [ast.Return(ast.Name('True', ast.Load()))],
-        [],
-        None)
+    visitor = RuleVisitor()
+    rule = parser._rules[rulename]
+    fn_args = ast.arguments([ast.arg('self', None)], None, None, [], None,
+                            None, [], [])
+    body = visitor._clause(rule_topython(rule))
+    body.append(ast.Return(ast.Name('True', ast.Load())))
+    return ast.FunctionDef(rulename, fn_args, body, [], None)
