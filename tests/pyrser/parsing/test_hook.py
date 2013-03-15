@@ -1,7 +1,6 @@
 import unittest
 from unittest import mock
 
-import pyrser
 from pyrser import parsing
 
 

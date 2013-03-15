@@ -5,6 +5,8 @@ import unittest
 from pyrser import codegen
 from pyrser import parsing
 from pyrser import passes
+
+#Internal import used to patch handling of stubs
 from pyrser.passes import topython
 
 

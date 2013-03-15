@@ -210,7 +210,7 @@ class InternalParse_Test(unittest.TestCase):
                 )),
             parsing.Call(parser.readEOF)
         )
-        #print("\n" + parseTree.dumpParseTree())
+        parseTree.dumpParseTree()
         parseTree(parser)
         # Warning! skipIgnore is called between each parsing.Clauses
         self.assertEqual(parser.getTag("w1"), "_ad121dwdw ",

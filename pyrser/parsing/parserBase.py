@@ -1,6 +1,6 @@
+from pyrser import meta
 from pyrser.parsing.parserStream import Stream
 from pyrser.parsing.node import Node
-from pyrser import meta
 
 
 class BasicParser:

@@ -1,11 +1,9 @@
 # This pass is for debug only
-
-from pyrser.meta import *
-from pyrser.parsing.parserBase import *
-import inspect
+from pyrser import meta
+from pyrser import parsing
 
 
-@add_method(BasicParser)
+@meta.add_method(parsing.Parser)
 def dumpParseTree(self):
     res = "{"
     for k, v in self.rules.items():
@@ -17,40 +15,38 @@ def dumpParseTree(self):
     return res
 
 
-@add_method(Rule)
+@meta.add_method(parsing.Rule)
 def dumpParseTree(self, level=0):
     return "{}{}".format('\t' * level, self.name)
 
 
-@add_method(Hook)
+@meta.add_method(parsing.Hook)
 def dumpParseTree(self, level=0):
     return "{}#{}".format('\t' * level, self.name)
 
 
-@add_method(Call)
+@meta.add_method(parsing.Call)
 def dumpParseTree(self, level=0):
     #TODO(iopi): think to remap methods to hooks
-    if self.callObject.__name__ == BasicParser.readRange.__name__:
-        return ("{}'{}'..'{}'".format(
-            '\t' * level,
-            self.params[0],
-            self.params[1]))
-    elif self.callObject.__name__ == BasicParser.readChar.__name__:
-        return ("{}'{}'".format('\t' * level, self.params[0]))
-    elif self.callObject.__name__ == BasicParser.readText.__name__:
-        return ("{}\"{}\"".format('\t' * level, self.params[0]))
-    elif self.callObject.__name__ == BasicParser.readInteger.__name__:
-        return ("{}#num".format('\t' * level))
-    elif self.callObject.__name__ == BasicParser.readIdentifier.__name__:
-        return ("{}#id".format('\t' * level))
+    if self.callObject == parsing.Parser.readRange:
+        return "{}'{}'..'{}'".format(
+            '\t' * level, self.params[0], self.params[1])
+    elif self.callObject == parsing.Parser.readChar:
+        return "{}'{}'".format('\t' * level, self.params[0])
+    elif self.callObject == parsing.Parser.readText:
+        return "{}\"{}\"".format('\t' * level, self.params[0])
+    elif self.callObject == parsing.Parser.readInteger:
+        return "{}#num".format('\t' * level)
+    elif self.callObject == parsing.Parser.readIdentifier:
+        return "{}#id".format('\t' * level)
     else:
         res = "{}#call: {} (".format('\t' * level, self.callObject.__name__)
-        res += ", ".join(["{}".formt(repr(param)) for param in self.params])
+        res += ", ".join(["{}".format(repr(param)) for param in self.params])
         res += ")"
         return res
 
 
-@add_method(Scope)
+@meta.add_method(parsing.Scope)
 def dumpParseTree(self, level=0):
     res = "\n{}[{}\n".format('\t' * (level + 1), self.begin.dumpParseTree(0))
     res += self.clause.dumpParseTree(level + 1)
@@ -58,7 +54,7 @@ def dumpParseTree(self, level=0):
     return res
 
 
-@add_method(Capture)
+@meta.add_method(parsing.Capture)
 def dumpParseTree(self, level=0):
     res = "\n{}[\n".format('\t' * level)
     res += self.clause.dumpParseTree(level + 1)
@@ -66,13 +62,13 @@ def dumpParseTree(self, level=0):
     return res
 
 
-@add_method(Clauses)
+@meta.add_method(parsing.Clauses)
 def dumpParseTree(self, level=0):
     return ' '.join(
         [clause.dumpParseTree(level + 1) for clause in self.clauses])
 
 
-@add_method(Alt)
+@meta.add_method(parsing.Alt)
 def dumpParseTree(self, level=0):
     indent = '\t' * level
     res = "\n{}  {}".format(indent, self.clauses[0].dumpParseTree(0))
@@ -83,7 +79,7 @@ def dumpParseTree(self, level=0):
     return res
 
 
-@add_method(RepOptional)
+@meta.add_method(parsing.RepOptional)
 def dumpParseTree(self, level=0):
     res = ("\n{}[\n".format('\t' * level))
     res += self.clause.dumpParseTree(level + 1)
@@ -91,7 +87,7 @@ def dumpParseTree(self, level=0):
     return res
 
 
-@add_method(Rep0N)
+@meta.add_method(parsing.Rep0N)
 def dumpParseTree(self, level=0):
     res = ("\n{}[\n".format('\t' * level))
     res += self.clause.dumpParseTree(level + 1)
@@ -99,7 +95,7 @@ def dumpParseTree(self, level=0):
     return res
 
 
-@add_method(Rep1N)
+@meta.add_method(parsing.Rep1N)
 def dumpParseTree(self, level=0):
     res = ("\n{}[\n".format('\t' * level))
     res += self.clause.dumpParseTree(level + 1)
