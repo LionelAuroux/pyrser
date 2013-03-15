@@ -16,9 +16,8 @@ class Parser(parsing.Parser):
                 parsing.Rep1N(
                     parsing.Clauses(
                         parsing.Capture('r', parsing.Rule('rule')),
-                        parsing.Hook('add_rules',
-                                     [('bnf_dsl', parsing.Node),
-                                      ('r', parsing.Node)]))),
+                        parsing.Hook('add_rules', [('bnf_dsl', parsing.Node),
+                                                   ('r', parsing.Node)]))),
                 parsing.Rule('Base::eof')),
             #
             # rule ::= rule_name: rn "::=" alternatives : alts
@@ -28,12 +27,10 @@ class Parser(parsing.Parser):
             'rule': parsing.Clauses(
                 parsing.Capture('rn', parsing.Rule('rule_name')),
                 parsing.Call(self.readText, '::='),
-                parsing.Capture('alts',
-                                parsing.Rule('alternatives')),
-                parsing.Hook('add_rule',
-                             [('rule', parsing.Node),
-                              ('rn', parsing.Node),
-                              ('alts', parsing.Node)]),
+                parsing.Capture('alts', parsing.Rule('alternatives')),
+                parsing.Hook('add_rule', [('rule', parsing.Node),
+                                          ('rn', parsing.Node),
+                                          ('alts', parsing.Node)]),
                 parsing.Call(self.readChar, ';')),
             #
             # alternatives ::=
@@ -62,11 +59,11 @@ class Parser(parsing.Parser):
                 '$$',
                 parsing.Rep1N(
                     parsing.Clauses(
-                        parsing.Capture('cla',
-                                        parsing.Rule('clause')),
-                        parsing.Hook('add_clauses',
-                                     [('clauses', parsing.Node),
-                                      ('cla', parsing.Node)])))),
+                        parsing.Capture('cla', parsing.Rule('clause')),
+                        parsing.Hook(
+                            'add_clauses',
+                            [('clauses', parsing.Node),
+                             ('cla', parsing.Node)])))),
             #
             # clause ::= [
             #     Base::id: rid #add_ruleclause_name(clause, rid)
@@ -83,32 +80,26 @@ class Parser(parsing.Parser):
             'clause': parsing.Clauses(
                 parsing.Alt(
                     parsing.Clauses(
-                        parsing.Capture('rid',
-                                        parsing.Rule('Base::id')),
+                        parsing.Capture('rid', parsing.Rule('Base::id')),
                         parsing.Hook('add_ruleclause_name',
                                      [('clause', parsing.Node),
                                       ('rid', parsing.Node)])),
                     parsing.Clauses(
-                        parsing.Capture('txt',
-                                        parsing.Rule('Base::string')),
-                        parsing.Hook('add_text',
-                                     [('clause', parsing.Node),
-                                      ('txt', parsing.Node)])),
+                        parsing.Capture('txt', parsing.Rule('Base::string')),
+                        parsing.Hook('add_text', [('clause', parsing.Node),
+                                                  ('txt', parsing.Node)])),
                     parsing.Clauses(
-                        parsing.Capture('begin',
-                                        parsing.Rule('Base::char')),
+                        parsing.Capture('begin', parsing.Rule('Base::char')),
                         parsing.Call(self.readText, '..'),
-                        parsing.Capture('end',
-                                        parsing.Rule('Base::char')),
+                        parsing.Capture('end', parsing.Rule('Base::char')),
                         parsing.Hook('add_range',
                                      [('clause', parsing.Node),
                                       ('begin', parsing.Node),
                                       ('end', parsing.Node)])),
                     parsing.Clauses(
                         parsing.Capture('c', parsing.Rule('Base::char')),
-                        parsing.Hook('add_char',
-                                     [('clause', parsing.Node),
-                                      ('c', parsing.Node)])),
+                        parsing.Hook('add_char', [('clause', parsing.Node),
+                                                  ('c', parsing.Node)])),
                     parsing.Clauses(
                         parsing.Call(self.readChar, '['),
                         parsing.Capture('subclause',
@@ -120,9 +111,8 @@ class Parser(parsing.Parser):
                 parsing.RepOptional(
                     parsing.Clauses(
                         parsing.Capture('rpt', parsing.Rule('repeat')),
-                        parsing.Hook('add_rpt',
-                                     [('clause', parsing.Node),
-                                      ('rpt', parsing.Node)])))),
+                        parsing.Hook('add_rpt', [('clause', parsing.Node),
+                                                 ('rpt', parsing.Node)])))),
             #TODO(iopi): add rules hooks
             # rule_name ::= Base::id: rid #add_ruleclause_name(rule_name, rid)
             # ;
@@ -173,13 +163,11 @@ def add_rule(self, rule, rn, alts) -> bool:
 
 @meta.hook(Parser)
 def add_clauses(self, clauses, cla) -> bool:
-    # print("add clauses: %s" % cla.parser_tree)
     if not hasattr(clauses, 'parser_tree'):
         # forward sublevel of clause as is
         clauses.parser_tree = cla.parser_tree
     else:
         oldnode = clauses
-        # print("OLDCLA %s" % oldnode.parser_tree)
         if isinstance(oldnode.parser_tree, parsing.Clauses):
             oldpt = list(oldnode.parser_tree.clauses)
         else:
@@ -191,7 +179,6 @@ def add_clauses(self, clauses, cla) -> bool:
 
 @meta.hook(Parser)
 def add_alt(self, alternatives, alt) -> bool:
-    # print("add ALT %s" % alt.parser_tree)
     if not hasattr(alternatives, 'parser_tree'):
         # forward sublevel of alt as is
         if hasattr(alt, 'parser_tree'):

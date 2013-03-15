@@ -1,8 +1,9 @@
 import unittest
+from unittest import mock
 
 from pyrser import meta
 from pyrser import parsing
-from pyrser.passes import dumpParseTree
+import pyrser.passes.dumpParseTree
 
 
 class InternalParse_Test(unittest.TestCase):
@@ -222,30 +223,32 @@ class InternalParse_Test(unittest.TestCase):
         """
             Basic test for Rules
         """
-        def printWord(parser, test, tutu):
-            test.assertEqual(tutu.value, "asbga",
-                             "failed access captured variable string")
+        def check_word(parser, test, tutu):
+            test.assertIn(tutu.value, ('asbga', 'njnj'))
+            return True
+        check_word = mock.Mock(side_effect=check_word)
 
-        def printint(parser, test, toto):
-            #TODO(bps): printint should be called, delete raise when called
-            raise Exception("Delete when called")
-            test.assertEqual(toto.value, "12121",
-                             "failed access captured variable int")
+        def check_int(parser, test, toto):
+            test.assertIn(toto.value, ('12121', '89898'))
+            return True
+        check_int = mock.Mock(side_effect=check_int)
 
         parser = parsing.Parser()
         parser.parsedStream("asbga    12121      njnj 89898")
         parser.rulenodes[-1]['test'] = self
-        parser.setHooks({'printWord': printWord,
-                         'printint': printint})
+        parser.setHooks({'checkWord': check_word, 'checkInt': check_int})
         parser.setRules({
-            'main': parsing.Rep0N(
-                parsing.Alt(
-                    parsing.Clauses(
-                        parsing.Capture('tutu', parsing.Rule('word')),
-                        parsing.Hook(
-                            'printWord',
-                            [("test", parsing.Node), ("tutu", parsing.Node)])),
-                    parsing.Rule('int'))),
+            'main': parsing.Clauses(
+                parsing.Rep0N(
+                    parsing.Alt(
+                        parsing.Clauses(
+                            parsing.Capture('tutu', parsing.Rule('word')),
+                            parsing.Hook(
+                                'checkWord',
+                                [("test", parsing.Node),
+                                 ("tutu", parsing.Node)])),
+                        parsing.Rule('int'))),
+                parsing.Rule('Base::eof')),
             'word': parsing.Scope(
                 parsing.Call(parser.pushIgnore, parser.ignoreNull),
                 parsing.Call(parser.popIgnore),
@@ -262,10 +265,12 @@ class InternalParse_Test(unittest.TestCase):
                         parsing.Rep1N(
                             parsing.Call(parser.readRange, '0', '9')))),
                 parsing.Hook(
-                    'printint',
+                    'checkInt',
                     [("test", parsing.Node), ("toto", parsing.Node)]))})
         bRes = parser.evalRule('main')
         self.assertTrue(bRes, "failed to parse")
+        self.assertEqual(2, check_word.call_count)
+        self.assertEqual(2, check_int.call_count)
 
     def test_10_contextVariables(self):
         """
@@ -275,13 +280,11 @@ class InternalParse_Test(unittest.TestCase):
         parser.rulenodes[-1].update({'coucou': 42, 'toto': [12, 33]})
         self.assertEqual(parser.rulenodes[-1]['toto'], [12, 33],
                          "failed comparing list")
-        #print("rulenodes:%s" % parser.rulenodes)
         parser.pushRuleNodes()
         parser.rulenodes[-1].update({'local1': 666, 'local2': 777})
         parser.rulenodes[-1]['toto'] = [1, 2, 3, 4]
         self.assertEqual(parser.rulenodes[-1]['coucou'], 42,
                          "failed outer scope not visible in local")
-        #print("rulenodes:%s" % parser.rulenodes)
         parser.popRuleNodes()
 
     def test_11_namespaceRules(self):

@@ -210,7 +210,7 @@ class TestToPythonPasse(unittest.TestCase):
         import pyrser.passes.dumpParseTree
 
         res, parser = [], Parser()
-        #res.append(self.help(parser._rules['alternatives']))
+        res.append(self.help(parser._rules['alternatives']))
         res.append(codegen.to_source(
             passes.parserrule_topython(parser, 'bnf_dsl')))
         res.append(codegen.to_source(

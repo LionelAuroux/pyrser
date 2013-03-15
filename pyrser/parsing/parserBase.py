@@ -490,13 +490,12 @@ class Scope(ParserTree):
         self.clause = clause
 
     def __call__(self, parser: BasicParser) -> Node:
-        if self.begin(parser):
-            parser.pushRuleNodes()
-            res = self.clause(parser)
-            parser.popRuleNodes()
-            if res and self.end(parser):
-                return res
-        return False
+        if not self.begin(parser):
+            return False
+        res = self.clause(parser)
+        if not self.end(parser):
+            return False
+        return res
 
 
 class Call(ParserTree):
