@@ -19,6 +19,7 @@ class BasicParser:
         self.rulenodes = [{}]
         # Basic rules handling
         self._lastIgnoreIndex = 0
+        self._lastIgnore = False
         # public
         # decorator rule handling
         if hasattr(BasicParser, 'class_rule_list'):
@@ -97,11 +98,8 @@ class BasicParser:
         """
         Add one rule (with namespace handling) that call callobject
         """
-        namespaces = rule_name.split("::")
-        if namespaces is None:
-            namespaces = [rule_name]
+        namespaces = reversed(rule_name.split("::"))
         lstname = []
-        namespaces.reverse()
         for name in namespaces:
             lstname.insert(0, name)
             strname = "::".join(lstname)
@@ -139,8 +137,7 @@ class BasicParser:
     #TODO(iopi): think about hook prototypes!!!
     def evalHook(self, name: str, ctx: list) -> Node:
         """Evaluate a hook by name."""
-        res = self.__hooks[name](self, *ctx)
-        return res
+        return self.__hooks[name](self, *ctx)
 
 ### PARSING PRIMITIVES
 
@@ -162,20 +159,6 @@ class BasicParser:
             return False
         self._stream.save_context()
         if self._stream.peek_char == cC:
-            self._stream.incpos()
-            return self._stream.validate_context()
-        return self._stream.restore_context()
-
-    #TODO(iopi): seems not to work, could be obsolete
-    def readAChar(self, cC: str) -> bool:
-        """
-        Consume a character if possible.
-        """
-        if self.readEOF():
-            return False
-        self._stream.save_context()
-        if self._stream.index + 1 < self.eos_index:
-            cC = self._stream.peek_char
             self._stream.incpos()
             return self._stream.validate_context()
         return self._stream.restore_context()
@@ -224,45 +207,6 @@ class BasicParser:
             return self._stream.validate_context()
         return self._stream.restore_context()
 
-#    def readInteger(self) -> bool:
-#        """
-#        Read following BNF rule else return False
-#        readInteger ::= ['0'..'9']+ ;
-#        """
-#        if self.readEOF():
-#            return False
-#        self._stream.save_context()
-#        cC = self._stream.peek_char
-#        if cC.isdigit():
-#                self._stream.incpos()
-#                while not self.readEOF():
-#                    cC = self._stream.peek_char
-#                    if not cC.isdigit():
-#                        break
-#                    self._stream.incpos()
-#                return self._stream.validate_context()
-#        return self._stream.restore_context()
-#
-#    def readIdentifier(self) -> bool:
-#        """
-#        Read following BNF rule else return False
-#        readIdentifier ::= ['a'..'z'|'A'..'Z'|'_']
-#                           ['0'..'9'|'a'..'z'|'A'..'Z'|'_']* ;
-#        """
-#        if self.readEOF():
-#            return False
-#        self._stream.save_context()
-#        cC = self._stream.peek_char
-#        if (cC.isalpha() or cC == '_'):
-#                self._stream.incpos()
-#                while not self.readEOF():
-#                    cC = self._stream.peek_char
-#                    if not (cC.isalpha() or cC.isdigit() or cC == '_'):
-#                        break
-#                    self._stream.incpos()
-#                return self._stream.validate_context()
-#        return self._stream.restore_context()
-
     def readRange(self, begin: str, end: str) -> int:
         """
         Consume head byte if it is >= begin and <= end else return false
@@ -270,33 +214,11 @@ class BasicParser:
         """
         if self.readEOF():
             return False
-        self._stream.save_context()
-        cC = self._stream.peek_char
-        if cC >= begin and cC <= end:
+        c = self._stream.peek_char
+        if begin <= c <= end:
             self._stream.incpos()
-            return self._stream.validate_context()
-        return self._stream.restore_context()
-
-#    def readCString(self) -> bool:
-#        """
-#        Read following BNF rule else return False
-#        '"' -> ['/'| '"']
-#        """
-#        self._stream.save_context()
-#        if self.readChar('\"') and self.readUntil('\"', '\\'):
-#            return self._stream.validate_context()
-#        return self._stream.restore_context()
-#
-#    def readCChar(self) -> bool:
-#        #TODO(iopi): octal digit, hex digit
-#        """
-#        Read following BNF rule else return False
-#        "'" -> [~"/" "'"]
-#        """
-#        self._stream.save_context()
-#        if self.readChar('\'') and self.readUntil('\'', '\\'):
-#            return self._stream.validate_context()
-#        return self._stream.restore_context()
+            return True
+        return False
 
 ### IGNORE CONVENTION
 
@@ -323,10 +245,8 @@ class BasicParser:
 
     def undoIgnore(self) -> bool:
         if self._lastIgnore:
-            delta = self._stream.index - self._lastIgnoreIndex
-            if delta > 0:
-                self._stream.decpos(delta)
-                self._lastIgnoreIndex = self._stream.index
+            self._stream.decpos(self._stream.index - self._lastIgnoreIndex)
+            self._lastIgnoreIndex = self._stream.index
         return True
 
     def pushIgnore(self, ignoreConvention) -> bool:
@@ -455,14 +375,6 @@ class ParserTree:
         pass
 
 
-def is_inlinable(callable_):
-    if hasattr(callable_, 'inline'):
-        return callable_.inline
-    if callable(callable_):
-        return True
-    return False
-
-
 class Clauses(ParserTree):
     """A B C bnf primitive as a functor."""
 
@@ -539,12 +451,10 @@ class Capture(ParserTree):
             parser.rulenodes[-1][self.tagname] = Node()
             res = self.clause(parser)
             parser.popRuleNodes()
-            if (res and
-                    parser.undoIgnore() and
-                    parser.endTag(self.tagname)):
+            if res and parser.undoIgnore() and parser.endTag(self.tagname):
                 text = parser.getTag(self.tagname)
                 # wrap it in a Node instance
-                if type(res) == bool:
+                if type(res) is bool:
                     res = Node(res)
                 #TODO(iopi): should be a future capture object for multistream
                 # capture

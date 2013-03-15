@@ -32,15 +32,14 @@ class TestHook(unittest.TestCase):
         hook(parser)
         parser.evalHook.assert_called_once_with('hook', [1, '', []])
 
-    #TODO(bps):Figure how to test this case w/o unhashable type: 'Node'
-    @unittest.skip
     def test_it_evaluates_hook_with_weakref_for_node_values(self):
+        node = parsing.Node()
         parser = mock.Mock(
             spec=parsing.BasicParser,
-            **{'rulenodes': [{'hook': pyrser.Node()}]})
-        hook = parsing.Hook('hook', [(pyrser.Node(), pyrser.Node)])
+            **{'rulenodes': [{'hooknode': node}]})
+        hook = parsing.Hook('hook', [('hooknode', parsing.Node)])
         hook(parser)
-        parser.evalHook.assert_called_once_with('hook', [])
+        parser.evalHook.assert_called_once_with('hook', [node])
 
     def test_it_raises_typeerror_when_param_is_malformed(self):
         with self.assertRaises(TypeError):
