@@ -83,11 +83,7 @@ class Stream:
         return self.__len
 
     def __getitem__(self, key: int or slice) -> str:
-        if isinstance(key, int):
-            return self.__content[key]
-        if isinstance(key, slice):
-            return self.__content[key.start:key.stop]
-        raise TypeError()
+        return self.__content.__getitem__(key)
 
     @property
     def name(self) -> int:

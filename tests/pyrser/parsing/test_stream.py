@@ -5,6 +5,17 @@ from pyrser.parsing.parserStream import Position
 
 
 class TestParserStream(unittest.TestCase):
+    def test_its_len_is_its_content_len(self):
+        content = "some content"
+        stream = parsing.Stream(content)
+        self.assertEqual(len(content), len(stream))
+
+    def test_its_content_can_be_accessed_like_a_string(self):
+        content = "some content"
+        stream = parsing.Stream(content)
+        self.assertEqual(content[5], stream[5])
+        self.assertEqual(content[2:], stream[2:])
+
     def test_it_increments_position(self):
         stream = parsing.Stream(" ")
         prev_pos = stream.index

@@ -7,9 +7,15 @@ from pyrser import parsing
 class TestCall(unittest.TestCase):
     def test_it_calls_its_clause_with_given_args(self):
         parser, clause, args = mock.Mock(), mock.Mock(), (1, 2, 3)
-        call = parsing.Call(clause, *args)
-        call(parser)
+        parsing.Call(clause, *args)(parser)
         clause.assert_called_once_with(parser, *args)
+
+    def test_it_calls_its_method_clause_with_given_args(self):
+        import types
+        clause = mock.Mock(spec=types.MethodType)
+        parser, args = mock.Mock(), (1, 2, 3)
+        parsing.Call(clause, *args)(parser)
+        clause.__func__.assert_called_once_with(parser, *args)
 
     def test_it_returns_true_when_clause_is_true(self):
         parser = mock.Mock()

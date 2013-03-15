@@ -138,8 +138,6 @@ class RuleVisitor(ast.NodeVisitor):
         if not self.begin():
             return False
         res = self.clause()
-        if not res:
-            return False
         if not self.end():
             return False
         return res
@@ -182,10 +180,14 @@ class RuleVisitor(ast.NodeVisitor):
         res.body.append(self.__exit_scope())
         return [res]
 
+    def combine_exprs_for_clauses(self, exprs: [ast.expr]) -> [ast.stmt]:
+        expr = exprs[0] if len(exprs) == 1 else ast.BoolOp(ast.And(), exprs)
+        return self._clause(expr)
+
     def visit_Clauses(self, node: parsing.Clauses) -> [ast.stmt] or ast.expr:
         """Generates python code for clauses.
 
-        #If all clauses can be inlined
+        #Continuous clauses which can can be inlined are combined with and
         clause and clause
 
         if not clause:
@@ -200,16 +202,13 @@ class RuleVisitor(ast.NodeVisitor):
                 exprs.append(clause_ast)
             else:
                 if exprs:
-                    stmts.extend(self._clause(ast.BoolOp(ast.And(), exprs)))
+                    stmts.extend(self.combine_exprs_for_clauses(exprs))
                     exprs = []
                 stmts.extend(self._clause(clause_ast))
         if not stmts:
             return ast.BoolOp(ast.And(), exprs)
         if exprs:
-            if len(exprs) == 1:
-                stmts.extend(self._clause(exprs[0]))
-            else:
-                stmts.extend(self._clause(ast.BoolOp(ast.And(), exprs)))
+            stmts.extend(self.combine_exprs_for_clauses(exprs))
         return stmts
 
     def visit_RepOptional(self, node: parsing.RepOptional) -> ([ast.stmt] or

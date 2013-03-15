@@ -43,27 +43,34 @@ class TestToPythonPasse(unittest.TestCase):
         self.assertEqual(res, "lambda : (self.readChar('a') or True)")
 
     def test_topython_generates_code_for_hook(self):
-        parser = None
         hook = parsing.Hook('hookname', tuple())
         res = codegen.to_source(passes.rule_topython(hook))
         self.assertEqual(res,
                          "self.evalHook('hookname', self.ruleNodes[(-1)])")
 
     def test_topython_generates_code_for_rule(self):
-        parser = None
         rule = parsing.Rule('rulename')
         res = codegen.to_source(passes.rule_topython(rule))
         self.assertEqual(res, "self.evalRule('rulename')")
 
     def test_topython_inline_inlinable_clauses(self):
-        parser = None
         clauses = parsing.Clauses(
             ParseTreeStub('a', True), ParseTreeStub('b', True))
         res = codegen.to_source(ast.Module(passes.rule_topython(clauses)))
         self.assertEqual(res, "(a and b)")
 
+    def test_topython_inline_partially_inlinable_clauses(self):
+        clauses = parsing.Clauses(
+            ParseTreeStub('a', True),
+            ParseTreeStub('b', True),
+            ParseTreeStub('c', False))
+        res = codegen.to_source(ast.Module(passes.rule_topython(clauses)))
+        self.assertEqual(res, ("if (not (a and b)):\n"
+                               "    return False\n"
+                               "if (not c):\n"
+                               "    return False"))
+
     def test_topython_generates_code_for_clauses(self):
-        parser = None
         clauses = parsing.Clauses(
             ParseTreeStub('a', False), ParseTreeStub('b', False))
         res = codegen.to_source(ast.Module(passes.rule_topython(clauses)))
@@ -73,7 +80,6 @@ class TestToPythonPasse(unittest.TestCase):
                                "    return False"))
 
     def test_topython_generates_code_for_complex_clauses(self):
-        parser = None
         clauses = parsing.Clauses(
             ParseTreeStub('a', False),
             parsing.Clauses(ParseTreeStub('b', False)))
@@ -84,7 +90,6 @@ class TestToPythonPasse(unittest.TestCase):
                                "    return False"))
 
     def test_topython_generates_code_for_alt(self):
-        parser = None
         alt = parsing.Alt(
             ParseTreeStub('a', False), ParseTreeStub('b', False))
         res = codegen.to_source(ast.Module(passes.rule_topython(alt)))
@@ -107,7 +112,6 @@ class TestToPythonPasse(unittest.TestCase):
 
     def test_topython_generates_code_for_complex_alt(self):
         self.maxDiff = None
-        parser = None
         alt = parsing.Alt(
             ParseTreeStub('a', False),
             parsing.Clauses(
@@ -162,7 +166,6 @@ class TestToPythonPasse(unittest.TestCase):
                               "    pass")
 
     def test_topython_generates_code_for_rep0n(self):
-        parser = None
         rep = parsing.Rep0N(ParseTreeStub('a', False))
         ast_ = ast.Module(passes.rule_topython(rep))
         res = codegen.to_source(ast_)
@@ -173,7 +176,6 @@ class TestToPythonPasse(unittest.TestCase):
              "        break"))
 
     def test_topython_generates_code_for_rep1n(self):
-        parser = None
         rep = parsing.Rep1N(ParseTreeStub('a', False))
         res = codegen.to_source(ast.Module(passes.rule_topython(rep)))
         self.assertEqual(
