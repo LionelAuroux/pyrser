@@ -1,6 +1,6 @@
 from pyrser.parsing.parserStream import Stream
+from pyrser.parsing.node import Node
 from pyrser import meta
-from pyrser import node
 
 
 class BasicParser:
@@ -67,17 +67,17 @@ class BasicParser:
 
 #TODO(iopi): change for beginTag, endTag, getTag for multicapture, and
 # typesetting at endTag (i.e: readCChar,readCString need transcoding)
-    def beginTag(self, name: str) -> node.Node:
+    def beginTag(self, name: str) -> Node:
         """Save the current index under the given name."""
         self.__tags[name] = {'index': self._stream.index}
-        return node.Node(True)
+        return Node(True)
 
-    def endTag(self, name: str) -> node.Node:
+    def endTag(self, name: str) -> Node:
         """Extract the string between saved and current index."""
         tag = self.__tags[name]
         start = tag['index']
         tag['value'] = self._stream[start:self._stream.index]
-        return node.Node(True)
+        return Node(True)
 
     def getTag(self, name: str) -> str:
         """Extract the string previously saved."""
@@ -115,7 +115,7 @@ class BasicParser:
         self.__hooks.update(hook)
         return True
 
-    def handleVarCtx(self, res: node.Node, name: str) -> node.Node:
+    def handleVarCtx(self, res: Node, name: str) -> Node:
         unnsname = name.split("::")[-1]
         # default behavior the returned node is transfered
         # if a rulenodes have the name $$, it's use for return
@@ -124,20 +124,20 @@ class BasicParser:
         return res
 
     #TODO(iopi): define what's could be send globally to all rules
-    def evalRule(self, name: str, *args, **kwargs) -> node.Node:
+    def evalRule(self, name: str, *args, **kwargs) -> Node:
         """Evaluate a rule by name."""
         if name not in self._rules:
             raise Exception("No rule named {}".format(name))
         self.pushRuleNodes()
         # create a slot value for the result
-        self.rulenodes[-1][name] = node.Node()
+        self.rulenodes[-1][name] = Node()
         res = self._rules[name](self, *args, **kwargs)
         res = self.handleVarCtx(res, name)
         self.popRuleNodes()
         return res
 
     #TODO(iopi): think about hook prototypes!!!
-    def evalHook(self, name: str, ctx: list) -> node.Node:
+    def evalHook(self, name: str, ctx: list) -> Node:
         """Evaluate a hook by name."""
         res = self.__hooks[name](self, *ctx)
         return res
@@ -424,7 +424,7 @@ def readCString(self) -> bool:
     idx = self._stream.index
     if self.readChar('\"') and self.readUntil('\"', '\\'):
         txt = self._stream[idx:self._stream.index]
-        res = node.Node(self._stream.validate_context())
+        res = Node(self._stream.validate_context())
         res.value = txt.strip('"')
         return res
     return self._stream.restore_context()
@@ -441,7 +441,7 @@ def readCChar(self) -> bool:
     idx = self._stream.index
     if self.readChar('\'') and self.readUntil('\'', '\\'):
         txt = self._stream[idx:self._stream.index]
-        res = node.Node(self._stream.validate_context())
+        res = Node(self._stream.validate_context())
         res.value = txt.strip("'")
         return res
     return self._stream.restore_context()
@@ -489,7 +489,7 @@ class Scope(ParserTree):
         self.end = end
         self.clause = clause
 
-    def __call__(self, parser: BasicParser) -> node.Node:
+    def __call__(self, parser: BasicParser) -> Node:
         if self.begin(parser):
             parser.pushRuleNodes()
             res = self.clause(parser)
@@ -512,14 +512,14 @@ class Call(ParserTree):
             self.callObject = callObject
         self.params = params
 
-    def __call__(self, parser: BasicParser) -> node.Node:
+    def __call__(self, parser: BasicParser) -> Node:
         return self.callObject(parser, *self.params)
 
 
 class CallTrue(Call):
     """Functor to wrap arbitrary callable object in BNF clause."""
 
-    def __call__(self) -> node.Node:
+    def __call__(self) -> Node:
         self.callObject(*self.params)
         return True
 
@@ -534,10 +534,10 @@ class Capture(ParserTree):
         self.tagname = tagname
         self.clause = clause
 
-    def __call__(self, parser: BasicParser) -> node.Node:
+    def __call__(self, parser: BasicParser) -> Node:
         if parser.beginTag(self.tagname):
             parser.pushRuleNodes()
-            parser.rulenodes[-1][self.tagname] = node.Node()
+            parser.rulenodes[-1][self.tagname] = Node()
             res = self.clause(parser)
             parser.popRuleNodes()
             if (res and
@@ -546,7 +546,7 @@ class Capture(ParserTree):
                 text = parser.getTag(self.tagname)
                 # wrap it in a Node instance
                 if type(res) == bool:
-                    res = node.Node(res)
+                    res = Node(res)
                 #TODO(iopi): should be a future capture object for multistream
                 # capture
                 if not hasattr(res, 'value'):
@@ -565,7 +565,7 @@ class Alt(ParserTree):
         ParserTree.__init__(self)
         self.clauses = clauses
 
-    def __call__(self, parser: BasicParser) -> node.Node:
+    def __call__(self, parser: BasicParser) -> Node:
         for clause in self.clauses:
             parser._stream.save_context()
             parser.skipIgnore()
@@ -630,7 +630,7 @@ class Rule(ParserTree):
         ParserTree.__init__(self)
         self.name = name
 
-    def __call__(self, parser: BasicParser) -> node.Node:
+    def __call__(self, parser: BasicParser) -> Node:
         return parser.evalRule(self.name)
 
 
@@ -650,7 +650,7 @@ class Hook(ParserTree):
     def __call__(self, parser: BasicParser) -> bool:
         valueparam = []
         for v, t in self.param:
-            if t is node.Node:
+            if t is Node:
                 import weakref
                 valueparam.append(weakref.proxy(parser.rulenodes[-1][v]))
             elif type(v) is t:

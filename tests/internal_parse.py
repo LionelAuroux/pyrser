@@ -1,7 +1,6 @@
 import unittest
 
 from pyrser import meta
-from pyrser import node
 from pyrser import parsing
 from pyrser.passes import dumpParseTree
 
@@ -245,7 +244,7 @@ class InternalParse_Test(unittest.TestCase):
                         parsing.Capture('tutu', parsing.Rule('word')),
                         parsing.Hook(
                             'printWord',
-                            [("test", node.Node), ("tutu", node.Node)])),
+                            [("test", parsing.Node), ("tutu", parsing.Node)])),
                     parsing.Rule('int'))),
             'word': parsing.Scope(
                 parsing.Call(parser.pushIgnore, parser.ignoreNull),
@@ -264,7 +263,7 @@ class InternalParse_Test(unittest.TestCase):
                             parsing.Call(parser.readRange, '0', '9')))),
                 parsing.Hook(
                     'printint',
-                    [("test", node.Node), ("toto", node.Node)]))})
+                    [("test", parsing.Node), ("toto", parsing.Node)]))})
         bRes = parser.evalRule('main')
         self.assertTrue(bRes, "failed to parse")
 
@@ -293,7 +292,7 @@ class InternalParse_Test(unittest.TestCase):
 
         @meta.add_method(parsing.Parser)
         def dummy(self):
-            res = node.Node()
+            res = parsing.Node()
             res.text = "cool"
             self.rulenodes[-1]["test"] = res
             return res

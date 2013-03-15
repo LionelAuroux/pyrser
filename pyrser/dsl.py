@@ -1,6 +1,5 @@
 from pyrser import parsing
 from pyrser import meta
-from pyrser.node import Node
 
 
 class Parser(parsing.Parser):
@@ -18,7 +17,8 @@ class Parser(parsing.Parser):
                     parsing.Clauses(
                         parsing.Capture('r', parsing.Rule('rule')),
                         parsing.Hook('add_rules',
-                                     [('bnf_dsl', Node), ('r', Node)]))),
+                                     [('bnf_dsl', parsing.Node),
+                                      ('r', parsing.Node)]))),
                 parsing.Rule('Base::eof')),
             #
             # rule ::= rule_name: rn "::=" alternatives : alts
@@ -31,7 +31,9 @@ class Parser(parsing.Parser):
                 parsing.Capture('alts',
                                 parsing.Rule('alternatives')),
                 parsing.Hook('add_rule',
-                             [('rule', Node), ('rn', Node), ('alts', Node)]),
+                             [('rule', parsing.Node),
+                              ('rn', parsing.Node),
+                              ('alts', parsing.Node)]),
                 parsing.Call(self.readChar, ';')),
             #
             # alternatives ::=
@@ -41,14 +43,15 @@ class Parser(parsing.Parser):
             #
             'alternatives': parsing.Clauses(
                 parsing.Capture('alt', parsing.Rule('clauses')),
-                parsing.Hook('add_alt', [('alternatives', Node),
-                                         ('alt', Node)]),
+                parsing.Hook('add_alt', [('alternatives', parsing.Node),
+                                         ('alt', parsing.Node)]),
                 parsing.Rep0N(
                     parsing.Clauses(
                         parsing.Call(self.readChar, '|'),
                         parsing.Capture('alt', parsing.Rule('clauses')),
-                        parsing.Hook('add_alt', [('alternatives', Node),
-                                                 ('alt', Node)])))),
+                        parsing.Hook('add_alt',
+                                     [('alternatives', parsing.Node),
+                                      ('alt', parsing.Node)])))),
             #
             # clauses ::= [ clause: cla #add_clauses(clauses, cla) ]+ //| hook
             # ;
@@ -62,7 +65,8 @@ class Parser(parsing.Parser):
                         parsing.Capture('cla',
                                         parsing.Rule('clause')),
                         parsing.Hook('add_clauses',
-                                     [('clauses', Node), ('cla', Node)])))),
+                                     [('clauses', parsing.Node),
+                                      ('cla', parsing.Node)])))),
             #
             # clause ::= [
             #     Base::id: rid #add_ruleclause_name(clause, rid)
@@ -82,12 +86,14 @@ class Parser(parsing.Parser):
                         parsing.Capture('rid',
                                         parsing.Rule('Base::id')),
                         parsing.Hook('add_ruleclause_name',
-                                     [('clause', Node), ('rid', Node)])),
+                                     [('clause', parsing.Node),
+                                      ('rid', parsing.Node)])),
                     parsing.Clauses(
                         parsing.Capture('txt',
                                         parsing.Rule('Base::string')),
                         parsing.Hook('add_text',
-                                     [('clause', Node), ('txt', Node)])),
+                                     [('clause', parsing.Node),
+                                      ('txt', parsing.Node)])),
                     parsing.Clauses(
                         parsing.Capture('begin',
                                         parsing.Rule('Base::char')),
@@ -95,27 +101,28 @@ class Parser(parsing.Parser):
                         parsing.Capture('end',
                                         parsing.Rule('Base::char')),
                         parsing.Hook('add_range',
-                                     [('clause', Node),
-                                      ('begin', Node),
-                                      ('end', Node)])),
+                                     [('clause', parsing.Node),
+                                      ('begin', parsing.Node),
+                                      ('end', parsing.Node)])),
                     parsing.Clauses(
-                        parsing.Capture('c',
-                                        parsing.Rule('Base::char')),
+                        parsing.Capture('c', parsing.Rule('Base::char')),
                         parsing.Hook('add_char',
-                                     [('clause', Node), ('c', Node)])),
+                                     [('clause', parsing.Node),
+                                      ('c', parsing.Node)])),
                     parsing.Clauses(
                         parsing.Call(self.readChar, '['),
                         parsing.Capture('subclause',
                                         parsing.Rule('alternatives')),
                         parsing.Call(self.readChar, ']'),
-                        parsing.Hook('add_subclause', [('clause', Node),
-                                                       ('subclause', Node)]))),
+                        parsing.Hook('add_subclause',
+                                     [('clause', parsing.Node),
+                                      ('subclause', parsing.Node)]))),
                 parsing.RepOptional(
                     parsing.Clauses(
-                        parsing.Capture('rpt',
-                                        parsing.Rule('repeat')),
+                        parsing.Capture('rpt', parsing.Rule('repeat')),
                         parsing.Hook('add_rpt',
-                                     [('clause', Node), ('rpt', Node)])))),
+                                     [('clause', parsing.Node),
+                                      ('rpt', parsing.Node)])))),
             #TODO(iopi): add rules hooks
             # rule_name ::= Base::id: rid #add_ruleclause_name(rule_name, rid)
             # ;
@@ -123,7 +130,8 @@ class Parser(parsing.Parser):
             'rule_name': parsing.Clauses(
                 parsing.Capture('rid', parsing.Rule('Base::id')),
                 parsing.Hook('add_ruleclause_name',
-                             [('rule_name', Node), ('rid', Node)])),
+                             [('rule_name', parsing.Node),
+                              ('rid', parsing.Node)])),
             #
             # repeat ::= '?' #add_optional(repeat)
             #     | '*' #add_0N(repeat)
@@ -133,13 +141,13 @@ class Parser(parsing.Parser):
             'repeat': parsing.Alt(
                 parsing.Clauses(
                     parsing.Call(self.readChar, '?'),
-                    parsing.Hook('add_optional', [('repeat', Node)])),
+                    parsing.Hook('add_optional', [('repeat', parsing.Node)])),
                 parsing.Clauses(
                     parsing.Call(self.readChar, '*'),
-                    parsing.Hook('add_0N', [('repeat', Node)])),
+                    parsing.Hook('add_0N', [('repeat', parsing.Node)])),
                 parsing.Clauses(
                     parsing.Call(self.readChar, '+'),
-                    parsing.Hook('add_1N', [('repeat', Node)])),),
+                    parsing.Hook('add_1N', [('repeat', parsing.Node)])),),
         })
 
 
