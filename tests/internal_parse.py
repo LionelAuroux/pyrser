@@ -1,5 +1,9 @@
 import unittest
-import sys
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
 from pyrser import meta
 from pyrser import parsing
 import pyrser.passes.dumpParseTree
@@ -183,7 +187,8 @@ class InternalParse_Test(unittest.TestCase):
         parseTree = parsing.Seq(
             parsing.Call(parsing.Parser.beginTag, 'w1'),
             parsing.Scope(
-                begin=parsing.Call(parsing.Parser.pushIgnore, parsing.Parser.ignore_null),
+                begin=parsing.Call(parsing.Parser.pushIgnore,
+                                   parsing.Parser.ignore_null),
                 end=parsing.Call(parsing.Parser.popIgnore),
                 pt=parsing.Seq(
                     parsing.Alt(
@@ -196,7 +201,8 @@ class InternalParse_Test(unittest.TestCase):
                             parsing.Call(parsing.Parser.readChar, '_'),
                             parsing.Call(parsing.Parser.readRange, 'a', 'z'),
                             parsing.Call(parsing.Parser.readRange, 'A', 'Z'),
-                            parsing.Call(parsing.Parser.readRange, '0', '9'))))),
+                            parsing.Call(parsing.Parser.readRange,
+                                         '0', '9'))))),
             parsing.Call(parsing.Parser.endTag, 'w1'),
             parsing.Capture(
                 'w2',
@@ -225,12 +231,13 @@ class InternalParse_Test(unittest.TestCase):
         def check_word(parser, test, tutu):
             test.assertIn(tutu.value, ('asbga', 'njnj'))
             return True
+
         def check_int(parser, test, toto):
             test.assertIn(toto.value, ('12121', '89898'))
             return True
-        if sys.version_info[0:2] >= (3, 3):
-            check_word = unittest.mock.Mock(side_effect=check_word)
-            check_int = unittest.mock.Mock(side_effect=check_int)
+
+        check_word = mock.Mock(side_effect=check_word)
+        check_int = mock.Mock(side_effect=check_int)
 
         parser = parsing.Parser()
         parser.parsedStream("asbga    12121      njnj 89898")
@@ -249,7 +256,8 @@ class InternalParse_Test(unittest.TestCase):
                         parsing.Rule('int'))),
                 parsing.Rule('Base.eof')),
             'word': parsing.Scope(
-                parsing.Call(parsing.Parser.pushIgnore, parsing.Parser.ignore_null),
+                parsing.Call(parsing.Parser.pushIgnore,
+                             parsing.Parser.ignore_null),
                 parsing.Call(parsing.Parser.popIgnore),
                 parsing.Rep1N(
                     parsing.Alt(
@@ -257,20 +265,21 @@ class InternalParse_Test(unittest.TestCase):
                         parsing.Call(parsing.Parser.readRange, 'A', 'Z')))),
             'int': parsing.Seq(
                 parsing.Scope(
-                    parsing.Call(parsing.Parser.pushIgnore, parsing.Parser.ignore_null),
+                    parsing.Call(parsing.Parser.pushIgnore,
+                                 parsing.Parser.ignore_null),
                     parsing.Call(parsing.Parser.popIgnore),
                     parsing.Capture(
                         'toto',
                         parsing.Rep1N(
-                            parsing.Call(parsing.Parser.readRange, '0', '9')))),
+                            parsing.Call(parsing.Parser.readRange,
+                                         '0', '9')))),
                 parsing.Hook(
                     'checkInt',
                     [("test", parsing.Node), ("toto", parsing.Node)]))})
         bRes = parser.evalRule('main')
         self.assertTrue(bRes, "failed to parse")
-        if sys.version_info[0:2] >= (3, 3):
-            self.assertEqual(2, check_word.call_count)
-            self.assertEqual(2, check_int.call_count)
+        self.assertEqual(2, check_word.call_count)
+        self.assertEqual(2, check_int.call_count)
 
     def test_10_contextVariables(self):
         """

@@ -4,15 +4,15 @@ from pyrser import parsing
 
 class MetaGrammar(type):
     """Metaclass for all grammars."""
-    def __new__(metaclass, classname, bases, classdict):
-        cls = type.__new__(metaclass, classname, bases, classdict)
+    def __new__(metacls, name, bases, namespace):
+        cls = type.__new__(metacls, name, bases, namespace)
         rules = {}
         for base in reversed(bases):
             rules.update(getattr(base, 'rules', {}))
-        grammar = classdict.get('grammar')
+        grammar = namespace.get('grammar')
         if grammar is not None:
-            dsl_parser = dsl.Parser(grammar)
-            rules.update(dsl_parser.evalRule('bnf_dsl'))
+            parser = cls.dsl_parser(grammar)
+            rules.update(parser.parse())
         cls.rules = rules
         return cls
 
@@ -25,15 +25,20 @@ class Grammar(metaclass=MetaGrammar):
     Taking the description of the grammar in parameter it will add
     all what is what is needed for A to parse it.
     """
-
+    # Text grammar to generate parsing rules for this class.
     grammar = None
+    # Name of the default rule to parse the grammar.
     entry = None
+    # DSL parsing class
+    dsl_parser = dsl.Parser
+
+    def __init__(self):
+        if getattr(self, 'entry', None) is None:
+            raise ValueError("No entry rule name defined for {}".format(
+                self.__class__.__name__))
 
     def parse(self, source):
         """Parse the grammar"""
-        if not hasattr(self, 'entry') or self.entry is None:
-            raise Exception("No entry rule name defined for {}".format(
-                self.__class__.__name__))
         parser = parsing.Parser(source)
         parser.setRules(self.rules)
         return parser.evalRule(self.entry)

@@ -1,4 +1,6 @@
 import ast
+#TODO(bps): remove compatibility python3.2
+import sys
 
 from pyrser import meta
 from pyrser import parsing
@@ -142,6 +144,7 @@ class RuleVisitor(ast.NodeVisitor):
             return False
         return res
         """
+        return ast.Name('scope_not_implemented', ast.Load())
         raise NotImplementedError()
 
     #TODO(bps): forbid nested alt
@@ -164,18 +167,28 @@ class RuleVisitor(ast.NodeVisitor):
                 break
         else:
             return ast.BoolOp(ast.Or(), clauses)
-        res = ast.Try([],
-                      [ast.ExceptHandler(ast.Name('AltTrue', ast.Load()),
-                                         None, [ast.Pass()])], [], [])
+        if sys.version_info[:2] < (3, 3):
+            res = ast.TryExcept([],
+                          [ast.ExceptHandler(ast.Name('AltTrue', ast.Load()),
+                                             None, [ast.Pass()])], [])
+        else:
+            res = ast.Try([],
+                          [ast.ExceptHandler(ast.Name('AltTrue', ast.Load()),
+                                             None, [ast.Pass()])], [], [])
         alt_true = [ast.Raise(ast.Call(ast.Name('AltTrue', ast.Load()), [], [],
                     None, None), None)]
         alt_false = [ast.ExceptHandler(ast.Name('AltFalse', ast.Load()), None,
                      [ast.Pass()])]
         self.in_try += 1
         for clause in node.ptlist:
-            res.body.append(
-                ast.Try(self._clause(self.visit(clause)) + alt_true, alt_false,
-                        [], []))
+            if sys.version_info[:2] < (3, 3):
+                res.body.append(
+                    ast.TryExcept(self._clause(self.visit(clause)) + alt_true, alt_false,
+                            []))
+            else:
+                res.body.append(
+                    ast.Try(self._clause(self.visit(clause)) + alt_true, alt_false,
+                            [], []))
         self.in_try -= 1
         res.body.append(self.__exit_scope())
         return [res]

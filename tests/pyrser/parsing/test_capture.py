@@ -1,21 +1,61 @@
 import unittest
-from unittest import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from pyrser import parsing
 
 
-#TODO(bps): finish testing
 class TestCapture(unittest.TestCase):
-    #TODO(bps): Find what the hell is going on here?
-    def test_it_returns_captured_text(self):
-        parser = parsing.Parser('captured text')
-        clause = parsing.Call(parser.readText, 'captured text')
+    def test_it_returns_clause_result(self):
+        res = mock.Mock()
+        parser = mock.Mock(rulenodes=[{}])
+        clause = mock.Mock(return_value=res)
         capture = parsing.Capture('tagname', clause)
-        self.assertEqual(capture(parser), "captured text")
-    #test_it_is_false_when_begintag_is_false
-    #test_it_is_false_when_clause_is_false
-    #test_it_is_false_when_undoIgnore_is_false
-    #test_it_is_false_when_endtag_is_false
+        self.assertIs(capture(parser), res)
+        clause.assert_called_once_with(parser)
+
+    def test_it_wraps_boolean_result_in_node(self):
+        res = mock.Mock()
+        parser = mock.Mock(rulenodes=[{}], **{'getTag.return_value': res})
+        clause = mock.Mock(return_value=True)
+        capture = parsing.Capture('tagname', clause)
+        expected_res = parsing.Node(True)
+        expected_res.value = res
+        self.assertEqual(capture(parser), expected_res)
+        clause.assert_called_once_with(parser)
+
+    def test_it_is_false_when_begintag_is_false(self):
+        parser = mock.Mock(**{'beginTag.return_value': False})
+        capture = parsing.Capture('tagname', None)
+        self.assertFalse(capture(parser))
+        parser.beginTag.assert_called_once_with('tagname')
+
+    def test_it_is_false_when_clause_is_false(self):
+        parser = mock.Mock(rulenodes=[{}], **{'beginTag.return_value': True})
+        clause = mock.Mock(return_value=False)
+        capture = parsing.Capture('tagname', clause)
+        self.assertFalse(capture(parser))
+        clause.assert_called_once_with(parser)
+
+    @unittest.skip
+    def test_it_is_false_when_undoIgnore_is_false(self):
+        parser = mock.Mock(rulenodes=[{}],
+                           **{'beginTag.return_value': True,
+                              'undoIgnore.return_value': False})
+        clause = mock.Mock(return_value=True)
+        capture = parsing.Capture('tagname', clause)
+        self.assertFalse(capture(parser))
+
+    def test_it_is_false_when_endtag_is_false(self):
+        parser = mock.Mock(rulenodes=[{}],
+                           **{'beginTag.return_value': True,
+                              'undoIgnore.return_value': True,
+                              'endTag.return_value': False})
+        clause = mock.Mock(return_value=True)
+        capture = parsing.Capture('tagname', clause)
+        self.assertFalse(capture(parser))
 
     def test_it_raises_typeerror_if_tagname_is_not_a_str(self):
         tagname, clause = None, None

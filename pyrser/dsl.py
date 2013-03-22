@@ -4,6 +4,9 @@ from pyrser.parsing.node import Node
 
 class Parser(parsing.Parser):
     """Basic class for BNF DSL PARSING."""
+    def parse(self, text: str) -> parsing.Node:
+        return self.evalRule('bnf_dsl')
+
     def __init__(self, stream=''):
         super().__init__(stream)
         #TODO(iopi): allow comment, so ignoreCxx

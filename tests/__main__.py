@@ -8,12 +8,11 @@ parent_dir = path.abspath(path.join(path.dirname(__file__), os.pardir))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from tests import grammar, internal_parse, internal_dsl
+from tests import internal_parse, internal_dsl
 
 
 # Test cases in order
 test_cases = (
-    grammar.TestGrammar,
     internal_parse.InternalParse_Test,
     internal_dsl.InternalDsl_Test,
 )

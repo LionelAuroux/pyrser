@@ -1,5 +1,8 @@
 import unittest
-from unittest import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from pyrser import parsing
 
@@ -43,12 +46,11 @@ class TestAlt(unittest.TestCase):
 
     def test_it_calls_all_clauses_in_order_if_they_all_false(self):
         parser = mock.Mock(spec=parsing.BasicParser)
-        clauses = mock.Mock(**{'clause0.return_value': False,
-                               'clause1.return_value': False})
+        clauses = mock.Mock(**{'pt0.return_value': False,
+                               'pt1.return_value': False})
         parsing.Alt(clauses.pt0, clauses.pt1)(parser)
-        self.assertEqual(
-            [mock.call.pt0(parser), mock.call.pt1(parser)],
-            clauses.mock_calls)
+        self.assertEqual([mock.call.pt0(parser), mock.call.pt1(parser)],
+                         clauses.mock_calls)
 
     def test_it_stops_calling_clauses_if_a_clause_is_true(self):
         parser = mock.Mock(spec=parsing.BasicParser)
