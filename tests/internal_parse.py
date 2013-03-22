@@ -183,7 +183,7 @@ class InternalParse_Test(unittest.TestCase):
         parseTree = parsing.Seq(
             parsing.Call(parsing.Parser.beginTag, 'w1'),
             parsing.Scope(
-                begin=parsing.Call(parsing.Parser.pushIgnore, parsing.Parser.ignoreNull),
+                begin=parsing.Call(parsing.Parser.pushIgnore, parsing.Parser.ignore_null),
                 end=parsing.Call(parsing.Parser.popIgnore),
                 pt=parsing.Seq(
                     parsing.Alt(
@@ -249,7 +249,7 @@ class InternalParse_Test(unittest.TestCase):
                         parsing.Rule('int'))),
                 parsing.Rule('Base.eof')),
             'word': parsing.Scope(
-                parsing.Call(parsing.Parser.pushIgnore, parsing.Parser.ignoreNull),
+                parsing.Call(parsing.Parser.pushIgnore, parsing.Parser.ignore_null),
                 parsing.Call(parsing.Parser.popIgnore),
                 parsing.Rep1N(
                     parsing.Alt(
@@ -257,7 +257,7 @@ class InternalParse_Test(unittest.TestCase):
                         parsing.Call(parsing.Parser.readRange, 'A', 'Z')))),
             'int': parsing.Seq(
                 parsing.Scope(
-                    parsing.Call(parsing.Parser.pushIgnore, parsing.Parser.ignoreNull),
+                    parsing.Call(parsing.Parser.pushIgnore, parsing.Parser.ignore_null),
                     parsing.Call(parsing.Parser.popIgnore),
                     parsing.Capture(
                         'toto',

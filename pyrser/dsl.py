@@ -129,7 +129,7 @@ class Parser(parsing.Parser):
             'ns_name':  parsing.Seq(
                             parsing.Capture('rid',
                                 parsing.Scope(
-                                    parsing.Call(parsing.Parser.pushIgnore, parsing.Parser.ignoreNull),
+                                    parsing.Call(parsing.Parser.pushIgnore, parsing.Parser.ignore_null),
                                     parsing.Call(parsing.Parser.popIgnore),
                                     parsing.Seq(
                                         parsing.Rule('Base.id'),

@@ -13,7 +13,7 @@ class BasicParser(object):
 
     def __init__(self, content: str=''):
         self.__hooks = {}
-        self._ignores = [BasicParser.ignoreBlanks]
+        self._ignores = [BasicParser.ignore_blanks]
         self.__streams = [Stream(content, "root")]
         self.__tags = {}
         self._rules = {}
@@ -241,13 +241,13 @@ class BasicParser(object):
 
 ### IGNORE CONVENTION
 
-    def ignoreNull(self) -> bool:
+    def ignore_null(self) -> bool:
         """
         Empty ignore convention for notignore
         """
         return True
 
-    def ignoreBlanks(self) -> bool:
+    def ignore_blanks(self) -> bool:
         """Consume comments and whitespace characters."""
         self._stream.save_context()
         while not self.readEOF():
