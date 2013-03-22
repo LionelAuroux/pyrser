@@ -73,7 +73,6 @@ def hook(cls, txt=None):
         rootparser.class_hook_list[bindname] = f
 
         def _wrapped(*args, **kv):
-            print("BIND!!!: <%s>" % globals())
             return f(*args, **kv)
         return wraps(f)(_wrapped)
     return _wrapper

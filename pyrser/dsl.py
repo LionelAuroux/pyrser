@@ -216,7 +216,6 @@ class Parser(parsing.Parser):
 
 @meta.hook(Parser)
 def add_ruleclause_name(self, ns_name, rid) -> bool:
-    print("RULECLAUSE %s" % rid)
     ns_name.value = rid.value
     ns_name.parser_tree = parsing.Rule(ns_name.value)
     return True
@@ -228,21 +227,17 @@ def add_rules(self, bnf, r) -> bool:
 
 @meta.hook(Parser)
 def add_rule(self, rule, rn, alts) -> bool:
-    print("RULE %s %s" % (rn.value, alts.parser_tree))
     rule.rulename = rn.value
     rule.parser_tree = alts.parser_tree
     return True
 
 @meta.hook(Parser)
 def add_sequences(self, sequences, cla) -> bool:
-    print("add sequences: %s" % cla.parser_tree)
     if not hasattr(sequences, 'parser_tree'):
         # forward sublevel of sequence as is
-        print("PRINT %s" % cla.parser_tree)
         sequences.parser_tree = cla.parser_tree
     else:
         oldnode = sequences
-        #print("OLDCLA %s" % oldnode.parser_tree)
         if isinstance(oldnode.parser_tree, parsing.Seq):
             oldpt = list(oldnode.parser_tree.ptlist)
         else:
@@ -253,7 +248,6 @@ def add_sequences(self, sequences, cla) -> bool:
 
 @meta.hook(Parser)
 def add_alt(self, alternatives, alt) -> bool:
-    #print("add ALT %s" % alt.parser_tree)
     if not hasattr(alternatives, 'parser_tree'):
         # forward sublevel of alt as is
         if hasattr(alt, 'parser_tree'):
@@ -293,7 +287,6 @@ def add_rpt(self, sequence, pt):
 
 @meta.hook(Parser)
 def add_capture(self, sequence, cpt):
-    print("ADDCAPTURE %s %s" % (cpt, self._stream.index))
     sequence.parser_tree = parsing.Capture(cpt.value, sequence.parser_tree)
     return True
 
@@ -319,7 +312,6 @@ def add_1N(self, repeat):
 
 @meta.hook(Parser)
 def add_hook(self, sequence, h):
-    print("NEWHOOK %s" % h.value)
     sequence.parser_tree = parsing.Hook(h.name, h.listparam)
     return True
 

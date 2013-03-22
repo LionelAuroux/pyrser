@@ -32,7 +32,7 @@ class RuleVisitor(ast.NodeVisitor):
         return ast.Return(ast.Name('False', ast.Load()))
 
     #TODO(bps): find a better name to describe what this does
-    def _clause(self, clause: parsing.ParserTree) -> [ast.stmt]:
+    def _clause(self, pt: parsing.ParserTree) -> [ast.stmt]:
         """Normalize a test expression into a statements list.
 
         Statements list are returned as-is.
@@ -40,9 +40,9 @@ class RuleVisitor(ast.NodeVisitor):
         if not expr:
             return False
         """
-        if isinstance(clause, list):
-            return clause
-        return [ast.If(ast.UnaryOp(ast.Not(), clause),
+        if isinstance(pt, list):
+            return pt
+        return [ast.If(ast.UnaryOp(ast.Not(), pt),
                        [self.__exit_scope()],
                        [])]
 

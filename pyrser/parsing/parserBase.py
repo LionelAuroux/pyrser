@@ -129,7 +129,6 @@ class BasicParser(object):
         # if a rulenodes have the name $$, it's use for return
         if (res and (unnsname in self.rulenodes[-1])):
             res = self.rulenodes[-1][unnsname]
-            #print("HANDLE %s: %s" % (unnsname, res))
         return res
 
     # TODO: define what's could be send globally to all rules
@@ -139,13 +138,9 @@ class BasicParser(object):
         """
         self.pushRuleNodes()
         # create a slot value for the result
-        #print("VAL RULE!!!! %s" % name)
         self.rulenodes[-1][name] = Node()
-        #print("NEW STACK0 %r" % self.rulenodes[0])
-        #print("NEW STACK1 %r" % self.rulenodes[1])
         res = self._rules[name](self) # TODO: think about rule proto? global data etc...
         res = self.handleVarCtx(res, name)
-        #print("POP IN EVAL RULE")
         self.popRuleNodes()
         return res
 
@@ -222,7 +217,6 @@ class BasicParser(object):
             for _ in range(0, nLength):
                 self._stream.incpos()
             iii = self._stream.index
-            print("READ %s %s %s" % (sText, ii, iii))
             return self._stream.validate_context()
         return self._stream.restore_context()
 
@@ -273,7 +267,7 @@ class BasicParser(object):
         return True
 
     def undoIgnore(self) -> bool:
-        print("testvar %s testexpr %s" % (self._lastIgnore, self._stream.index != self._lastIgnoreIndex))
+        # TODO(iopi): wrong don't work in all case
         if self._lastIgnore:
             self._stream.decpos(self._stream.index - self._lastIgnoreIndex)
             self._lastIgnoreIndex = self._stream.index
@@ -341,7 +335,6 @@ def readIdentifier(self) -> bool:
                     break
                 self._stream.incpos()
             iii = self._stream.index
-            print("grep id %s endid %s" % (self._stream[ii:iii], iii))
             return self._stream.validate_context()
     return self._stream.restore_context()
 
@@ -472,7 +465,6 @@ class Capture(ParserTree):
         if parser.beginTag(self.tagname):
             parser.rulenodes[-1][self.tagname] = Node()
             res = self.pt(parser)
-            print("apresCLAUSE: %d" % parser._stream.index)
             if (res and 
                     #parser.undoIgnore() and
                     parser.endTag(self.tagname)):
@@ -485,7 +477,6 @@ class Capture(ParserTree):
                     res.value = text
                 if (len(parser.rulenodes) == 0):
                     raise BaseException("Fuck! No context for rule Nodes")
-                print("Capture %s as %s" % (self.tagname, res))
                 parser.rulenodes[-1][self.tagname] = res
                 return res
         return False
@@ -548,7 +539,6 @@ class Hook(ParserTree):
 
     def __init__(self, name: str, param: [(object, type)]):
         ParserTree.__init__(self)
-        #self.parser = copy.copy(parser)
         self.name = name
         # compose the list of value param, check type
         for v, t in param:
@@ -557,8 +547,6 @@ class Hook(ParserTree):
         self.param = param
 
     def __call__(self, parser: BasicParser) -> bool:
-        #print("PARSER OBJECT %s" % parser)
-        #print("ALL STACK %r" % parser.rulenodes)
         valueparam = []
         for v, t in self.param:
             if t is Node:

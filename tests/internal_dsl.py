@@ -15,7 +15,6 @@ class InternalDsl_Test(unittest.TestCase):
             ;
         """)
         res = bnf.evalRule('bnf_dsl')
-        print("RES: %s" % type(res))
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Rule, "failed in ParserTree type for node Rule")
         self.assertTrue(res['the_rule'].name == "a", "failed in ParserTree type for node Rule")
@@ -283,7 +282,6 @@ class InternalDsl_Test(unittest.TestCase):
     def test_18_hookParams(self):
         @meta.hook(dsl.Parser)
         def my_hook_params(self, n, num, txt):
-            print("HOOK18")
             self.test.assertIsInstance(n, node.Node, 'failed to receive node in hook')
             self.test.assertTrue(num == 123456, 'failed to receive 123456 in hook')
             self.test.assertTrue(txt == "cool", 'failed to receive "cool" in hook')
@@ -304,7 +302,6 @@ class InternalDsl_Test(unittest.TestCase):
     def test_19_hookAndCapture(self):
         @meta.hook(dsl.Parser)
         def my_hook_multi(self, n1, n2, n3):
-            print("HOOKMULTI")
             self.test.assertTrue(n1.value == "456", 'failed to receive 456 in hook')
             self.test.assertTrue(n2.value == "toto", 'failed to receive "toto" in hook')
             self.test.assertTrue(n3.value == "blabla", 'failed to receive "blabla" in hook')
@@ -314,7 +311,6 @@ class InternalDsl_Test(unittest.TestCase):
             ;
         """)
         res = bnf.evalRule('bnf_dsl')
-        print("TYPERES %s" % type(res))
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Seq, "failed in ParserTree type for node Seq")
         self.assertTrue(res['the_rule'].ptlist[-1].name == "my_hook_multi", "failed in name of hook 'my_hook_multi'")
