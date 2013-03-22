@@ -1,5 +1,5 @@
 from pyrser.parsing.functors import ParserTree
-from pyrser.parsing.functors import Call, CallTrue, Hook, Rule
+from pyrser.parsing.functors import Call, CallTrue, Hook, Rule, Directive, DirectiveWrapper
 from pyrser.parsing.functors import Alt, Seq
 from pyrser.parsing.functors import Rep0N, Rep1N, RepOptional
 from pyrser.parsing.functors import Capture, Scope
@@ -14,6 +14,8 @@ __all__ = [
     'Call',
     'CallTrue',
     'Capture',
+    'Directive',
+    'DirectiveWrapper',
     'Hook',
     'Node',
     'ParserTree',

@@ -2,7 +2,6 @@ from pyrser import meta
 from pyrser.parsing.parserStream import Stream
 from pyrser.parsing.node import Node
 
-
 class BasicParser:
     """Emtpy basic parser, contains no rule nor hook.
 
@@ -13,8 +12,8 @@ class BasicParser:
 
     def __init__(self, content: str=''):
         self.__hooks = {}
-        self.__ignores = [BasicParser.ignore_blanks]
-        self.__streams = [Stream(content, 'root')]
+        self._ignores = [BasicParser.ignore_blanks]
+        self.__streams = [Stream(content, "root")]
         self.__tags = {}
         self._rules = {}
         self.rulenodes = [{}]
@@ -43,6 +42,7 @@ class BasicParser:
         return self._rules
 
 ### Rule Nodes
+
     def pushRuleNodes(self) -> bool:
         """Push context variable to store rule nodes."""
         # outer scope visible in local
@@ -60,7 +60,6 @@ class BasicParser:
 
     def parsedStream(self, sNewStream: str, sName="new"):
         """Push a new Stream into the parser.
-
         All subsequent called functions will parse this new stream,
         until the 'popStream' function is called.
         """
@@ -72,11 +71,10 @@ class BasicParser:
 
 ### VARIABLE PRIMITIVES
 
-#TODO(iopi): change for beginTag, endTag, getTag for multicapture, and
-# typesetting at endTag (i.e: readCChar,readCString need transcoding)
+# TODO(iopi): change for beginTag,endTag,getTag for multicapture, and typesetting at endTag (i.e: readCChar,readCString need transcoding)
     def beginTag(self, name: str) -> Node:
-        """Save the current index under the given name."""
-        self.__tags[name] = {'begin': self._stream.index}
+        """        Save the current index under the given name."""
+        self.__tags[name] = {'begin' : self._stream.index}
         return Node(True)
 
     def endTag(self, name: str) -> Node:
@@ -105,7 +103,9 @@ class BasicParser:
         Add one rule (with namespace handling) that call callobject
         and fix the value of parser in ParserTree
         """
-        namespaces = reversed(rule_name.split('.'))
+        namespaces = reversed(rule_name.split("."))
+        if namespaces is None:
+            namespaces = [rule_name]
         lstname = []
         for name in namespaces:
             lstname.insert(0, name)
@@ -131,30 +131,39 @@ class BasicParser:
     #TODO(iopi): define what should be sent globally to all rules
     #TODO(iopi): think about rule proto? global data etc...
     #TODO(bps): Check why evalRule gets args & kwargs but does not use them
-    def evalRule(self, name: str, *args, **kwargs) -> Node:
-        """Evaluate a rule by name."""
+    def evalRule(self, name : str, *args, **kvargs) -> Node:
+        """
+        Evaluate the rule by its name
+        """
         self.pushRuleNodes()
         # create a slot value for the result
         self.rulenodes[-1][name] = Node()
-        res = self._rules[name](self)
+        res = self._rules[name](self) # TODO: think about rule proto? global data etc...
         res = self.handleVarCtx(res, name)
         self.popRuleNodes()
         return res
 
-    #TODO(iopi): think about hook prototype!!!
     def evalHook(self, name: str, ctx: list) -> Node:
-        """Evaluate a hook by name."""
+        """Evaluate the hook by its name"""
+        # TODO: think of hooks prototype!!!
         return self.__hooks[name](self, *ctx)
 
 ### PARSING PRIMITIVES
-#TODO(bps): is '''if self.readEOF():''' necessary?
 
     def peekChar(self, c: str) -> bool:
         if self.readEOF():
             return False
         return self._stream.peek_char == c
 
-    def readChar(self, c: str) -> bool:
+    def peekText(self, text: str) -> bool:
+        """Same as readText but doesn't consume the stream."""
+        start = self._stream.index
+        stop = start + len(text)
+        if stop > self._stream.eos_index:
+            return False
+        return self._stream[self._stream.index:stop] == text
+
+    def readChar(self, cC: str) -> bool:
         """
         Consume the c head byte, increment current index and return True
         else return False. It use peekchar and it's the same as '' in BNF.
@@ -162,29 +171,12 @@ class BasicParser:
         if self.readEOF():
             return False
         self._stream.save_context()
-        if self._stream.peek_char == c:
+        if self._stream.peek_char == cC:
             self._stream.incpos()
             return self._stream.validate_context()
         return self._stream.restore_context()
 
-    def peekText(self, text: str) -> bool:
-        """Same as readText but doesn't consume the stream."""
-        stream = self._stream
-        start = stream.index
-        stop = start + len(text)
-        return stream[start:stop] == text
-
-    def readText(self, text: str) -> bool:
-        """Consumes a text at current position in the stream if present."""
-        if self.readEOF():
-            return False
-        self._stream.save_context()
-        if not self.peekText(text):
-            return self._stream.restore_context()
-        self._stream.incpos(len(text))
-        return self._stream.validate_context()
-
-    def readUntil(self, c: str, cInhibitor='\\') -> bool:
+    def readUntil(self, cC: str, cInhibitor='\\') -> bool:
         """
         Consume the stream while the c byte is not read, else return false
         ex : if stream is " abcdef ", readUntil("d"); consume "abcd".
@@ -194,9 +186,9 @@ class BasicParser:
         self._stream.save_context()
         while not self.readEOF():
             if self._stream.peek_char == cInhibitor:
-                self._stream.incpos()  # Deletion of the inhibitor.
-                self._stream.incpos()  # Deletion of the inhibited character.
-            if self._stream.peek_char == c:
+                self._stream.incpos() # Deletion of the inhibitor.
+                self._stream.incpos() # Deletion of the inhibited character.
+            if self._stream.peek_char == cC:
                 self._stream.incpos()
                 return self._stream.validate_context()
             self._stream.incpos()
@@ -210,6 +202,25 @@ class BasicParser:
         while not self.readEOF():
             self._stream.incpos()
         return self._stream.validate_context()
+
+    def readText(self, sText: str) -> bool:
+        """
+        Consume a strlen(text) text at current position in the stream
+        else return False.
+        Same as "" in BNF
+        ex : readText("ls");.
+        """
+        if self.readEOF():
+            return False
+        ii = self._stream.index
+        self._stream.save_context()
+        if self.peekText(sText):
+            nLength = len(sText)
+            for _ in range(0, nLength):
+                self._stream.incpos()
+            iii = self._stream.index
+            return self._stream.validate_context()
+        return self._stream.restore_context()
 
     def readRange(self, begin: str, end: str) -> int:
         """
@@ -243,18 +254,18 @@ class BasicParser:
 
     def pushIgnore(self, ignoreConvention) -> bool:
         """Set the ignore convention"""
-        self.__ignores.append(ignoreConvention)
+        self._ignores.append(ignoreConvention)
         return True
 
     def popIgnore(self) -> bool:
         """Remove the last ignore convention"""
-        self.__ignores.pop()
+        self._ignores.pop()
         return True
 
     def skipIgnore(self) -> bool:
         self._lastIgnoreIndex = self._stream.index
-        self.__ignores[-1](self)
-        self._lastIgnore = self._stream.index != self._lastIgnoreIndex
+        self._ignores[-1](self)
+        self._lastIgnore = (self._stream.index != self._lastIgnoreIndex)
         return True
 
     def undoIgnore(self) -> bool:
@@ -264,30 +275,16 @@ class BasicParser:
             self._lastIgnoreIndex = self._stream.index
         return True
 
-    def pushIgnore(self, ignoreConvention) -> bool:
-        """Set the ignore convention."""
-        self.__ignores.append(ignoreConvention)
-        return True
-
-    def popIgnore(self) -> bool:
-        """Remove the last ignore convention."""
-        self.__ignores.pop()
-        return True
-
-
-#TODO(bps): move ignore in parser
 class Parser(BasicParser):
     """An ascii parsing primitive library."""
     def __init__(self, *args):
         super().__init__(*args)
-
 
 ### BASE RULES
 @meta.rule(BasicParser, "Base.eof")
 def readEOF(self) -> bool:
     """Returns true if reached end of the stream."""
     return self._stream.index == self._stream.eos_index
-
 
 @meta.rule(Parser, "Base.eol")
 def readEOL(self) -> bool:
@@ -299,7 +296,6 @@ def readEOL(self) -> bool:
     if self.readChar('\n'):
         return self._stream.validate_context()
     return self._stream.restore_context()
-
 
 @meta.rule(Parser, "Base.num")
 def readInteger(self) -> bool:
@@ -321,7 +317,6 @@ def readInteger(self) -> bool:
             return self._stream.validate_context()
     return self._stream.restore_context()
 
-
 @meta.rule(Parser, "Base.id")
 def readIdentifier(self) -> bool:
     """
@@ -340,9 +335,9 @@ def readIdentifier(self) -> bool:
                 if not (c.isalpha() or c.isdigit() or c == '_'):
                     break
                 self._stream.incpos()
+            iii = self._stream.index
             return self._stream.validate_context()
     return self._stream.restore_context()
-
 
 @meta.rule(Parser, "Base.string")
 def readCString(self) -> bool:
@@ -359,10 +354,9 @@ def readCString(self) -> bool:
         return res
     return self._stream.restore_context()
 
-
 @meta.rule(Parser, "Base.char")
 def readCChar(self) -> bool:
-    #TODO(iopi): octal digit, hex digit
+    # TODO(iopi): octal digit, hex digit
     """
     Read following BNF rule else return False
     "'" -> [~"/" "'"]

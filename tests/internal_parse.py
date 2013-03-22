@@ -334,3 +334,18 @@ class InternalParse_Test(unittest.TestCase):
                         "failed no found Base.string")
         self.assertTrue("Base.string" in parser._rules,
                         "failed no found Base.string")
+
+    def test_13_Directive(self):
+        """Test Directive/DirectiveWrapper
+        """
+        class   DummyDirective(parsing.DirectiveWrapper):
+            def begin(self, parser, a, b):
+                print("BEGIN %s %s" % (a, b))
+                return True
+            def end(self, parser, a, b):
+                print("END %s %s" % (a, b))
+                return True
+        def dummyParser(p):
+            return True
+        direct = parsing.Directive(DummyDirective(), [(1, int), (2, int)], dummyParser)
+        direct(dummyParser)

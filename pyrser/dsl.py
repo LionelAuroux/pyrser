@@ -75,6 +75,7 @@ class Parser(parsing.Parser):
             #           [repeat : rpt #add_rpt(sequence, rpt) ]?
             #           [':' Base.id : cpt #add_capture(sequence, cpt) ]?
             #           | hook : h #add_hook(sequence, h)
+            #           | directive : d sequence : s #add_directive(sequence, d, s)
             # ;
             #
             'sequence':   parsing.Alt(
@@ -191,6 +192,30 @@ class Parser(parsing.Parser):
                             )
                         ),
                     ),
+
+            #
+            # directive ::= '@' ns_name : n #hook_name(hook, n) ['(' param : p #hook_param(hook, p) [',' param : p #hook_param(hook, p)]* ')']?
+            # ;
+            'directive':    parsing.Seq(
+                                parsing.Call(parsing.Parser.readChar, '@'),
+                                parsing.Capture('n', parsing.Rule('ns_name')),
+                                parsing.Hook('hook_name', [('hook', Node), ('n', Node)]),
+                                parsing.RepOptional(
+                                    parsing.Seq(
+                                        parsing.Call(parsing.Parser.readChar, '('),
+                                        parsing.Capture('p', parsing.Rule('param')),
+                                        parsing.Hook('hook_param', [('hook', Node), ('p', Node)]),
+                                        parsing.Rep0N(
+                                            parsing.Seq(
+                                                parsing.Call(parsing.Parser.readChar, ','),
+                                                parsing.Capture('p', parsing.Rule('param')),
+                                                parsing.Hook('hook_param', [('hook', Node), ('p', Node)]),
+                                            )
+                                        ),
+                                        parsing.Call(parsing.Parser.readChar, ')')
+                                    )
+                                ),
+                            ),
 
             #
             # param ::= Base.num :n #param_num(param, n) | Base.string : s #param_str(param, s) | Base.char : c #param_str(param, c) | Base.id : i #param_id(param, i)

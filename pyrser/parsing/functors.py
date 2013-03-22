@@ -18,7 +18,7 @@ class Seq(ParserTree):
     def __init__(self, *ptlist: ParserTree):
         ParserTree.__init__(self)
         if len(ptlist) == 0:
-            raise TypeError()
+            raise TypeError("Expected ParserTree")
         self.ptlist = ptlist
 
     def __call__(self, parser: BasicParser) -> bool:
@@ -84,10 +84,8 @@ class Capture(ParserTree):
 
     def __call__(self, parser: BasicParser) -> Node:
         if parser.beginTag(self.tagname):
-            parser.pushRuleNodes()
             parser.rulenodes[-1][self.tagname] = Node()
             res = self.pt(parser)
-            parser.popRuleNodes()
             if res and parser.endTag(self.tagname):
                 text = parser.getTag(self.tagname)
                 # wrap it in a Node instance
@@ -203,3 +201,66 @@ class Hook(ParserTree):
                 raise TypeError("Type mismatch expected {} got {}".format(
                     t, type(v)))
         return parser.evalHook(self.name, valueparam)
+
+
+class DirectiveWrapper(object):
+    """functor to wrap begin/end directive"""
+
+    def __init__(self, ):
+        ParserTree.__init__(self)
+
+    def checkParam(self, params: list):
+        print("REPR %r" % dir(self.__class__))
+        if ('begin' not in dir(self.__class__)) or ('end' not in dir(self.__class__)):
+            return False
+        pbegin = self.__class__.begin.__code__.co_varnames
+        fbegin = self.__class__.begin.__annotations__
+        pend = self.__class__.end.__code__.co_varnames
+        fend = self.__class__.end.__annotations__
+        print("PARAM %s" % repr(pbegin))
+        print("ANNOT %s" % repr(fbegin))
+        for value, idx in zip(params, range(len(params))):
+            print("ITER PARAMS %s %s" % (value, idx))
+        return True
+
+    # must be define in inherited class
+    #def begin(self, parser, ...):
+    #    pass
+
+    # must be define in inherited class
+    #def end(self, parser, ...):
+    #    pass
+
+
+class Directive(ParserTree):
+    """functor to wrap directive HOOKS"""
+
+    def __init__(self, directive: DirectiveWrapper, param: [(object, type)], pt: ParserTree):
+        ParserTree.__init__(self)
+        self.directive = directive
+        self.pt = pt
+        # compose the list of value param, check type
+        for v, t in param:
+            if type(t) is not type:
+                raise TypeError("Must be pair of value and type (i.e: int, str, Node)")
+        self.param = param
+
+    def __call__(self, parser: BasicParser) -> Node:
+        valueparam = []
+        for v, t in self.param:
+            if t is Node:
+                valueparam.append(weakref.proxy(parser.rulenodes[-1][v]))
+            elif type(v) is t:
+                valueparam.append(v)
+            else:
+                raise TypeError("Type mismatch expected {} got {}".format(t, type(v)))
+        print("LIST CONTENT %s" % repr(valueparam))
+        if not self.directive.checkParam(valueparam):
+            return False
+        if not self.directive.begin(parser, *valueparam):
+            return False
+        res = self.pt(parser)
+        if not self.directive.end(parser, *valueparam):
+            return False
+        return res
+
