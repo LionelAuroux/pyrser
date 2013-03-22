@@ -1,8 +1,6 @@
 import ast
 import collections
 import unittest
-#TODO(bps): remove compatibility python3.2
-import sys
 
 from pyrser import codegen
 from pyrser import parsing
@@ -22,7 +20,6 @@ def visit_ParseTreeStub(self, node: ParseTreeStub) -> [ast.stmt] or ast.expr:
     return expr if node.inline else self._clause(expr)
 
 
-@unittest.skipIf(sys.version_info[:2] < (3, 3), "Need fixing for python3.2")
 #TODO(bps): Fix brittle test suite by testing behavior instead of code
 class TestToPythonPasse(unittest.TestCase):
     @classmethod
