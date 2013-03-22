@@ -49,7 +49,7 @@ def dumpParseTree(self, level=0):
 @meta.add_method(parsing.Scope)
 def dumpParseTree(self, level=0):
     res = "\n{}[{}\n".format('\t' * (level + 1), self.begin.dumpParseTree(0))
-    res += self.clause.dumpParseTree(level + 1)
+    res += self.pt.dumpParseTree(level + 1)
     res += "\n{}]{}\n".format('\t' * (level + 1), self.end.dumpParseTree(0))
     return res
 
@@ -57,32 +57,32 @@ def dumpParseTree(self, level=0):
 @meta.add_method(parsing.Capture)
 def dumpParseTree(self, level=0):
     res = "\n{}[\n".format('\t' * level)
-    res += self.clause.dumpParseTree(level + 1)
+    res += self.pt.dumpParseTree(level + 1)
     res += "\n{}] : {}\n".format('\t' * level, self.tagname)
     return res
 
 
 @meta.add_method(parsing.Seq)
 def dumpParseTree(self, level=0):
-    return ' '.join(
-        [clause.dumpParseTree(level + 1) for clause in self.clauses])
+    return ' '.join([
+        pt.dumpParseTree(level + 1) for pt in self.ptlist])
 
 
 @meta.add_method(parsing.Alt)
 def dumpParseTree(self, level=0):
     indent = '\t' * level
-    res = "\n{}  {}".format(indent, self.clauses[0].dumpParseTree(0))
-    if len(self.clauses) > 1:
+    res = "\n{}  {}".format(indent, self.ptlist[0].dumpParseTree(0))
+    if len(self.ptlist) > 1:
         res += "\n{}| ".format(indent)
-    res += "\n{}| ".format('\t' * level).join(
-        [clause.dumpParseTree(0) for clause in self.clauses[1:]])
+    res += "\n{}| ".format('\t' * level).join([
+        pt.dumpParseTree(0) for pt in self.ptlist[1:]])
     return res
 
 
 @meta.add_method(parsing.RepOptional)
 def dumpParseTree(self, level=0):
     res = ("\n{}[\n".format('\t' * level))
-    res += self.clause.dumpParseTree(level + 1)
+    res += self.pt.dumpParseTree(level + 1)
     res += ("\n{}]?\n".format('\t' * level))
     return res
 
@@ -90,7 +90,7 @@ def dumpParseTree(self, level=0):
 @meta.add_method(parsing.Rep0N)
 def dumpParseTree(self, level=0):
     res = ("\n{}[\n".format('\t' * level))
-    res += self.clause.dumpParseTree(level + 1)
+    res += self.pt.dumpParseTree(level + 1)
     res += ("\n{}]*\n".format('\t' * level))
     return res
 
@@ -98,6 +98,6 @@ def dumpParseTree(self, level=0):
 @meta.add_method(parsing.Rep1N)
 def dumpParseTree(self, level=0):
     res = ("\n{}[\n".format('\t' * level))
-    res += self.clause.dumpParseTree(level + 1)
+    res += self.pt.dumpParseTree(level + 1)
     res += ("\n{}]+\n".format('\t' * level))
     return res

@@ -185,7 +185,7 @@ class InternalParse_Test(unittest.TestCase):
             parsing.Scope(
                 begin=parsing.Call(parsing.Parser.pushIgnore, parsing.Parser.ignoreNull),
                 end=parsing.Call(parsing.Parser.popIgnore),
-                clause=parsing.Seq(
+                pt=parsing.Seq(
                     parsing.Alt(
                         parsing.Call(parsing.Parser.readChar, '_'),
                         parsing.Call(parsing.Parser.readRange, 'a', 'z'),

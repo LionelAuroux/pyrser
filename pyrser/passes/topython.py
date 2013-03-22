@@ -121,7 +121,7 @@ class RuleVisitor(ast.NodeVisitor):
             ast.Name('self', ast.Load()), 'endTag', ast.Load())
         begin = ast.Call(begintag, [ast.Str(node.tagname)], [], None, None)
         end = ast.Call(endtag, [ast.Str(node.tagname)], [], None, None)
-        result = [begin, self.visit(node.clause), end]
+        result = [begin, self.visit(node.pt), end]
         for clause in result:
             if not isinstance(clause, ast.expr):
                 break
@@ -137,7 +137,7 @@ class RuleVisitor(ast.NodeVisitor):
 
         if not self.begin():
             return False
-        res = self.clause()
+        res = self.pt()
         if not self.end():
             return False
         return res
@@ -158,7 +158,7 @@ class RuleVisitor(ast.NodeVisitor):
         except AltTrue:
             pass
         """
-        clauses = [self.visit(clause) for clause in node.clauses]
+        clauses = [self.visit(clause) for clause in node.ptlist]
         for clause in clauses:
             if not isinstance(clause, ast.expr):
                 break
@@ -172,7 +172,7 @@ class RuleVisitor(ast.NodeVisitor):
         alt_false = [ast.ExceptHandler(ast.Name('AltFalse', ast.Load()), None,
                      [ast.Pass()])]
         self.in_try += 1
-        for clause in node.clauses:
+        for clause in node.ptlist:
             res.body.append(
                 ast.Try(self._clause(self.visit(clause)) + alt_true, alt_false,
                         [], []))
@@ -196,7 +196,7 @@ class RuleVisitor(ast.NodeVisitor):
             return False
         """
         exprs, stmts = [], []
-        for clause in node.clauses:
+        for clause in node.ptlist:
             clause_ast = self.visit(clause)
             if isinstance(clause_ast, ast.expr):
                 exprs.append(clause_ast)
@@ -217,11 +217,11 @@ class RuleVisitor(ast.NodeVisitor):
 
         <code for the clause>
         """
-        cl_ast = self.visit(node.clause)
+        cl_ast = self.visit(node.pt)
         if isinstance(cl_ast, ast.expr):
             return ast.BoolOp(ast.Or(), [cl_ast, ast.Name('True', ast.Load())])
         self.in_optional += 1
-        cl_ast = self.visit(node.clause)
+        cl_ast = self.visit(node.pt)
         self.in_optional -= 1
         return cl_ast
 
@@ -235,11 +235,11 @@ class RuleVisitor(ast.NodeVisitor):
         while True:
             <code for the clause>
         """
-        cl_ast = self.visit(node.clause)
+        cl_ast = self.visit(node.pt)
         if isinstance(cl_ast, ast.expr):
             return [ast.While(cl_ast, [ast.Pass()], [])]
         self.in_loop += 1
-        clause = self._clause(self.visit(node.clause))
+        clause = self._clause(self.visit(node.pt))
         self.in_loop -= 1
         return [ast.While(ast.Name('True', ast.Load()), clause, [])]
 
@@ -250,13 +250,13 @@ class RuleVisitor(ast.NodeVisitor):
         while True:
             <code for the clause>
         """
-        clause = self.visit(node.clause)
+        clause = self.visit(node.pt)
         if isinstance(clause, ast.expr):
             return (self._clause(clause) + self.visit_Rep0N(node))
         self.in_loop += 1
-        clause = self._clause(self.visit(node.clause))
+        clause = self._clause(self.visit(node.pt))
         self.in_loop -= 1
-        return self._clause(self.visit(node.clause)) + [
+        return self._clause(self.visit(node.pt)) + [
             ast.While(ast.Name('True', ast.Load()), clause, [])]
 
 

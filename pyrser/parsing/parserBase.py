@@ -379,38 +379,43 @@ def readCChar(self) -> bool:
 ### PARSE TREE
 
 class ParserTree:
-    """Dummy Base class for all parse tree classes"""
+    """Dummy Base class for all parse tree classes
+    
+    common property:
+        pt if contain a ParserTree
+        ptlist if contain a list of ParserTree
+    """
     def __init__(self):
         pass
 
 class Seq(ParserTree):
     """A B C bnf primitive as a functor"""
 
-    def __init__(self, *clauses):
+    def __init__(self, *ptlist: ParserTree):
         ParserTree.__init__(self)
-        if len(clauses) == 0:
+        if len(ptlist) == 0:
             raise TypeError("Expected Seq")
-        self.clauses = clauses
+        self.ptlist = ptlist
 
     def __call__(self, parser: BasicParser) -> bool:
-        for clause in self.clauses:
+        for pt in self.ptlist:
             parser.skipIgnore()
-            if not clause(parser):
+            if not pt(parser):
                 return False
         return True
 
 class Alt(ParserTree):
     """A | B bnf primitive as a functor."""
 
-    def __init__(self, *clauses: ParserTree):
+    def __init__(self, *ptlist: ParserTree):
         ParserTree.__init__(self)
-        self.clauses = clauses
+        self.ptlist = ptlist
 
     def __call__(self, parser: BasicParser) -> Node:
-        for clause in self.clauses:
+        for pt in self.ptlist:
             parser._stream.save_context()
             parser.skipIgnore()
-            res = clause(parser)
+            res = pt(parser)
             if res:
                 parser._stream.validate_context()
                 return res
@@ -420,16 +425,16 @@ class Alt(ParserTree):
 class Scope(ParserTree):
     """functor to wrap SCOPE/rule directive or just []"""
 
-    def __init__(self, begin: Seq, end: Seq, clause: Seq):
+    def __init__(self, begin: Seq, end: Seq, pt: ParserTree):
         ParserTree.__init__(self)
         self.begin = begin
         self.end = end
-        self.clause = clause
+        self.pt = pt
 
     def __call__(self, parser: BasicParser) -> Node:
         if not self.begin(parser):
             return False
-        res = self.clause(parser)
+        res = self.pt(parser)
         if not self.end(parser):
             return False
         return res
@@ -456,17 +461,17 @@ class CallTrue(Call):
 
 class Capture(ParserTree):
     """functor to handle capture variables."""
-    def __init__(self, tagname: str, clause: ParserTree):
+    def __init__(self, tagname: str, pt: ParserTree):
         ParserTree.__init__(self)
         if not isinstance(tagname, str) or len(tagname) == 0:
             raise TypeError("Bad type for tagname")
         self.tagname = tagname
-        self.clause = clause
+        self.pt = pt
 
     def __call__(self, parser: BasicParser) -> Node:
         if parser.beginTag(self.tagname):
             parser.rulenodes[-1][self.tagname] = Node()
-            res = self.clause(parser)
+            res = self.pt(parser)
             print("apresCLAUSE: %d" % parser._stream.index)
             if (res and 
                     #parser.undoIgnore() and
@@ -488,25 +493,25 @@ class Capture(ParserTree):
 class RepOptional(ParserTree):
     """[]? bnf primitive as a functor"""
 
-    def __init__(self, clause: Seq):
+    def __init__(self, pt: ParserTree):
         ParserTree.__init__(self)
-        self.clause = clause
+        self.pt = pt
     def __call__(self, parser: BasicParser) -> bool:
         parser.skipIgnore()
-        self.clause(parser)
+        self.pt(parser)
         return True
 
 class Rep0N(ParserTree):
     """[]* bnf primitive as a functor"""
 
     # TODO: at each turn, pop/push rulenodes
-    def __init__(self, clause: Seq):
+    def __init__(self, pt: ParserTree):
         ParserTree.__init__(self)
-        self.clause = clause
+        self.pt = pt
 
     def __call__(self, parser: BasicParser) -> bool:
         parser.skipIgnore()
-        while self.clause(parser):
+        while self.pt(parser):
             parser.skipIgnore()
         return True
 
@@ -514,15 +519,15 @@ class Rep1N(ParserTree):
     """[]+ bnf primitive as a functor"""
 
     # TODO: at each turn, pop/push rulenodes
-    def __init__(self, clause: Seq):
+    def __init__(self, pt: ParserTree):
         ParserTree.__init__(self)
-        self.clause = clause
+        self.pt = pt
 
     def __call__(self, parser: BasicParser) -> bool:
         parser.skipIgnore()
-        if self.clause(parser):
+        if self.pt(parser):
             parser.skipIgnore()
-            while self.clause(parser):
+            while self.pt(parser):
                 parser.skipIgnore()
             return True
         return False

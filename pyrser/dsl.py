@@ -244,7 +244,7 @@ def add_sequences(self, sequences, cla) -> bool:
         oldnode = sequences
         #print("OLDCLA %s" % oldnode.parser_tree)
         if isinstance(oldnode.parser_tree, parsing.Seq):
-            oldpt = list(oldnode.parser_tree.clauses)
+            oldpt = list(oldnode.parser_tree.ptlist)
         else:
             oldpt = [oldnode.parser_tree]
         oldpt.append(cla.parser_tree)
@@ -263,7 +263,7 @@ def add_alt(self, alternatives, alt) -> bool:
     else:
         oldnode = alternatives
         if isinstance(oldnode.parser_tree, parsing.Alt):
-            oldpt = list(oldnode.parser_tree.clauses)
+            oldpt = list(oldnode.parser_tree.ptlist)
         else:
             oldpt = [oldnode.parser_tree]
         oldpt.append(alt.parser_tree)
