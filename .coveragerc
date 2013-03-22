@@ -1,0 +1,14 @@
+[run]
+branch = True
+omit =
+    pyrser/codegen.py
+    pyrser/passes/dumpParseTree.py
+    tests/__main__.py
+
+[report]
+exclude_lines =
+    def __repr__
+    def generic_visit
+    def help
+    def test_topython_generates_code_for_parserdsl
+    def _test_topython_generates_code_for_parserdsl
