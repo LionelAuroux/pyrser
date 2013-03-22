@@ -62,7 +62,7 @@ def dumpParseTree(self, level=0):
     return res
 
 
-@meta.add_method(parsing.Clauses)
+@meta.add_method(parsing.Seq)
 def dumpParseTree(self, level=0):
     return ' '.join(
         [clause.dumpParseTree(level + 1) for clause in self.clauses])

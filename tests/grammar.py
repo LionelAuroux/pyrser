@@ -6,7 +6,7 @@ import pyrser
 class TestGrammar(unittest.TestCase):
     def test_it_parses_a_keyword(self):
         class KeywordGrammar(pyrser.Grammar):
-            #grammar = '''kw ::= "keyword" Base::eof;'''
+            #grammar = '''kw ::= "keyword" Base.eof;'''
             grammar = '''kw ::= "keyword" eof;'''
             entry = 'kw'
 

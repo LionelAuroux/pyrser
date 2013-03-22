@@ -1,6 +1,6 @@
 from pyrser.parsing.parserBase import ParserTree
 from pyrser.parsing.parserBase import Call, CallTrue, Hook, Rule
-from pyrser.parsing.parserBase import Alt, Clauses
+from pyrser.parsing.parserBase import Alt, Seq
 from pyrser.parsing.parserBase import Rep0N, Rep1N, RepOptional
 from pyrser.parsing.parserBase import Capture, Scope
 from pyrser.parsing.parserBase import BasicParser, Parser
@@ -14,7 +14,7 @@ __all__ = [
     'Call',
     'CallTrue',
     'Capture',
-    'Clauses',
+    'Seq',
     'Hook',
     'Node',
     'ParserTree',

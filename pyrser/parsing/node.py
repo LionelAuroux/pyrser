@@ -13,7 +13,7 @@ class Node(dict):
     def __repr__(self):
         items = []
         if len(self) > 0:
-            items.append(repr(self))
+            items.append(repr(self.items()))
         for k, v in vars(self).items():
             items.append("{} = {}".format(k, repr(v)))
         return "{}({})".format(self.__class__.__name__, ', '.join(items))

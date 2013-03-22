@@ -184,7 +184,7 @@ class RuleVisitor(ast.NodeVisitor):
         expr = exprs[0] if len(exprs) == 1 else ast.BoolOp(ast.And(), exprs)
         return self._clause(expr)
 
-    def visit_Clauses(self, node: parsing.Clauses) -> [ast.stmt] or ast.expr:
+    def visit_Seq(self, node: parsing.Seq) -> [ast.stmt] or ast.expr:
         """Generates python code for clauses.
 
         #Continuous clauses which can can be inlined are combined with and
