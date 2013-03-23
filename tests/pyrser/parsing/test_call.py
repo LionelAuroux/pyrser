@@ -18,7 +18,7 @@ class TestCall(unittest.TestCase):
         clause = mock.Mock(spec=types.MethodType)
         parser, args = mock.Mock(), (1, 2, 3)
         parsing.Call(clause, *args)(parser)
-        clause.__func__.assert_called_once_with(parser, *args)
+        clause.assert_called_once_with(parser, *args)
 
     def test_it_returns_true_when_clause_is_true(self):
         parser = mock.Mock()
