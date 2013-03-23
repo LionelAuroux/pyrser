@@ -16,6 +16,7 @@ class Parser(parsing.Parser):
             # ;
             #
             'bnf_dsl':  parsing.Seq(
+                            parsing.CallTrue(print, "HERE0"),
                             parsing.Rep1N(parsing.Seq(
                                 parsing.Capture("r", parsing.Rule('rule')),
                                 parsing.Hook('add_rules', [("bnf_dsl", Node), ("r", Node)])
@@ -123,10 +124,15 @@ class Parser(parsing.Parser):
                             parsing.Seq(
                                 parsing.Capture('h', parsing.Rule('hook')),
                                 parsing.Hook('add_hook', [('sequence', Node), ('h', Node)])
+                            ),
+                            parsing.Seq(
+                                parsing.Capture('d', parsing.Rule('directive')),
+                                parsing.Capture('s', parsing.Rule('sequence')),
+                                parsing.Hook('add_directive', [('sequence', Node), ('d', Node), ('s', Node)])
                             )
                         ),
 
-            # TODO: add rules hooks
+            # TODO: add directive hooks
             # ns_name ::= @ignore("null") [ Base.id ['.' Base.id]* ]: rid #add_ruleclause_name(ns_name, rid)
             # ;
             #
@@ -194,22 +200,24 @@ class Parser(parsing.Parser):
                     ),
 
             #
-            # directive ::= '@' ns_name : n #hook_name(hook, n) ['(' param : p #hook_param(hook, p) [',' param : p #hook_param(hook, p)]* ')']?
+            # directive ::= '@' ns_name : n #hook_name(directive, n) ['(' param : p #hook_param(directive, p) [',' param : p #hook_param(directive, p)]* ')']?
             # ;
             'directive':    parsing.Seq(
+                                parsing.CallTrue(print, "HERE"),
                                 parsing.Call(parsing.Parser.readChar, '@'),
+                                parsing.CallTrue(print, "HERE"),
                                 parsing.Capture('n', parsing.Rule('ns_name')),
-                                parsing.Hook('hook_name', [('hook', Node), ('n', Node)]),
+                                parsing.Hook('hook_name', [('directive', Node), ('n', Node)]),
                                 parsing.RepOptional(
                                     parsing.Seq(
                                         parsing.Call(parsing.Parser.readChar, '('),
                                         parsing.Capture('p', parsing.Rule('param')),
-                                        parsing.Hook('hook_param', [('hook', Node), ('p', Node)]),
+                                        parsing.Hook('hook_param', [('directive', Node), ('p', Node)]),
                                         parsing.Rep0N(
                                             parsing.Seq(
                                                 parsing.Call(parsing.Parser.readChar, ','),
                                                 parsing.Capture('p', parsing.Rule('param')),
-                                                parsing.Hook('hook_param', [('hook', Node), ('p', Node)]),
+                                                parsing.Hook('hook_param', [('directive', Node), ('p', Node)]),
                                             )
                                         ),
                                         parsing.Call(parsing.Parser.readChar, ')')
@@ -360,6 +368,7 @@ def param_id(self, param, i):
 
 @meta.hook(Parser)
 def hook_name(self, hook, n):
+    print("HOOK_NAME %s" % n.value)
     hook.name = n.value
     hook.listparam = []
     return True
@@ -369,3 +378,8 @@ def hook_param(self, hook, p):
     hook.listparam.append(p.pair)
     return True
 
+@meta.hook(Parser)
+def add_directive(self, sequence, d, s):
+    print("ADD DIRECTIVE")
+    sequence.parser_tree = parsing.Directive()
+    return True

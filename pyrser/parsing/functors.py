@@ -52,12 +52,7 @@ class Call(ParserTree):
 
     def __init__(self, callObject, *params):
         ParserTree.__init__(self)
-        #TODO(bps): fix the function vs. method mess
-        import types
-        if isinstance(callObject, types.MethodType):
-            self.callObject = callObject.__func__
-        else:
-            self.callObject = callObject
+        self.callObject = callObject
         self.params = params
 
     def __call__(self, parser: BasicParser) -> Node:
@@ -67,7 +62,7 @@ class Call(ParserTree):
 class CallTrue(Call):
     """Functor to wrap arbitrary callable object in BNF clause."""
 
-    def __call__(self) -> Node:
+    def __call__(self, parser: BasicParser) -> Node:
         self.callObject(*self.params)
         return True
 
@@ -210,20 +205,26 @@ class DirectiveWrapper(object):
         ParserTree.__init__(self)
 
     def checkParam(self, params: list):
-        print("REPR %r" % dir(self.__class__))
         if ('begin' not in dir(self.__class__)) or ('end' not in dir(self.__class__)):
             return False
         pbegin = self.__class__.begin.__code__.co_varnames
         tbegin = self.__class__.begin.__annotations__
         pend = self.__class__.end.__code__.co_varnames
         tend = self.__class__.end.__annotations__
-        print("PARAM %s" % repr(pbegin))
-        print("ANNOT %s %s" % (repr(tbegin), len(tbegin)))
-        #for value, idx in zip(params, range(len(params))):
-        #    print("ITER PARAMS %s %s" % (value, idx))
+        idx = 0
         for pname in pbegin:
             if pname in tbegin:
-                print("%s is type %s " % (pname, tbegin[pname]))
+                if tbegin[pname] != type(params[idx]):
+                    raise TypeError("{}:Wrong parameter in begin method parameter {} expected {} got {}"
+                        .format(self.__class__.__name__, idx, type(params[idx]), tbegin[pname]))
+                idx += 1
+        idx = 0
+        for pname in pend:
+            if pname in tend:
+                if tend[pname] != type(params[idx]):
+                    raise TypeError("{}:Wrong parameter in end method parameter {} expected {} got {}"
+                        .format(self.__class__.__name__, idx, type(params[idx]), tend[pname]))
+                idx += 1
         return True
 
     # must be define in inherited class
@@ -257,7 +258,6 @@ class Directive(ParserTree):
                 valueparam.append(v)
             else:
                 raise TypeError("Type mismatch expected {} got {}".format(t, type(v)))
-        print("LIST CONTENT %s" % repr(valueparam))
         if not self.directive.checkParam(valueparam):
             return False
         if not self.directive.begin(parser, *valueparam):

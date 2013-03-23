@@ -320,3 +320,17 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData.setRules(res)
         dummyData.test = self
         self.assertTrue(dummyData.evalRule('the_rule'), "failed to parse dummyData")
+
+    def test_20_directive(self):
+        class dummyDir(parsing.DirectiveWrapper):
+            def begin(self, parser, a: int, b: int, c: int):
+                return True
+            def end(self, parser, a: int, b: int, c: int):
+                return True
+        bnf = dsl.Parser("""
+            the_rule ::= @dummyDir(1, 2, 3) bla
+            ;
+        """)
+        res = bnf.evalRule('bnf_dsl')
+        self.assertTrue('the_rule' in res, "failed to fetch the rule name")
+

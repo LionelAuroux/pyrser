@@ -339,13 +339,15 @@ class InternalParse_Test(unittest.TestCase):
         """Test Directive/DirectiveWrapper
         """
         class   DummyDirective(parsing.DirectiveWrapper):
-            def begin(self, parser, a: int, b: str):
-                print("BEGIN %s %s" % (a, b))
+            def begin(self, test, a: int, b: int):
+                test.assertTrue(a == 1, "failed to recv first parameter into DummyDirective.begin")
+                test.assertTrue(b == 2, "failed to recv second parameter into DummyDirective.begin")
                 return True
-            def end(self, parser, a: int, b: int):
-                print("END %s %s" % (a, b))
+            def end(self, test, a: int, b: int):
+                test.assertTrue(a == 1, "failed to recv first parameter into DummyDirective.end")
+                test.assertTrue(b == 2, "failed to recv second parameter into DummyDirective.end")
                 return True
         def dummyParser(p):
             return True
         direct = parsing.Directive(DummyDirective(), [(1, int), (2, int)], dummyParser)
-        direct(dummyParser)
+        direct(self)
