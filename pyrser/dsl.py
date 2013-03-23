@@ -1,6 +1,5 @@
 from pyrser import parsing
 from pyrser import meta
-from pyrser.parsing.node import Node
 
 class Parser(parsing.Parser):
     """Basic class for BNF DSL PARSING."""
@@ -16,10 +15,9 @@ class Parser(parsing.Parser):
             # ;
             #
             'bnf_dsl':  parsing.Seq(
-                            #parsing.CallTrue(print, "HERE0"),
                             parsing.Rep1N(parsing.Seq(
                                 parsing.Capture("r", parsing.Rule('rule')),
-                                parsing.Hook('add_rules', [("bnf_dsl", Node), ("r", Node)])
+                                parsing.Hook('add_rules', [("bnf_dsl", parsing.Node), ("r", parsing.Node)])
                                 )
                             ),
                             parsing.Rule('Base.eof')
@@ -33,7 +31,7 @@ class Parser(parsing.Parser):
                         parsing.Capture("rn", parsing.Rule('ns_name')),
                         parsing.Call(parsing.Parser.read_text, "::="),
                         parsing.Capture("alts", parsing.Rule('alternatives')),
-                        parsing.Hook('add_rule', [("rule", Node), ("rn", Node), ("alts", Node)]),
+                        parsing.Hook('add_rule', [("rule", parsing.Node), ("rn", parsing.Node), ("alts", parsing.Node)]),
                         parsing.Call(parsing.Parser.read_char, ';')
                     ),
 
@@ -44,12 +42,12 @@ class Parser(parsing.Parser):
             #
             'alternatives': parsing.Seq(
                                 parsing.Capture('alt', parsing.Rule('sequences')),
-                                parsing.Hook('add_alt', [("alternatives", Node), ("alt", Node)]),
+                                parsing.Hook('add_alt', [("alternatives", parsing.Node), ("alt", parsing.Node)]),
                                 parsing.Rep0N(
                                     parsing.Seq(
                                         parsing.Call(parsing.Parser.read_char, '|'),
                                         parsing.Capture('alt', parsing.Rule('sequences')),
-                                        parsing.Hook('add_alt', [("alternatives", Node), ("alt", Node)])
+                                        parsing.Hook('add_alt', [("alternatives", parsing.Node), ("alt", parsing.Node)])
                                     )
                                 )
                             ),
@@ -61,7 +59,7 @@ class Parser(parsing.Parser):
             'sequences':  parsing.Rep1N(
                             parsing.Seq(
                                 parsing.Capture('cla', parsing.Rule('sequence')),
-                                parsing.Hook('add_sequences', [("sequences", Node), ("cla", Node)])
+                                parsing.Hook('add_sequences', [("sequences", parsing.Node), ("cla", parsing.Node)])
                             )
                         ),
 
@@ -84,51 +82,51 @@ class Parser(parsing.Parser):
                                 parsing.Alt(
                                     parsing.Seq(
                                             parsing.Capture('rid', parsing.Rule('ns_name')), 
-                                            parsing.Hook('add_ruleclause_name', [("sequence", Node), ("rid", Node)])
+                                            parsing.Hook('add_ruleclause_name', [("sequence", parsing.Node), ("rid", parsing.Node)])
                                         ),
                                     parsing.Seq(
                                             parsing.Capture('txt', parsing.Rule('Base.string')), 
-                                            parsing.Hook('add_text', [("sequence", Node), ("txt", Node)])
+                                            parsing.Hook('add_text', [("sequence", parsing.Node), ("txt", parsing.Node)])
                                         ),
                                     parsing.Seq(
                                         parsing.Capture('begin', parsing.Rule('Base.char')),
                                         parsing.Call(parsing.Parser.read_text, ".."),
                                         parsing.Capture('end', parsing.Rule('Base.char')),
-                                        parsing.Hook('add_range', [("sequence", Node), ("begin", Node), ("end", Node)])
+                                        parsing.Hook('add_range', [("sequence", parsing.Node), ("begin", parsing.Node), ("end", parsing.Node)])
                                     ),
                                     parsing.Seq(
                                         parsing.Capture('c', parsing.Rule('Base.char')), 
-                                        parsing.Hook('add_char', [("sequence", Node), ("c", Node)])
+                                        parsing.Hook('add_char', [("sequence", parsing.Node), ("c", parsing.Node)])
                                     ),
                                     parsing.Seq(
                                         parsing.Call(parsing.Parser.read_char, "["),
                                         parsing.Capture('subsequence', parsing.Rule('alternatives')), 
                                         parsing.Call(parsing.Parser.read_char, "]"),
-                                        parsing.Hook('add_subsequence', [("sequence", Node), ("subsequence", Node)]),
+                                        parsing.Hook('add_subsequence', [("sequence", parsing.Node), ("subsequence", parsing.Node)]),
                                     )
                                 ),
                                 parsing.RepOptional(
                                     parsing.Seq(
                                         parsing.Capture('rpt', parsing.Rule('repeat')),
-                                        parsing.Hook('add_rpt', [("sequence", Node), ("rpt", Node)])
+                                        parsing.Hook('add_rpt', [("sequence", parsing.Node), ("rpt", parsing.Node)])
                                     )
                                 ),
                                 parsing.RepOptional(
                                     parsing.Seq(
                                         parsing.Call(parsing.Parser.read_text, ":"),
                                         parsing.Capture('cpt', parsing.Rule('Base.id')),
-                                        parsing.Hook('add_capture', [('sequence', Node), ('cpt', Node)])
+                                        parsing.Hook('add_capture', [('sequence', parsing.Node), ('cpt', parsing.Node)])
                                     )
                                 )
                             ),
                             parsing.Seq(
                                 parsing.Capture('h', parsing.Rule('hook')),
-                                parsing.Hook('add_hook', [('sequence', Node), ('h', Node)])
+                                parsing.Hook('add_hook', [('sequence', parsing.Node), ('h', parsing.Node)])
                             ),
                             parsing.Seq(
                                 parsing.Capture('d', parsing.Rule('directive')),
                                 parsing.Capture('s', parsing.Rule('sequence')),
-                                parsing.Hook('add_directive', [('sequence', Node), ('d', Node), ('s', Node)])
+                                parsing.Hook('add_directive', [('sequence', parsing.Node), ('d', parsing.Node), ('s', parsing.Node)])
                             )
                         ),
 
@@ -152,7 +150,7 @@ class Parser(parsing.Parser):
                                     )
                                 )
                             ), 
-                            parsing.Hook('add_ruleclause_name', [("ns_name", Node), ("rid", Node)])
+                            parsing.Hook('add_ruleclause_name', [("ns_name", parsing.Node), ("rid", parsing.Node)])
                         ),
 
             #
@@ -162,15 +160,15 @@ class Parser(parsing.Parser):
             'repeat':   parsing.Alt(
                             parsing.Seq(
                                 parsing.Call(parsing.Parser.read_char, '?'),
-                                parsing.Hook('add_optional', [("repeat", Node)])
+                                parsing.Hook('add_optional', [("repeat", parsing.Node)])
                             ),
                             parsing.Seq(
                                 parsing.Call(parsing.Parser.read_char, '*'),
-                                parsing.Hook('add_0N', [("repeat", Node)])
+                                parsing.Hook('add_0N', [("repeat", parsing.Node)])
                             ),
                             parsing.Seq(
                                 parsing.Call(parsing.Parser.read_char, '+'),
-                                parsing.Hook('add_1N', [("repeat", Node)])
+                                parsing.Hook('add_1N', [("repeat", parsing.Node)])
                             ),
                         ),
 
@@ -181,17 +179,17 @@ class Parser(parsing.Parser):
             'hook': parsing.Seq(
                         parsing.Call(parsing.Parser.read_char, '#'),
                         parsing.Capture('n', parsing.Rule('ns_name')),
-                        parsing.Hook('hook_name', [('hook', Node), ('n', Node)]),
+                        parsing.Hook('hook_name', [('hook', parsing.Node), ('n', parsing.Node)]),
                         parsing.RepOptional(
                             parsing.Seq(
                                 parsing.Call(parsing.Parser.read_char, '('),
                                 parsing.Capture('p', parsing.Rule('param')),
-                                parsing.Hook('hook_param', [('hook', Node), ('p', Node)]),
+                                parsing.Hook('hook_param', [('hook', parsing.Node), ('p', parsing.Node)]),
                                 parsing.Rep0N(
                                     parsing.Seq(
                                         parsing.Call(parsing.Parser.read_char, ','),
                                         parsing.Capture('p', parsing.Rule('param')),
-                                        parsing.Hook('hook_param', [('hook', Node), ('p', Node)]),
+                                        parsing.Hook('hook_param', [('hook', parsing.Node), ('p', parsing.Node)]),
                                     )
                                 ),
                                 parsing.Call(parsing.Parser.read_char, ')')
@@ -203,21 +201,19 @@ class Parser(parsing.Parser):
             # directive ::= '@' ns_name : n #hook_name(directive, n) ['(' param : p #hook_param(directive, p) [',' param : p #hook_param(directive, p)]* ')']?
             # ;
             'directive':    parsing.Seq(
-                                #parsing.CallTrue(print, "HERE"),
                                 parsing.Call(parsing.Parser.read_char, '@'),
-                                #parsing.CallTrue(print, "HERE"),
                                 parsing.Capture('n', parsing.Rule('ns_name')),
-                                parsing.Hook('hook_name', [('directive', Node), ('n', Node)]),
+                                parsing.Hook('hook_name', [('directive', parsing.Node), ('n', parsing.Node)]),
                                 parsing.RepOptional(
                                     parsing.Seq(
                                         parsing.Call(parsing.Parser.read_char, '('),
                                         parsing.Capture('p', parsing.Rule('param')),
-                                        parsing.Hook('hook_param', [('directive', Node), ('p', Node)]),
+                                        parsing.Hook('hook_param', [('directive', parsing.Node), ('p', parsing.Node)]),
                                         parsing.Rep0N(
                                             parsing.Seq(
                                                 parsing.Call(parsing.Parser.read_char, ','),
                                                 parsing.Capture('p', parsing.Rule('param')),
-                                                parsing.Hook('hook_param', [('directive', Node), ('p', Node)]),
+                                                parsing.Hook('hook_param', [('directive', parsing.Node), ('p', parsing.Node)]),
                                             )
                                         ),
                                         parsing.Call(parsing.Parser.read_char, ')')
@@ -232,19 +228,19 @@ class Parser(parsing.Parser):
             'param' : parsing.Alt(
                         parsing.Seq(
                             parsing.Capture('n', parsing.Rule('Base.num')),
-                            parsing.Hook('param_num', [('param', Node), ('n', Node)])
+                            parsing.Hook('param_num', [('param', parsing.Node), ('n', parsing.Node)])
                         ),
                         parsing.Seq(
                             parsing.Capture('s', parsing.Rule('Base.string')),
-                            parsing.Hook('param_str', [('param', Node), ('s', Node)])
+                            parsing.Hook('param_str', [('param', parsing.Node), ('s', parsing.Node)])
                         ),
                         parsing.Seq(
                             parsing.Capture('c', parsing.Rule('Base.char')),
-                            parsing.Hook('param_str', [('param', Node), ('c', Node)])
+                            parsing.Hook('param_str', [('param', parsing.Node), ('c', parsing.Node)])
                         ),
                         parsing.Seq(
                             parsing.Capture('i', parsing.Rule('Base.id')),
-                            parsing.Hook('param_id', [('param', Node), ('i', Node)])
+                            parsing.Hook('param_id', [('param', parsing.Node), ('i', parsing.Node)])
                         ),
                     ),
         })
@@ -363,7 +359,7 @@ def param_str(self, param, s):
 
 @meta.hook(Parser)
 def param_id(self, param, i):
-    param.pair = (i.value, Node)
+    param.pair = (i.value, parsing.Node)
     return True
 
 @meta.hook(Parser)
@@ -380,11 +376,11 @@ def hook_param(self, hook, p):
 
 @meta.hook(Parser)
 def add_directive(self, sequence, d, s):
-    #print("ADD DIRECTIVE")
-    class dummy(parsing.DirectiveWrapper):
-        def begin(self, parser):
-            return True
-        def end(self, parser):
-            return True
-    sequence.parser_tree = parsing.Directive(dummy(), [], add_directive)
+    #print("ADD DIRECTIVE %s" % d.name)
+    #print("d %s" % d)
+    if not hasattr(Parser, 'directives'):
+        raise TypeError("empty directive dictionnary in dsl.Parser")
+    the_class = Parser.directives[d.name]
+    #print("try get class name %s" % the_class)
+    sequence.parser_tree = parsing.Directive(the_class(), d.listparam, s.parser_tree)
     return True
