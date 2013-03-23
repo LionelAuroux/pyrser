@@ -13,16 +13,16 @@ class TestRule(unittest.TestCase):
         parser = mock.Mock(spec=parsing.BasicParser)
         rule = parsing.Rule(rulename)
         rule(parser)
-        parser.evalRule.assert_called_once_with(rulename)
+        parser.eval_rule.assert_called_once_with(rulename)
 
     def test_it_is_true_when_the_rule_is_true(self):
         parser = mock.Mock(spec=parsing.BasicParser)
-        parser.evalRule.return_value = True
+        parser.eval_rule.return_value = True
         rule = parsing.Rule('rule')
         self.assertTrue(rule(parser))
 
     def test_it_is_false_when_the_rule_is_false(self):
         parser = mock.Mock(spec=parsing.BasicParser)
-        parser.evalRule.return_value = False
+        parser.eval_rule.return_value = False
         rule = parsing.Rule('rule')
         self.assertFalse(rule(parser))

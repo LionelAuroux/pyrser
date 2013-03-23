@@ -13,19 +13,19 @@ class TestHook(unittest.TestCase):
         parser = mock.Mock(spec=parsing.BasicParser)
         hook = parsing.Hook(hookname, params)
         hook(parser)
-        parser.evalHook.assert_called_once_with(hookname, [1, 2, 3])
+        parser.eval_hook.assert_called_once_with(hookname, [1, 2, 3])
 
     def test_it_is_true_when_the_hook_is_true(self):
         parser = mock.Mock(
             spec=parsing.BasicParser,
-            **{'evalHook.return_value': True})
+            **{'eval_hook.return_value': True})
         hook = parsing.Hook('hook', [])
         self.assertTrue(hook(parser))
 
     def test_it_is_false_when_the_hook_is_false(self):
         parser = mock.Mock(
             spec=parsing.BasicParser,
-            **{'evalHook.return_value': False})
+            **{'eval_hook.return_value': False})
         hook = parsing.Hook('hook', [])
         self.assertFalse(hook(parser))
 
@@ -33,7 +33,7 @@ class TestHook(unittest.TestCase):
         parser = mock.Mock(spec=parsing.BasicParser)
         hook = parsing.Hook('hook', [(1, int), ('', str), ([], list)])
         hook(parser)
-        parser.evalHook.assert_called_once_with('hook', [1, '', []])
+        parser.eval_hook.assert_called_once_with('hook', [1, '', []])
 
     def test_it_evaluates_hook_with_weakref_for_node_values(self):
         node = parsing.Node()
@@ -42,7 +42,7 @@ class TestHook(unittest.TestCase):
             **{'rulenodes': [{'hooknode': node}]})
         hook = parsing.Hook('hook', [('hooknode', parsing.Node)])
         hook(parser)
-        parser.evalHook.assert_called_once_with('hook', [node])
+        parser.eval_hook.assert_called_once_with('hook', [node])
 
     def test_it_raises_typeerror_when_param_is_malformed(self):
         with self.assertRaises(TypeError):

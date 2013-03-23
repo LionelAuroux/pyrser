@@ -28,16 +28,16 @@ def dumpParseTree(self, level=0):
 @meta.add_method(parsing.Call)
 def dumpParseTree(self, level=0):
     #TODO(iopi): think to remap methods to hooks
-    if self.callObject == parsing.Parser.readRange:
+    if self.callObject == parsing.Parser.read_range:
         return "{}'{}'..'{}'".format(
             '\t' * level, self.params[0], self.params[1])
-    elif self.callObject == parsing.Parser.readChar:
+    elif self.callObject == parsing.Parser.read_char:
         return "{}'{}'".format('\t' * level, self.params[0])
-    elif self.callObject == parsing.Parser.readText:
+    elif self.callObject == parsing.Parser.read_text:
         return "{}\"{}\"".format('\t' * level, self.params[0])
-    elif self.callObject == parsing.Parser.readInteger:
+    elif self.callObject == parsing.Parser.read_integer:
         return "{}#num".format('\t' * level)
-    elif self.callObject == parsing.Parser.readIdentifier:
+    elif self.callObject == parsing.Parser.read_identifier:
         return "{}#id".format('\t' * level)
     else:
         res = "{}#call: {} (".format('\t' * level, self.callObject.__name__)

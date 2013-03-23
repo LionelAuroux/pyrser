@@ -14,7 +14,7 @@ class TestSeq(unittest.TestCase):
         parser.clause = clause
         parsing.Seq(clause, clause)(parser)
         self.assertEqual(
-            [mock.call.skipIgnore(), mock.call.clause(parser)] * 2,
+            [mock.call.skip_ignore(), mock.call.clause(parser)] * 2,
             parser.mock_calls)
 
     def test_it_calls_all_clauses_in_order_if_each_clause_is_true(self):

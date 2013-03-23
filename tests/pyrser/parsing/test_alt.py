@@ -13,12 +13,12 @@ class TestAlt(unittest.TestCase):
         pt = mock.Mock(return_value=False)
         parser.pt = pt
         parsing.Alt(pt, pt)(parser)
-        calls = list(filter(lambda x: x in (mock.call.skipIgnore(),
+        calls = list(filter(lambda x: x in (mock.call.skip_ignore(),
                                             mock.call.pt(parser)),
                      parser.method_calls))
         self.assertEqual(
             calls,
-            [mock.call.skipIgnore(), mock.call.pt(parser)] * 2)
+            [mock.call.skip_ignore(), mock.call.pt(parser)] * 2)
 
     def test_it_save_current_context_before_each_clause(self):
         parser = mock.Mock(spec=parsing.BasicParser)
