@@ -1,31 +1,42 @@
 from pyrser import meta
 from pyrser.parsing.parserStream import Stream
 from pyrser.parsing.node import Node
+import collections
 
-class BasicParser:
+class MetaBasicParser(type):
+    """Metaclass for all parser."""
+    def __new__(metacls, name, bases, namespace):
+        cls = type.__new__(metacls, name, bases, namespace)
+        # create rules mapping in the class from inheritance
+        cls._rules = collections.ChainMap()
+        for base in reversed(bases):
+            if hasattr(base, '_rules') and isinstance(base._rules, collections.ChainMap):
+                cls._rules = base._rules.new_child()
+        # create hooks mapping in the class from inheritance
+        cls._hooks = collections.ChainMap()
+        for base in reversed(bases):
+            if hasattr(base, '_hooks') and isinstance(base._hooks, collections.ChainMap):
+                cls._hooks = base._hooks.new_child()
+        # create directives mapping in the class from inheritance
+        cls._directives = collections.ChainMap()
+        for base in reversed(bases):
+            if hasattr(base, '_directives') and isinstance(base._directives, collections.ChainMap):
+                cls._directives = base._directives.new_child()
+        return cls
+
+class BasicParser(metaclass=MetaBasicParser):
     """Emtpy basic parser, contains no rule nor hook.
 
     Unless you know what you are doing, use Parser instead of this class.
 
     """
-    rules = {}
-
     def __init__(self, content: str=''):
-        self.__hooks = {}
         self._ignores = [BasicParser.ignore_blanks]
         self.__streams = [Stream(content, "root")]
         self.__tags = {}
-        self._rules = {}
         self.rulenodes = [{}]
         self._lastIgnoreIndex = 0
         self._lastIgnore = False
-        # public
-        # decorator rule handling
-        if hasattr(BasicParser, 'class_rule_list'):
-            self.set_rules(BasicParser.class_rule_list)
-        # decorator hook handling
-        if hasattr(BasicParser, 'class_hook_list'):
-            self.set_hooks(BasicParser.class_hook_list)
 
 ### READ ONLY @property
 
@@ -90,35 +101,50 @@ class BasicParser:
 
 ####
 
-    def set_rules(self, rules: dict) -> bool:
+    @classmethod
+    def set_rules(cls, rules: dict) -> bool:
         """
         Merge internal rules set with the given rules
         """
+        cls._rules = cls._rules.new_child()
         for rule_name, rule_pt in rules.items():
-            self.set_one_rule(rule_name, rule_pt)
+            cls.set_one(cls._rules, rule_name, rule_pt)
         return True
 
-    def set_one_rule(self, rule_name, callobject) -> bool:
+    @classmethod
+    def set_hooks(cls, hooks: dict) -> bool:
         """
-        Add one rule (with namespace handling) that call callobject
-        and fix the value of parser in ParserTree
+        Merge internal hooks set with the given hooks
         """
-        namespaces = reversed(rule_name.split("."))
+        cls._hooks = cls._hooks.new_child()
+        for hook_name, hook_pt in hooks.items():
+            cls.set_one(cls._hooks, hook_name, hook_pt)
+        return True
+
+    @classmethod
+    def set_directives(cls, directives: dict) -> bool:
+        """
+        Merge internal directives set with the given directives.
+        For working directives, attach it only in the dsl.Parser class
+        """
+        cls._directives = cls._directives.new_child()
+        for dir_name, dir_pt in directives.items():
+            cls.set_one(cls._directives, dir_name, dir_pt)
+        return True
+
+    @classmethod
+    def set_one(cls, chainmap, thing_name, callobject):
+        """
+        Add one thing (with namespace handling) that call callobject in the given chainmap.
+        """
+        namespaces = reversed(thing_name.split("."))
         if namespaces is None:
-            namespaces = [rule_name]
+            namespaces = [thing_name]
         lstname = []
         for name in namespaces:
             lstname.insert(0, name)
             strname = '.'.join(lstname)
-            self._rules[strname] = callobject
-        return True
-
-    def set_hooks(self, hook: dict) -> bool:
-        """
-        Merge internal hooks set with the given hook
-        """
-        self.__hooks.update(hook)
-        return True
+            chainmap[strname] = callobject
 
     def handle_var_ctx(self, res: Node, name: str) -> Node:
         unnsname = name.split(".")[-1]
@@ -130,13 +156,13 @@ class BasicParser:
 
     #TODO(iopi): define what should be sent globally to all rules
     #TODO(iopi): think about rule proto? global data etc...
-    #TODO(bps): Check why evalRule gets args & kwargs but does not use them
+    #TODO(bps): Check why eval_rule gets args & kwargs but does not use them
     def eval_rule(self, name: str, *args, **kwargs) -> Node:
         """Evaluate a rule by name."""
         self.push_rule_nodes()
         # create a slot value for the result
         self.rulenodes[-1][name] = Node()
-        res = self._rules[name](self) # TODO: think about rule proto? global data etc...
+        res = self.__class__._rules[name](self) # TODO: think about rule proto? global data etc...
         res = self.handle_var_ctx(res, name)
         self.pop_rule_nodes()
         return res
@@ -144,7 +170,7 @@ class BasicParser:
     def eval_hook(self, name: str, ctx: list) -> Node:
         """Evaluate the hook by its name"""
         # TODO: think of hooks prototype!!!
-        return self.__hooks[name](self, *ctx)
+        return self.__class__._hooks[name](self, *ctx)
 
 ### PARSING PRIMITIVES
 
@@ -277,6 +303,7 @@ class Parser(BasicParser):
         super().__init__(*args)
 
 ### BASE RULES
+
 @meta.rule(BasicParser, "Base.eof")
 def read_eof(self) -> bool:
     """Returns true if reached end of the stream."""

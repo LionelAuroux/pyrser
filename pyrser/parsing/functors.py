@@ -1,6 +1,6 @@
 from pyrser.parsing.parserBase import BasicParser
 from pyrser.parsing.node import Node
-
+import types
 
 class ParserTree:
     """Dummy Base class for all parse tree classes.
@@ -198,7 +198,23 @@ class Hook(ParserTree):
         return parser.eval_hook(self.name, valueparam)
 
 
-class DirectiveWrapper(object):
+class MetaDirectiveWrapper(type):
+    """metaclass of all DirectiveWrapper subclasses.
+    ensure that begin and end exists in subclasses as method"""
+    def __new__(metacls, name, bases, namespace):
+        cls = type.__new__(metacls, name, bases, namespace)
+        if 'begin' not in namespace:
+            raise TypeError("DirectiveWrapper %s must have a begin method" % name)
+        if not(isinstance(namespace['begin'], types.FunctionType)):
+            raise TypeError("'begin' not a function class in DirectiveWrapper %s" % name)
+        if 'end' not in namespace:
+            raise TypeError("DirectiveWrapper %s subclasse must have a end method" % name)
+        if not(isinstance(namespace['end'], types.FunctionType)):
+            raise TypeError("'end' not a function class in DirectiveWrapper %s" % name)
+        return cls
+
+
+class DirectiveWrapper(metaclass=MetaDirectiveWrapper):
     """functor to wrap begin/end directive"""
 
     def __init__(self, ):
@@ -227,14 +243,11 @@ class DirectiveWrapper(object):
                 idx += 1
         return True
 
-    # must be define in inherited class
-    #def begin(self, parser, ...):
-    #    pass
+    def begin(self):
+        pass
 
-    # must be define in inherited class
-    #def end(self, parser, ...):
-    #    pass
-
+    def end(self):
+        pass
 
 class Directive(ParserTree):
     """functor to wrap directive HOOKS"""

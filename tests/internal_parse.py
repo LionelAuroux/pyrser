@@ -6,10 +6,28 @@ except ImportError:
 
 from pyrser import meta
 from pyrser import parsing
+from pyrser.parsing import MetaBasicParser
 import pyrser.passes.dumpParseTree
-
+import collections
 
 class InternalParse_Test(unittest.TestCase):
+    def test_00_Directive(self):
+        """Test Directive/DirectiveWrapper
+        """
+        class   DummyDirective(parsing.DirectiveWrapper):
+            def begin(self, test, a: int, b: int):
+                test.assertTrue(a == 1, "failed to recv first parameter into DummyDirective.begin")
+                test.assertTrue(b == 2, "failed to recv second parameter into DummyDirective.begin")
+                return True
+            def end(self, test, a: int, b: int):
+                test.assertTrue(a == 1, "failed to recv first parameter into DummyDirective.end")
+                test.assertTrue(b == 2, "failed to recv second parameter into DummyDirective.end")
+                return True
+        def dummyParser(p):
+            return True
+        direct = parsing.Directive(DummyDirective(), [(1, int), (2, int)], dummyParser)
+        direct(self)
+
     def test_01_readIdentifier(self):
         """
             Basic test for identifier parsing
@@ -276,8 +294,8 @@ class InternalParse_Test(unittest.TestCase):
                 parsing.Hook(
                     'checkInt',
                     [("test", parsing.Node), ("toto", parsing.Node)]))})
-        bRes = parser.eval_rule('main')
-        self.assertTrue(bRes, "failed to parse")
+        res = parser.eval_rule('main')
+        self.assertTrue(res, "failed to parse")
         self.assertEqual(2, check_word.call_count)
         self.assertEqual(2, check_int.call_count)
 
@@ -308,7 +326,7 @@ class InternalParse_Test(unittest.TestCase):
             res.text = "cool"
             self.rulenodes[-1]["test"] = res
             return res
-        parser.set_one_rule("A.B.C.test", parsing.Call(parsing.Parser.dummy))
+        parsing.Parser.set_one(parsing.Parser._rules, "A.B.C.test", parsing.Call(parsing.Parser.dummy))
         bRes = parser.eval_rule('test')
         self.assertEqual(bRes.text, "cool",
                          "failed rule node in global namespace")
@@ -322,7 +340,21 @@ class InternalParse_Test(unittest.TestCase):
         self.assertEqual(bRes.text, "cool",
                          "failed rule node in global namespace")
 
-    def test_12_defaultRules(self):
+
+    def test_12_Metabasicparser(self):
+        """
+        Test the metaclass of BasicParser
+        """
+        class   A(metaclass=parsing.MetaBasicParser):
+            pass
+        self.assertTrue('_rules' in dir(A), "failed metaclass don't add _rules")
+        self.assertIsInstance(A._rules, collections.ChainMap, "failed _rules is not a ChainMap")
+        self.assertTrue('_hooks' in dir(A), "failed metaclass don't add _hooks")
+        self.assertIsInstance(A._hooks, collections.ChainMap, "failed _hooks is not a ChainMap")
+        self.assertTrue('_directives' in dir(A), "failed metaclass don't add _directives")
+        self.assertIsInstance(A._directives, collections.ChainMap, "failed _directives is not a ChainMap")
+
+    def test_13_defaultRules(self):
         """
         Test the presence of default rules
         """
@@ -334,20 +366,3 @@ class InternalParse_Test(unittest.TestCase):
                         "failed no found Base.string")
         self.assertTrue("Base.string" in parser._rules,
                         "failed no found Base.string")
-
-    def test_13_Directive(self):
-        """Test Directive/DirectiveWrapper
-        """
-        class   DummyDirective(parsing.DirectiveWrapper):
-            def begin(self, test, a: int, b: int):
-                test.assertTrue(a == 1, "failed to recv first parameter into DummyDirective.begin")
-                test.assertTrue(b == 2, "failed to recv second parameter into DummyDirective.begin")
-                return True
-            def end(self, test, a: int, b: int):
-                test.assertTrue(a == 1, "failed to recv first parameter into DummyDirective.end")
-                test.assertTrue(b == 2, "failed to recv second parameter into DummyDirective.end")
-                return True
-        def dummyParser(p):
-            return True
-        direct = parsing.Directive(DummyDirective(), [(1, int), (2, int)], dummyParser)
-        direct(self)

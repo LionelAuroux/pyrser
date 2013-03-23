@@ -100,15 +100,13 @@ def add_method(cls):
 
 
 def hook(cls, hookname=None):
-    """Attach a method to a class and register it as a parser hook.
+    """Attach a method to a parsing class and register it as a parser hook.
 
        The method is registered with its name unless hookname is provided.
     """
-    #TODO(bps): why share hooks with every parsers?
-    rootparser = _get_base_class(cls)
-    if not hasattr(rootparser, 'class_hook_list'):
-        setattr(rootparser, 'class_hook_list', {})
-    class_hook_list = rootparser.class_hook_list
+    if not hasattr(cls, '_hooks'):
+        raise TypeError("%s didn't seems to be a BasicParser subsclasse" % cls.__name__)
+    class_hook_list = cls._hooks
 
     def wrapper(f):
         nonlocal hookname
@@ -121,21 +119,37 @@ def hook(cls, hookname=None):
 
 
 def rule(cls, rulename=None):
-    """Attach a method to a class and register it as a parser rule.
+    """Attach a method to a parsing class and register it as a parser rule.
 
        The method is registered with its name unless rulename is provided.
     """
-    #TODO(bps): why share rules with every parsers?
-    rootparser = _get_base_class(cls)
-    if not hasattr(rootparser, 'class_rule_list'):
-        setattr(rootparser, 'class_rule_list', {})
-    class_rule_list = rootparser.class_rule_list
+    if not hasattr(cls, '_rules'):
+        raise TypeError("%s didn't seems to be a BasicParser subsclasse" % cls.__name__)
+    class_rule_list = cls._rules
 
     def wrapper(f):
         nonlocal rulename
         add_method(cls)(f)
         if rulename is None:
             rulename = f.__name__
-        class_rule_list[rulename] = f
+        cls.set_one(class_rule_list, rulename, f)
+        return f
+    return wrapper
+
+def directive(cls, directname=None):
+    """Attach a class to a parsing class and register it as a parser directive.
+
+        The class is registered with its name unless directname is provided.
+    """
+    if not hasattr(cls, '_directives'):
+        raise TypeError("%s didn't seems to be a BasicParser subsclasse" % cls.__name__)
+    class_dir_list = cls._directives
+
+    def wrapper(f):
+        nonlocal directname
+        add_method(cls)(f)
+        if directname is None:
+            directname = f.__name__
+        class_dir_list[directname] = f
         return f
     return wrapper

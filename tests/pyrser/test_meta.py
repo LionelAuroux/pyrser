@@ -5,7 +5,7 @@ except ImportError:
     import mock
 
 from pyrser import meta
-
+import collections
 
 @unittest.skipIf(not hasattr(meta.inspect, 'signature'),
                  "python3.2 inspect module does not support signature")
@@ -83,24 +83,27 @@ class TestAddMethod(unittest.TestCase):
 class TestHook(unittest.TestCase):
     def test_it_attach_method_as_hook_to_class(self):
         class cls:
+            _hooks = {}
             pass
         method = mock.Mock(__name__='method')
         meta.hook(cls)(method)
         self.assertIs(method, cls.method)
-        self.assertIn('method', cls.class_hook_list)
-        self.assertIs(method, cls.class_hook_list['method'])
+        self.assertIn('method', cls._hooks)
+        self.assertIs(method, cls._hooks['method'])
 
     def test_it_attach_method_as_hook_to_class_with_rulename(self):
         class cls:
+            _hooks = {}
             pass
         method = mock.Mock(__name__='method')
         meta.hook(cls, 'hookname')(method)
         self.assertIs(method, cls.method)
-        self.assertIn('hookname', cls.class_hook_list)
-        self.assertIs(method, cls.class_hook_list['hookname'])
+        self.assertIn('hookname', cls._hooks)
+        self.assertIs(method, cls._hooks['hookname'])
 
     def test_it_does_not_attach_a_hook_if_method_already_exist(self):
         class cls:
+            _hooks = {}
             def method(self):
                 pass
         method = mock.Mock(__name__='method')
@@ -110,25 +113,24 @@ class TestHook(unittest.TestCase):
 
 class TestRule(unittest.TestCase):
     def test_it_attach_method_as_rule_to_class(self):
-        class cls:
-            pass
-        method = mock.Mock(__name__='method')
-        meta.rule(cls)(method)
-        self.assertIs(method, cls.method)
-        self.assertIn('method', cls.class_rule_list)
-        self.assertIs(method, cls.class_rule_list['method'])
+        functioname = mock.Mock(__name__='functioname')
+        cls = mock.Mock(**{'set_one.return_value': functioname, '_rules': 42, '__name__': 'classname'})
+        del cls.functioname
+        meta.rule(cls)(functioname)
+        self.assertIs(functioname, cls.functioname)
+        cls.set_one.assert_call_once_with(42, 'functioname', functioname)
 
     def test_it_attach_method_as_rule_to_class_with_rulename(self):
-        class cls:
-            pass
         method = mock.Mock(__name__='method')
+        cls = mock.Mock(**{'set_one.return_value':method, '_rules': {'rulename':42}, '__name__': 'classname'})
+        del cls.method
         meta.rule(cls, 'rulename')(method)
         self.assertIs(method, cls.method)
-        self.assertIn('rulename', cls.class_rule_list)
-        self.assertIs(method, cls.class_rule_list['rulename'])
+        cls.set_one.assert_call_once_with(42, 'method', method)
 
     def test_it_does_not_attach_a_rule_if_method_already_exist(self):
         class cls:
+            _rules = {}
             def method(self):
                 pass
         method = mock.Mock(__name__='method')

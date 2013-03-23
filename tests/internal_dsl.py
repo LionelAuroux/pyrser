@@ -208,7 +208,7 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertIsInstance(res['the_rule'], parsing.Hook, "failed in ParserTree type for node Hook")
 
     def test_14_hookOneParamStr(self):
-        @meta.hook(dsl.Parser)
+        @meta.hook(parsing.Parser)
         def my_hook_txt(self, txt):
             self.test.assertTrue(txt == "cool", 'failed to receive "cool" in hook')
             return True
@@ -226,7 +226,7 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue(dummyData.eval_rule('the_rule'), "failed to parse dummyData")
 
     def test_15_hookOneParamChar(self):
-        @meta.hook(dsl.Parser)
+        @meta.hook(parsing.Parser)
         def my_hook_char(self, txt):
             self.test.assertTrue(txt == "\t", 'failed to receive "\t" in hook')
             return True
@@ -244,7 +244,7 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue(dummyData.eval_rule('the_rule'), "failed to parse dummyData")
 
     def test_16_hookOneParamNum(self):
-        @meta.hook(dsl.Parser)
+        @meta.hook(parsing.Parser)
         def my_hook_num(self, num):
             self.test.assertTrue(num == 123456, 'failed to receive 123456 in hook')
             return True
@@ -262,7 +262,7 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue(dummyData.eval_rule('the_rule'), "failed to parse dummyData")
 
     def test_17_hookOneParamId(self):
-        @meta.hook(dsl.Parser)
+        @meta.hook(parsing.Parser)
         def my_hook_id(self, n):
             self.test.assertIsInstance(n, node.Node, 'failed to receive node in hook')
             return True
@@ -280,7 +280,7 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue(dummyData.eval_rule('the_rule'), "failed to parse dummyData")
 
     def test_18_hookParams(self):
-        @meta.hook(dsl.Parser)
+        @meta.hook(parsing.Parser)
         def my_hook_params(self, n, num, txt):
             self.test.assertIsInstance(n, node.Node, 'failed to receive node in hook')
             self.test.assertTrue(num == 123456, 'failed to receive 123456 in hook')
@@ -300,7 +300,7 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue(dummyData.eval_rule('the_rule'), "failed to parse dummyData")
 
     def test_19_hookAndCapture(self):
-        @meta.hook(dsl.Parser)
+        @meta.hook(parsing.Parser)
         def my_hook_multi(self, n1, n2, n3):
             self.test.assertTrue(n1.value == "456", 'failed to receive 456 in hook')
             self.test.assertTrue(n2.value == "toto", 'failed to receive "toto" in hook')
@@ -337,15 +337,15 @@ class InternalDsl_Test(unittest.TestCase):
                 # for workflow checking
                 parser.test.assertTrue(parser.workflow == 2, "failed my_hook was not called before end")
                 return True
-        @meta.hook(dsl.Parser)
+        @meta.hook(parsing.Parser)
         def my_hook(self):
             # for workflow checking
             self.test.assertTrue(self.workflow == 1, "failed begin was not called before my_hook")
             self.workflow = 2
             return True
-        dsl.Parser.directives = {'dummyDir' : dummyDir}
+        dsl.Parser.set_directives({'toto.dummyDir' : dummyDir})
         bnf = dsl.Parser("""
-            the_rule ::= @dummyDir(1, 2, 3) test
+            the_rule ::= @toto.dummyDir(1, 2, 3) test
             ;
 
             test ::= #my_hook Base.eof

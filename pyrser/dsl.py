@@ -364,7 +364,6 @@ def param_id(self, param, i):
 
 @meta.hook(Parser)
 def hook_name(self, hook, n):
-    #print("HOOK_NAME %s" % n.value)
     hook.name = n.value
     hook.listparam = []
     return True
@@ -376,11 +375,8 @@ def hook_param(self, hook, p):
 
 @meta.hook(Parser)
 def add_directive(self, sequence, d, s):
-    #print("ADD DIRECTIVE %s" % d.name)
-    #print("d %s" % d)
-    if not hasattr(Parser, 'directives'):
-        raise TypeError("empty directive dictionnary in dsl.Parser")
-    the_class = Parser.directives[d.name]
-    #print("try get class name %s" % the_class)
+    if not hasattr(Parser, '_directives'):
+        raise TypeError("empty _directives dictionnary in dsl.Parser")
+    the_class = Parser._directives[d.name]
     sequence.parser_tree = parsing.Directive(the_class(), d.listparam, s.parser_tree)
     return True
