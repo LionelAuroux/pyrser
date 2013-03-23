@@ -168,27 +168,25 @@ class RuleVisitor(ast.NodeVisitor):
         else:
             return ast.BoolOp(ast.Or(), clauses)
         if sys.version_info[:2] < (3, 3):
-            res = ast.TryExcept([],
-                          [ast.ExceptHandler(ast.Name('AltTrue', ast.Load()),
-                                             None, [ast.Pass()])], [])
+            res = ast.TryExcept([], [ast.ExceptHandler(
+                ast.Name('AltTrue', ast.Load()), None, [ast.Pass()])], [])
         else:
-            res = ast.Try([],
-                          [ast.ExceptHandler(ast.Name('AltTrue', ast.Load()),
-                                             None, [ast.Pass()])], [], [])
-        alt_true = [ast.Raise(ast.Call(ast.Name('AltTrue', ast.Load()), [], [],
-                    None, None), None)]
-        alt_false = [ast.ExceptHandler(ast.Name('AltFalse', ast.Load()), None,
-                     [ast.Pass()])]
+            res = ast.Try([], [ast.ExceptHandler(
+                ast.Name('AltTrue', ast.Load()), None, [ast.Pass()])], [], [])
+        alt_true = [ast.Raise(ast.Call(
+            ast.Name('AltTrue', ast.Load()), [], [], None, None), None)]
+        alt_false = [ast.ExceptHandler(
+            ast.Name('AltFalse', ast.Load()), None, [ast.Pass()])]
         self.in_try += 1
         for clause in node.ptlist:
             if sys.version_info[:2] < (3, 3):
                 res.body.append(
-                    ast.TryExcept(self._clause(self.visit(clause)) + alt_true, alt_false,
-                            []))
+                    ast.TryExcept(self._clause(self.visit(clause)) + alt_true,
+                                  alt_false, []))
             else:
                 res.body.append(
-                    ast.Try(self._clause(self.visit(clause)) + alt_true, alt_false,
-                            [], []))
+                    ast.Try(self._clause(self.visit(clause)) + alt_true,
+                            alt_false, [], []))
         self.in_try -= 1
         res.body.append(self.__exit_scope())
         return [res]

@@ -301,6 +301,17 @@ class SourceGenerator(NodeVisitor):
                 self.write(', ')
             self.visit(target)
 
+    def visit_TryExcept(self, node):
+        self.newline(node)
+        self.write('try:')
+        self.body(node.body)
+        for handler in node.handlers:
+            self.visit(handler)
+        if node.orelse:
+            self.newline()
+            self.write('else:')
+            self.body(node.orelse)
+
     def visit_Try(self, node):
         self.newline(node)
         self.write('try:')
