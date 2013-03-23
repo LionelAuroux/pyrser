@@ -31,16 +31,16 @@ class TestToPythonPasse(unittest.TestCase):
         del topython.RuleVisitor.visit_ParseTreeStub
 
     def test_topython_generates_code_for_call(self):
-        method = parsing.BasicParser.readChar
+        method = parsing.BasicParser.read_char
         call = parsing.Call(method, 'a')
         res = codegen.to_source(passes.rule_topython(call))
-        self.assertEqual(res, "self.readChar('a')")
+        self.assertEqual(res, "self.read_char('a')")
 
     def test_topython_generates_code_for_calltrue(self):
-        method = parsing.BasicParser.readChar
+        method = parsing.BasicParser.read_char
         call = parsing.CallTrue(method, 'a')
         res = codegen.to_source(passes.rule_topython(call))
-        self.assertEqual(res, "lambda : (self.readChar('a') or True)")
+        self.assertEqual(res, "lambda : (self.read_char('a') or True)")
 
     def test_topython_generates_code_for_hook(self):
         hook = parsing.Hook('hookname', tuple())

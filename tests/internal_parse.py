@@ -15,29 +15,29 @@ class InternalParse_Test(unittest.TestCase):
             Basic test for identifier parsing
         """
         parser = parsing.Parser()
-        parser.parsedStream("ceci est un test", sName="root")
+        parser.parsed_stream("ceci est un test", sName="root")
         self.assertTrue(
-            parser.beginTag('sujet') and
-            parser.readIdentifier() and
-            parser.endTag('sujet'),
-            'failed in readIdentifier for sujet')
-        sujet = parser.getTag('sujet')
-        parser.skipIgnore()
+            parser.begin_tag('sujet') and
+            parser.read_identifier() and
+            parser.end_tag('sujet'),
+            'failed in read_identifier for sujet')
+        sujet = parser.get_tag('sujet')
+        parser.skip_ignore()
         self.assertEqual(sujet, "ceci", "failed in capture sujet")
         self.assertTrue(
-            parser.beginTag('verbe') and
-            parser.readIdentifier() and
-            parser.endTag('verbe'),
-            'failed in readIdentifier for verbe')
-        verbe = parser.getTag('verbe')
-        parser.skipIgnore()
+            parser.begin_tag('verbe') and
+            parser.read_identifier() and
+            parser.end_tag('verbe'),
+            'failed in read_identifier for verbe')
+        verbe = parser.get_tag('verbe')
+        parser.skip_ignore()
         self.assertEqual(verbe, "est", "failed in capture verbe")
         self.assertTrue(
-            parser.beginTag('other') and
-            parser.readUntilEOF() and
-            parser.endTag('other'),
-            'failed in readIdentifier for other')
-        reste = parser.getTag('other')
+            parser.begin_tag('other') and
+            parser.read_until_eof() and
+            parser.end_tag('other'),
+            'failed in read_identifier for other')
+        reste = parser.get_tag('other')
         self.assertEqual(reste, "un test", "failed in capture other")
 
     def test_02_readInteger(self):
@@ -45,86 +45,86 @@ class InternalParse_Test(unittest.TestCase):
             Basic test for integer parsing
         """
         parser = parsing.Parser()
-        parser.parsedStream("12 333 44444444444444444444444444", sName="root")
+        parser.parsed_stream("12 333 44444444444444444444444444", sName="root")
         self.assertTrue(
-            parser.beginTag('n1') and
-            parser.readInteger() and
-            parser.endTag('n1'),
-            'failed in readInteger for n1')
-        n1 = parser.getTag('n1')
-        parser.skipIgnore()
+            parser.begin_tag('n1') and
+            parser.read_integer() and
+            parser.end_tag('n1'),
+            'failed in read_integer for n1')
+        n1 = parser.get_tag('n1')
+        parser.skip_ignore()
         self.assertEqual(n1, "12", "failed in capture n1")
         self.assertTrue(
-            parser.beginTag('n2') and
-            parser.readInteger() and
-            parser.endTag('n2'),
-            'failed in readInteger for n2')
-        n2 = parser.getTag('n2')
-        parser.skipIgnore()
+            parser.begin_tag('n2') and
+            parser.read_integer() and
+            parser.end_tag('n2'),
+            'failed in read_integer for n2')
+        n2 = parser.get_tag('n2')
+        parser.skip_ignore()
         self.assertEqual(n2, "333", "failed in capture n2")
         self.assertTrue(
-            parser.beginTag('n3') and
-            parser.readInteger() and
-            parser.endTag('n3'),
-            'failed in readInteger for n3')
-        n3 = parser.getTag('n3')
+            parser.begin_tag('n3') and
+            parser.read_integer() and
+            parser.end_tag('n3'),
+            'failed in read_integer for n3')
+        n3 = parser.get_tag('n3')
         self.assertEqual(n3, "44444444444444444444444444",
                          "failed in capture n3")
 
     def test_04_readCChar(self):
         """
-            Basic test for readCChar
+            Basic test for read_cchar
         """
         parser = parsing.Parser()
-        parser.parsedStream(r"'c' '\t'", sName="root")
+        parser.parsed_stream(r"'c' '\t'", sName="root")
         self.assertTrue(
-            parser.beginTag('c1') and
-            parser.readCChar() and
-            parser.endTag('c1'),
-            'failed in readCChar for c1')
-        c1 = parser.getTag('c1')
-        parser.skipIgnore()
+            parser.begin_tag('c1') and
+            parser.read_cchar() and
+            parser.end_tag('c1'),
+            'failed in read_cchar for c1')
+        c1 = parser.get_tag('c1')
+        parser.skip_ignore()
         self.assertEqual(c1, "'c'", "failed in capture c1")
         self.assertTrue(
-            parser.beginTag('c2') and
-            parser.readCChar() and
-            parser.endTag('c2'),
-            'failed in readCChar for c2')
-        c2 = parser.getTag('c2')
+            parser.begin_tag('c2') and
+            parser.read_cchar() and
+            parser.end_tag('c2'),
+            'failed in read_cchar for c2')
+        c2 = parser.get_tag('c2')
         self.assertEqual(c2, r"'\t'", "failed in capture c2")
 
     def test_05_readCString(self):
         """
-            Basic test for readCString
+            Basic test for read_cstring
         """
         parser = parsing.Parser()
-        parser.parsedStream(
+        parser.parsed_stream(
             r'"premiere chaine"'
             r'"deuxieme chaine\n"'
             r'"troisieme chainee \"."',
             sName="root")
         self.assertTrue(
-            parser.beginTag('s1') and
-            parser.readCString() and
-            parser.endTag('s1'),
-            'failed in readCString for s1')
-        s1 = parser.getTag('s1')
-        parser.skipIgnore()
+            parser.begin_tag('s1') and
+            parser.read_cstring() and
+            parser.end_tag('s1'),
+            'failed in read_cstring for s1')
+        s1 = parser.get_tag('s1')
+        parser.skip_ignore()
         self.assertEqual(s1, '"premiere chaine"', "failed in capture s1")
         self.assertTrue(
-            parser.beginTag('s2') and
-            parser.readCString() and
-            parser.endTag('s2'),
-            'failed in readCString for s2')
-        s2 = parser.getTag('s2')
-        parser.skipIgnore()
+            parser.begin_tag('s2') and
+            parser.read_cstring() and
+            parser.end_tag('s2'),
+            'failed in read_cstring for s2')
+        s2 = parser.get_tag('s2')
+        parser.skip_ignore()
         self.assertEqual(s2, '"deuxieme chaine\\n"', "failed in capture s2")
         self.assertTrue(
-            parser.beginTag('s3') and
-            parser.readCString() and
-            parser.endTag('s3'),
-            'failed in readCString for s3')
-        s3 = parser.getTag('s3')
+            parser.begin_tag('s3') and
+            parser.read_cstring() and
+            parser.end_tag('s3'),
+            'failed in read_cstring for s3')
+        s3 = parser.get_tag('s3')
         self.assertEqual(s3, r'"troisieme chainee \"."',
                          "failed in capture s3")
 
@@ -133,49 +133,49 @@ class InternalParse_Test(unittest.TestCase):
             Basic test for call/clauses
         """
         parser = parsing.Parser()
-        parser.parsedStream("abc def ghg")
+        parser.parsed_stream("abc def ghg")
         parseTree = parsing.Seq(
-            parsing.Call(parsing.Parser.beginTag, 'i1'),
-            parsing.Parser.readIdentifier,
-            parsing.Call(parsing.Parser.endTag, 'i1'),
-            parsing.Call(parsing.Parser.beginTag, 'i2'),
-            parsing.Parser.readIdentifier,
-            parsing.Call(parsing.Parser.endTag, 'i2'),
-            parsing.Call(parsing.Parser.beginTag, 'i3'),
-            parsing.Parser.readIdentifier,
-            parsing.Call(parsing.Parser.endTag, 'i3'))
+            parsing.Call(parsing.Parser.begin_tag, 'i1'),
+            parsing.Parser.read_identifier,
+            parsing.Call(parsing.Parser.end_tag, 'i1'),
+            parsing.Call(parsing.Parser.begin_tag, 'i2'),
+            parsing.Parser.read_identifier,
+            parsing.Call(parsing.Parser.end_tag, 'i2'),
+            parsing.Call(parsing.Parser.begin_tag, 'i3'),
+            parsing.Parser.read_identifier,
+            parsing.Call(parsing.Parser.end_tag, 'i3'))
         parseTree(parser)
-        # Warning! skipIgnore is called between each parsing.Seq
-        self.assertEqual(parser.getTag("i1"), "abc ", "failed in captured i1")
-        self.assertEqual(parser.getTag("i2"), "def ", "failed in captured i2")
-        self.assertEqual(parser.getTag("i3"), "ghg", "failed in captured i3")
+        # Warning! skip_ignore is called between each parsing.Seq
+        self.assertEqual(parser.get_tag("i1"), "abc ", "failed in captured i1")
+        self.assertEqual(parser.get_tag("i2"), "def ", "failed in captured i2")
+        self.assertEqual(parser.get_tag("i3"), "ghg", "failed in captured i3")
 
     def test_07_RepXN(self):
         """
             Basic test for repeater
         """
         parser = parsing.Parser()
-        parser.parsedStream("12343 91219****1323 23")
+        parser.parsed_stream("12343 91219****1323 23")
         parseTree = parsing.Seq(
-            parsing.Call(parsing.Parser.beginTag, 'i1'),
-            parsing.Parser.readInteger,
-            parsing.Call(parsing.Parser.endTag, 'i1'),
-            parsing.Rep0N(parsing.Call(parsing.Parser.readChar, '*')),
-            parsing.Call(parsing.Parser.beginTag, 'i2'),
-            parsing.Rep1N(parsing.Call(parsing.Parser.readRange, '0', '9')),
-            parsing.Call(parsing.Parser.endTag, 'i2'),
-            parsing.Rep0N(parsing.Call(parsing.Parser.readChar, '*')),
-            parsing.Call(parsing.Parser.beginTag, 'i3'),
-            parsing.Parser.readInteger,
-            parsing.Call(parsing.Parser.endTag, 'i3'),
-            parsing.Call(parsing.Parser.readEOF))
+            parsing.Call(parsing.Parser.begin_tag, 'i1'),
+            parsing.Parser.read_integer,
+            parsing.Call(parsing.Parser.end_tag, 'i1'),
+            parsing.Rep0N(parsing.Call(parsing.Parser.read_char, '*')),
+            parsing.Call(parsing.Parser.begin_tag, 'i2'),
+            parsing.Rep1N(parsing.Call(parsing.Parser.read_range, '0', '9')),
+            parsing.Call(parsing.Parser.end_tag, 'i2'),
+            parsing.Rep0N(parsing.Call(parsing.Parser.read_char, '*')),
+            parsing.Call(parsing.Parser.begin_tag, 'i3'),
+            parsing.Parser.read_integer,
+            parsing.Call(parsing.Parser.end_tag, 'i3'),
+            parsing.Call(parsing.Parser.read_eof))
         parseTree(parser)
-        # Warning! skipIgnore is called between each parsing.Seq
-        self.assertEqual(parser.getTag("i1"), "12343 ",
+        # Warning! skip_ignore is called between each parsing.Seq
+        self.assertEqual(parser.get_tag("i1"), "12343 ",
                          "failed in captured i1")
-        self.assertEqual(parser.getTag("i2"), "91219",
+        self.assertEqual(parser.get_tag("i2"), "91219",
                          "failed in captured i2")
-        self.assertEqual(parser.getTag("i3"), "1323 ",
+        self.assertEqual(parser.get_tag("i3"), "1323 ",
                          "failed in captured i3")
 
     def test_08_RepAlt(self):
@@ -183,45 +183,45 @@ class InternalParse_Test(unittest.TestCase):
             Basic test for alternatives
         """
         parser = parsing.Parser()
-        parser.parsedStream("_ad121dwdw ()[]")
+        parser.parsed_stream("_ad121dwdw ()[]")
         parseTree = parsing.Seq(
-            parsing.Call(parsing.Parser.beginTag, 'w1'),
+            parsing.Call(parsing.Parser.begin_tag, 'w1'),
             parsing.Scope(
-                begin=parsing.Call(parsing.Parser.pushIgnore,
+                begin=parsing.Call(parsing.Parser.push_ignore,
                                    parsing.Parser.ignore_null),
-                end=parsing.Call(parsing.Parser.popIgnore),
+                end=parsing.Call(parsing.Parser.pop_ignore),
                 pt=parsing.Seq(
                     parsing.Alt(
-                        parsing.Call(parsing.Parser.readChar, '_'),
-                        parsing.Call(parsing.Parser.readRange, 'a', 'z'),
-                        parsing.Call(parsing.Parser.readRange, 'A', 'Z')
+                        parsing.Call(parsing.Parser.read_char, '_'),
+                        parsing.Call(parsing.Parser.read_range, 'a', 'z'),
+                        parsing.Call(parsing.Parser.read_range, 'A', 'Z')
                     ),
                     parsing.Rep0N(
                         parsing.Alt(
-                            parsing.Call(parsing.Parser.readChar, '_'),
-                            parsing.Call(parsing.Parser.readRange, 'a', 'z'),
-                            parsing.Call(parsing.Parser.readRange, 'A', 'Z'),
-                            parsing.Call(parsing.Parser.readRange,
+                            parsing.Call(parsing.Parser.read_char, '_'),
+                            parsing.Call(parsing.Parser.read_range, 'a', 'z'),
+                            parsing.Call(parsing.Parser.read_range, 'A', 'Z'),
+                            parsing.Call(parsing.Parser.read_range,
                                          '0', '9'))))),
-            parsing.Call(parsing.Parser.endTag, 'w1'),
+            parsing.Call(parsing.Parser.end_tag, 'w1'),
             parsing.Capture(
                 'w2',
                 parsing.Rep1N(
                     parsing.Alt(
-                        parsing.Call(parsing.Parser.readChar, '('),
-                        parsing.Call(parsing.Parser.readChar, ')'),
-                        parsing.Call(parsing.Parser.readChar, '['),
-                        parsing.Call(parsing.Parser.readChar, ']'),
+                        parsing.Call(parsing.Parser.read_char, '('),
+                        parsing.Call(parsing.Parser.read_char, ')'),
+                        parsing.Call(parsing.Parser.read_char, '['),
+                        parsing.Call(parsing.Parser.read_char, ']'),
                     )
                 )),
-            parsing.Call(parsing.Parser.readEOF)
+            parsing.Call(parsing.Parser.read_eof)
         )
         parseTree.dumpParseTree()
         parseTree(parser)
-        # Warning! skipIgnore is called between each parsing.Seq
-        self.assertEqual(parser.getTag("w1"), "_ad121dwdw ",
+        # Warning! skip_ignore is called between each parsing.Seq
+        self.assertEqual(parser.get_tag("w1"), "_ad121dwdw ",
                          "failed in captured w1")
-        self.assertEqual(parser.getTag("w2"), "()[]",
+        self.assertEqual(parser.get_tag("w2"), "()[]",
                          "failed in captured w2")
 
     def test_09_RepRules(self):
@@ -240,10 +240,10 @@ class InternalParse_Test(unittest.TestCase):
         check_int = mock.Mock(side_effect=check_int)
 
         parser = parsing.Parser()
-        parser.parsedStream("asbga    12121      njnj 89898")
+        parser.parsed_stream("asbga    12121      njnj 89898")
         parser.rulenodes[-1]['test'] = self
-        parser.setHooks({'checkWord': check_word, 'checkInt': check_int})
-        parser.setRules({
+        parser.set_hooks({'checkWord': check_word, 'checkInt': check_int})
+        parser.set_rules({
             'main': parsing.Seq(
                 parsing.Rep0N(
                     parsing.Alt(
@@ -256,27 +256,27 @@ class InternalParse_Test(unittest.TestCase):
                         parsing.Rule('int'))),
                 parsing.Rule('Base.eof')),
             'word': parsing.Scope(
-                parsing.Call(parsing.Parser.pushIgnore,
+                parsing.Call(parsing.Parser.push_ignore,
                              parsing.Parser.ignore_null),
-                parsing.Call(parsing.Parser.popIgnore),
+                parsing.Call(parsing.Parser.pop_ignore),
                 parsing.Rep1N(
                     parsing.Alt(
-                        parsing.Call(parsing.Parser.readRange, 'a', 'z'),
-                        parsing.Call(parsing.Parser.readRange, 'A', 'Z')))),
+                        parsing.Call(parsing.Parser.read_range, 'a', 'z'),
+                        parsing.Call(parsing.Parser.read_range, 'A', 'Z')))),
             'int': parsing.Seq(
                 parsing.Scope(
-                    parsing.Call(parsing.Parser.pushIgnore,
+                    parsing.Call(parsing.Parser.push_ignore,
                                  parsing.Parser.ignore_null),
-                    parsing.Call(parsing.Parser.popIgnore),
+                    parsing.Call(parsing.Parser.pop_ignore),
                     parsing.Capture(
                         'toto',
                         parsing.Rep1N(
-                            parsing.Call(parsing.Parser.readRange,
+                            parsing.Call(parsing.Parser.read_range,
                                          '0', '9')))),
                 parsing.Hook(
                     'checkInt',
                     [("test", parsing.Node), ("toto", parsing.Node)]))})
-        bRes = parser.evalRule('main')
+        bRes = parser.eval_rule('main')
         self.assertTrue(bRes, "failed to parse")
         self.assertEqual(2, check_word.call_count)
         self.assertEqual(2, check_int.call_count)
@@ -289,12 +289,12 @@ class InternalParse_Test(unittest.TestCase):
         parser.rulenodes[-1].update({'coucou': 42, 'toto': [12, 33]})
         self.assertEqual(parser.rulenodes[-1]['toto'], [12, 33],
                          "failed comparing list")
-        parser.pushRuleNodes()
+        parser.push_rule_nodes()
         parser.rulenodes[-1].update({'local1': 666, 'local2': 777})
         parser.rulenodes[-1]['toto'] = [1, 2, 3, 4]
         self.assertEqual(parser.rulenodes[-1]['coucou'], 42,
                          "failed outer scope not visible in local")
-        parser.popRuleNodes()
+        parser.pop_rule_nodes()
 
     def test_11_namespaceRules(self):
         """
@@ -308,17 +308,17 @@ class InternalParse_Test(unittest.TestCase):
             res.text = "cool"
             self.rulenodes[-1]["test"] = res
             return res
-        parser.setOneRule("A.B.C.test", parsing.Call(parsing.Parser.dummy))
-        bRes = parser.evalRule('test')
+        parser.set_one_rule("A.B.C.test", parsing.Call(parsing.Parser.dummy))
+        bRes = parser.eval_rule('test')
         self.assertEqual(bRes.text, "cool",
                          "failed rule node in global namespace")
-        bRes = parser.evalRule('C.test')
+        bRes = parser.eval_rule('C.test')
         self.assertEqual(bRes.text, "cool",
                          "failed rule node in global namespace")
-        bRes = parser.evalRule('B.C.test')
+        bRes = parser.eval_rule('B.C.test')
         self.assertEqual(bRes.text, "cool",
                          "failed rule node in global namespace")
-        bRes = parser.evalRule('A.B.C.test')
+        bRes = parser.eval_rule('A.B.C.test')
         self.assertEqual(bRes.text, "cool",
                          "failed rule node in global namespace")
 

@@ -14,7 +14,7 @@ class TestRepOptional(unittest.TestCase):
         parser.clause = clause
         parsing.RepOptional(clause)(parser)
         self.assertEqual(
-            [mock.call.skipIgnore(), mock.call.clause(parser)],
+            [mock.call.skip_ignore(), mock.call.clause(parser)],
             parser.method_calls)
 
     def test_it_is_true_when_clause_is_true(self):

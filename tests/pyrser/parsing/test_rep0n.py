@@ -14,7 +14,7 @@ class TestRep0N(unittest.TestCase):
         parser.clause = clause
         parsing.Rep0N(clause)(parser)
         self.assertEqual(
-            [mock.call.skipIgnore(), mock.call.clause(parser)] * 2,
+            [mock.call.skip_ignore(), mock.call.clause(parser)] * 2,
             parser.method_calls)
 
     def test_it_calls_clause_as_long_as_clause_is_true(self):

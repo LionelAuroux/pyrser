@@ -23,7 +23,7 @@ class Seq(ParserTree):
 
     def __call__(self, parser: BasicParser) -> bool:
         for pt in self.ptlist:
-            parser.skipIgnore()
+            parser.skip_ignore()
             if not pt(parser):
                 return False
         return True
@@ -83,13 +83,13 @@ class Capture(ParserTree):
         self.pt = pt
 
     def __call__(self, parser: BasicParser) -> Node:
-        if parser.beginTag(self.tagname):
-            parser.pushRuleNodes()
+        if parser.begin_tag(self.tagname):
+            parser.push_rule_nodes()
             parser.rulenodes[-1][self.tagname] = Node()
             res = self.pt(parser)
-            parser.popRuleNodes()
-            if res and parser.endTag(self.tagname):
-                text = parser.getTag(self.tagname)
+            parser.pop_rule_nodes()
+            if res and parser.end_tag(self.tagname):
+                text = parser.get_tag(self.tagname)
                 # wrap it in a Node instance
                 if type(res) is bool:
                     res = Node(res)
@@ -112,7 +112,7 @@ class Alt(ParserTree):
     def __call__(self, parser: BasicParser) -> Node:
         for pt in self.ptlist:
             parser._stream.save_context()
-            parser.skipIgnore()
+            parser.skip_ignore()
             res = pt(parser)
             if res:
                 parser._stream.validate_context()
@@ -128,7 +128,7 @@ class RepOptional(ParserTree):
         self.pt = pt
 
     def __call__(self, parser: BasicParser) -> bool:
-        parser.skipIgnore()
+        parser.skip_ignore()
         self.pt(parser)
         return True
 
@@ -142,9 +142,9 @@ class Rep0N(ParserTree):
         self.pt = pt
 
     def __call__(self, parser: BasicParser) -> bool:
-        parser.skipIgnore()
+        parser.skip_ignore()
         while self.pt(parser):
-            parser.skipIgnore()
+            parser.skip_ignore()
         return True
 
 
@@ -157,11 +157,11 @@ class Rep1N(ParserTree):
         self.pt = pt
 
     def __call__(self, parser: BasicParser) -> bool:
-        parser.skipIgnore()
+        parser.skip_ignore()
         if self.pt(parser):
-            parser.skipIgnore()
+            parser.skip_ignore()
             while self.pt(parser):
-                parser.skipIgnore()
+                parser.skip_ignore()
             return True
         return False
 
@@ -175,7 +175,7 @@ class Rule(ParserTree):
         self.name = name
 
     def __call__(self, parser: BasicParser) -> Node:
-        return parser.evalRule(self.name)
+        return parser.eval_rule(self.name)
 
 
 class Hook(ParserTree):
@@ -202,4 +202,4 @@ class Hook(ParserTree):
             else:
                 raise TypeError("Type mismatch expected {} got {}".format(
                     t, type(v)))
-        return parser.evalHook(self.name, valueparam)
+        return parser.eval_hook(self.name, valueparam)
