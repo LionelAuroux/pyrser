@@ -339,10 +339,10 @@ class InternalParse_Test(unittest.TestCase):
         """Test Directive/DirectiveWrapper
         """
         class   DummyDirective(parsing.DirectiveWrapper):
-            def begin(self, parser, a, b):
+            def begin(self, parser, a: int, b: str):
                 print("BEGIN %s %s" % (a, b))
                 return True
-            def end(self, parser, a, b):
+            def end(self, parser, a: int, b: int):
                 print("END %s %s" % (a, b))
                 return True
         def dummyParser(p):

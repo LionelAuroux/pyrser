@@ -214,13 +214,16 @@ class DirectiveWrapper(object):
         if ('begin' not in dir(self.__class__)) or ('end' not in dir(self.__class__)):
             return False
         pbegin = self.__class__.begin.__code__.co_varnames
-        fbegin = self.__class__.begin.__annotations__
+        tbegin = self.__class__.begin.__annotations__
         pend = self.__class__.end.__code__.co_varnames
-        fend = self.__class__.end.__annotations__
+        tend = self.__class__.end.__annotations__
         print("PARAM %s" % repr(pbegin))
-        print("ANNOT %s" % repr(fbegin))
-        for value, idx in zip(params, range(len(params))):
-            print("ITER PARAMS %s %s" % (value, idx))
+        print("ANNOT %s %s" % (repr(tbegin), len(tbegin)))
+        #for value, idx in zip(params, range(len(params))):
+        #    print("ITER PARAMS %s %s" % (value, idx))
+        for pname in pbegin:
+            if pname in tbegin:
+                print("%s is type %s " % (pname, tbegin[pname]))
         return True
 
     # must be define in inherited class
