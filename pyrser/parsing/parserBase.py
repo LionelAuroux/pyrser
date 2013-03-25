@@ -6,6 +6,7 @@ import collections
 class MetaBasicParser(type):
     """Metaclass for all parser."""
     def __new__(metacls, name, bases, namespace):
+        # TODO: add auto namespacing!!!
         cls = type.__new__(metacls, name, bases, namespace)
         # create rules mapping in the class from inheritance
         cls._rules = collections.ChainMap()
@@ -144,6 +145,8 @@ class BasicParser(metaclass=MetaBasicParser):
         for name in namespaces:
             lstname.insert(0, name)
             strname = '.'.join(lstname)
+            #if isinstance(chainmap, collections.ChainMap):
+            #    print("%s ADD IN A %s(%d): %s %s" % (cls.__name__, type(chainmap), id(chainmap), strname, callobject))
             chainmap[strname] = callobject
 
     def handle_var_ctx(self, res: Node, name: str) -> Node:
@@ -170,6 +173,8 @@ class BasicParser(metaclass=MetaBasicParser):
     def eval_hook(self, name: str, ctx: list) -> Node:
         """Evaluate the hook by its name"""
         # TODO: think of hooks prototype!!!
+        #for it in self.__class__._hooks.maps:
+        #    print("HOOK IN %s[%s] (%s)" % (self.__class__.__name__, it, id(it)))
         return self.__class__._hooks[name](self, *ctx)
 
 ### PARSING PRIMITIVES

@@ -2,18 +2,19 @@ from pyrser import dsl
 from pyrser import parsing
 
 
-class MetaGrammar(type):
+class MetaGrammar(parsing.MetaBasicParser):
     """Metaclass for all grammars."""
     def __new__(metacls, name, bases, namespace):
-        cls = type.__new__(metacls, name, bases, namespace)
+        import collections
+        cls = parsing.MetaBasicParser.__new__(metacls, name, bases, namespace)
         grammar = namespace.get('grammar')
-        cls._rules = {}
         if grammar is not None:
-            cls._rules = cls.dsl_parser(grammar)
+            dsl_object = cls.dsl_parser(grammar)
+            cls._rules.new_child()
+            cls._rules.update(dsl_object.get_rules())
         return cls
 
-
-class Grammar(metaclass=MetaGrammar):
+class Grammar(parsing.Parser, metaclass=MetaGrammar):
     """
     Base class for all grammars.
 
@@ -26,7 +27,7 @@ class Grammar(metaclass=MetaGrammar):
     # Name of the default rule to parse the grammar.
     entry = None
     # DSL parsing class
-    dsl_parser = dsl.Parser
+    dsl_parser = dsl.EBNF
 
     def __init__(self):
         if getattr(self, 'entry', None) is None:
@@ -36,5 +37,5 @@ class Grammar(metaclass=MetaGrammar):
     def parse(self, source):
         """Parse the grammar"""
         parser = self.__class__.dsl_parser(source)
-        parser.set_rules(self.__class__._rules)
+        parser.__class__.set_rules(self.__class__._rules)
         return parser.eval_rule(self.__class__.entry)

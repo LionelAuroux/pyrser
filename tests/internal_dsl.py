@@ -10,11 +10,11 @@ class InternalDsl_Test(unittest.TestCase):
         """
         Test default
         """
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= a
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Rule, "failed in ParserTree type for node Rule")
         self.assertTrue(res['the_rule'].name == "a", "failed in ParserTree type for node Rule")
@@ -23,11 +23,11 @@ class InternalDsl_Test(unittest.TestCase):
         """
         Test default
         """
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= a b
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Seq, "failed in ParserTree type for node Seq")
         self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule, "failed in ParserTree type for node Rule")
@@ -39,11 +39,11 @@ class InternalDsl_Test(unittest.TestCase):
         """
         Test default
         """
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= a b c
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Seq, "failed in ParserTree type for node Seq")
         self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule, "failed in ParserTree type for node Rule")
@@ -57,11 +57,11 @@ class InternalDsl_Test(unittest.TestCase):
         """
         Test default
         """
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= a | b
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Alt, "failed in ParserTree type for node Alt")
         self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule, "failed in ParserTree type for node Rule")
@@ -73,11 +73,11 @@ class InternalDsl_Test(unittest.TestCase):
         """
         Test default
         """
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= a | b | c
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Alt, "failed in ParserTree type for node Alt")
         self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule, "failed in ParserTree type for node Rule")
@@ -91,11 +91,11 @@ class InternalDsl_Test(unittest.TestCase):
         """
         Test default
         """
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= 'a'
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Call, "failed in ParserTree type for node Call")
         self.assertTrue(res['the_rule'].callObject.__name__ == parsing.Parser.read_char.__name__, "failed in ParserTree type for call to readChar")
@@ -105,11 +105,11 @@ class InternalDsl_Test(unittest.TestCase):
         """
         Test default
         """
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= "bonjour le monde"
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Call, "failed in ParserTree type for node Call")
         self.assertTrue(res['the_rule'].callObject.__name__ == parsing.Parser.read_text.__name__, "failed in ParserTree type for call to read_text")
@@ -119,11 +119,11 @@ class InternalDsl_Test(unittest.TestCase):
         """
         Test default
         """
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= 'a'..'z'
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Call, "failed in ParserTree type for node Call")
         self.assertTrue(res['the_rule'].callObject.__name__ == parsing.Parser.read_range.__name__, "failed in ParserTree type for call to read_range")
@@ -134,11 +134,11 @@ class InternalDsl_Test(unittest.TestCase):
         """
         Test default
         """
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= 'a'..'z' "tutu" 'a' | a b | z
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Alt, "failed in ParserTree type for node Alt")
         self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Seq, "failed in ParserTree type for node Seq")
@@ -162,11 +162,11 @@ class InternalDsl_Test(unittest.TestCase):
         """
         Test default
         """
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= a?
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.RepOptional, "failed in ParserTree type for node RepOptional")
         self.assertTrue(res['the_rule'].pt.name == 'a', "failed in name of rule 'a'")
@@ -175,11 +175,11 @@ class InternalDsl_Test(unittest.TestCase):
         """
         Test default
         """
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= [a]*
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Rep0N, "failed in ParserTree type for node Rep0N")
         self.assertTrue(res['the_rule'].pt.name == 'a', "failed in name of rule 'a'")
@@ -188,22 +188,22 @@ class InternalDsl_Test(unittest.TestCase):
         """
         Test default
         """
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= [a "toto"]+
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Rep1N, "failed in ParserTree type for node Rep1N")
         self.assertTrue(res['the_rule'].pt.ptlist[0].name == 'a', "failed in name of rule 'a'")
         self.assertTrue(res['the_rule'].pt.ptlist[1].params[0] == "toto", 'failed in name of rule "toto"')
 
     def test_13_hookNoParam(self):
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= #hook
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Hook, "failed in ParserTree type for node Hook")
 
@@ -212,11 +212,11 @@ class InternalDsl_Test(unittest.TestCase):
         def my_hook_txt(self, txt):
             self.test.assertTrue(txt == "cool", 'failed to receive "cool" in hook')
             return True
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= #my_hook_txt("cool")
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Hook, "failed in ParserTree type for node Hook")
         self.assertTrue(res['the_rule'].name == "my_hook_txt", "failed in name of hook 'my_hook_txt'")
@@ -230,11 +230,11 @@ class InternalDsl_Test(unittest.TestCase):
         def my_hook_char(self, txt):
             self.test.assertTrue(txt == "\t", 'failed to receive "\t" in hook')
             return True
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= #my_hook_char('\t')
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Hook, "failed in ParserTree type for node Hook")
         self.assertTrue(res['the_rule'].name == "my_hook_char", "failed in name of hook 'my_hook_char'")
@@ -248,11 +248,11 @@ class InternalDsl_Test(unittest.TestCase):
         def my_hook_num(self, num):
             self.test.assertTrue(num == 123456, 'failed to receive 123456 in hook')
             return True
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= #my_hook_num(123456)
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Hook, "failed in ParserTree type for node Hook")
         self.assertTrue(res['the_rule'].name == "my_hook_num", "failed in name of hook 'my_hook_num'")
@@ -266,11 +266,11 @@ class InternalDsl_Test(unittest.TestCase):
         def my_hook_id(self, n):
             self.test.assertIsInstance(n, node.Node, 'failed to receive node in hook')
             return True
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= #my_hook_id(the_rule)
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Hook, "failed in ParserTree type for node Hook")
         self.assertTrue(res['the_rule'].name == "my_hook_id", "failed in name of hook 'my_hook_id'")
@@ -286,11 +286,11 @@ class InternalDsl_Test(unittest.TestCase):
             self.test.assertTrue(num == 123456, 'failed to receive 123456 in hook')
             self.test.assertTrue(txt == "cool", 'failed to receive "cool" in hook')
             return True
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= #my_hook_params(the_rule, 123456, "cool")
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Hook, "failed in ParserTree type for node Hook")
         self.assertTrue(res['the_rule'].name == "my_hook_params", "failed in name of hook 'my_hook_params'")
@@ -306,11 +306,11 @@ class InternalDsl_Test(unittest.TestCase):
             self.test.assertTrue(n2.value == "toto", 'failed to receive "toto" in hook')
             self.test.assertTrue(n3.value == "blabla", 'failed to receive "blabla" in hook')
             return True
-        bnf = dsl.Parser("""
+        bnf = dsl.EBNF("""
             the_rule ::= Base.num : nth Base.string : t Base.id : i #my_hook_multi(nth, t, i)
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Seq, "failed in ParserTree type for node Seq")
         self.assertTrue(res['the_rule'].ptlist[-1].name == "my_hook_multi", "failed in name of hook 'my_hook_multi'")
@@ -343,15 +343,15 @@ class InternalDsl_Test(unittest.TestCase):
             self.test.assertTrue(self.workflow == 1, "failed begin was not called before my_hook")
             self.workflow = 2
             return True
-        dsl.Parser.set_directives({'toto.dummyDir' : dummyDir})
-        bnf = dsl.Parser("""
+        dsl.EBNF.set_directives({'toto.dummyDir' : dummyDir})
+        bnf = dsl.EBNF("""
             the_rule ::= @toto.dummyDir(1, 2, 3) test
             ;
 
             test ::= #my_hook Base.eof
             ;
         """)
-        res = bnf.eval_rule('bnf_dsl')
+        res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         dummyData = parsing.Parser()
         dummyData.set_rules(res)

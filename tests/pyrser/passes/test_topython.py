@@ -214,7 +214,7 @@ class TestToPythonPasse(unittest.TestCase):
 
     def test_topython_generates_code_for_parserdsl(self):
         from pprint import pprint
-        from pyrser.dsl import Parser
+        from pyrser.dsl import EBNF
         import pyrser.passes.dumpParseTree
 
         dsl_rules = [
@@ -227,7 +227,7 @@ class TestToPythonPasse(unittest.TestCase):
             'repeat',
             'hook',
             'param']
-        res, parser = [], Parser()
+        res, parser = [], EBNF()
         #res.append(self.help(parser._rules['alternatives']))
         for rule in dsl_rules:
             res.append(codegen.to_source(

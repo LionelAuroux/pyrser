@@ -113,7 +113,9 @@ def hook(cls, hookname=None):
         add_method(cls)(f)
         if hookname is None:
             hookname = f.__name__
-        class_hook_list[hookname] = f
+        if '.' not in hookname:
+            hookname = cls.__name__ + '.' + hookname
+        cls.set_one(class_hook_list, hookname, f)
         return f
     return wrapper
 
@@ -150,6 +152,6 @@ def directive(cls, directname=None):
         add_method(cls)(f)
         if directname is None:
             directname = f.__name__
-        class_dir_list[directname] = f
+        cls.set_one(class_dir_list, directname, f)
         return f
     return wrapper
