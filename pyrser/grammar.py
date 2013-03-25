@@ -6,14 +6,10 @@ class MetaGrammar(type):
     """Metaclass for all grammars."""
     def __new__(metacls, name, bases, namespace):
         cls = type.__new__(metacls, name, bases, namespace)
-        rules = {}
-        for base in reversed(bases):
-            rules.update(getattr(base, 'rules', {}))
         grammar = namespace.get('grammar')
+        cls._rules = {}
         if grammar is not None:
-            parser = cls.dsl_parser(grammar)
-            rules.update(parser.parse())
-        cls.rules = rules
+            cls._rules = cls.dsl_parser(grammar)
         return cls
 
 
@@ -39,6 +35,6 @@ class Grammar(metaclass=MetaGrammar):
 
     def parse(self, source):
         """Parse the grammar"""
-        parser = parsing.Parser(source)
-        parser.setRules(self.rules)
-        return parser.evalRule(self.entry)
+        parser = self.__class__.dsl_parser(source)
+        parser.set_rules(self.__class__._rules)
+        return parser.eval_rule(self.__class__.entry)

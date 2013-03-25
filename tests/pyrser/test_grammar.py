@@ -24,9 +24,11 @@ class TestGrammar(unittest.TestCase):
 
     def test_it_parses_source_using_rules(self):
         source, res = mock.Mock(), mock.Mock()
+        source.__len__ = lambda x: 0
+        res.__getitem__.return_value = 0
         rules = mock.Mock()
-        parser = mock.Mock(**{'setRules.return_value': None,
-                              'evalRule.return_value': res})
+        parser = mock.Mock(**{'set_rules.return_value': None,
+                              'eval_rule.return_value': res})
         with mock.patch('pyrser.grammar.parsing.Parser',
                         return_value=parser) as parser_cls:
             class StubGrammar(pyrser.Grammar):
