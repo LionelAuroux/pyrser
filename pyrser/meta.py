@@ -115,7 +115,7 @@ def hook(cls, hookname=None):
         if hookname is None:
             hookname = f.__name__
         if '.' not in hookname:
-            hookname = cls.__name__ + '.' + hookname
+            hookname = cls.__module__ + '.' + cls.__name__ + '.' + hookname
         cls.set_one(class_hook_list, hookname, f)
         return f
     return wrapper

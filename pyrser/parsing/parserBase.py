@@ -1,35 +1,47 @@
-import collections
-
 from pyrser import meta
 from pyrser.parsing.parserStream import Stream
 from pyrser.parsing.node import Node
-
+import collections
 
 class MetaBasicParser(type):
     """Metaclass for all parser."""
     def __new__(metacls, name, bases, namespace):
-        # TODO: add auto namespacing!!!
-        cls = type.__new__(metacls, name, bases, namespace)
+        # MetaBasicParser is singleton
+        if '__MetaBasicParser' not in globals():
+            cls = type.__new__(metacls, name, bases, namespace)
+            global _MetaBasicParser
+            _MetaBasicParser = cls
+        else:
+            cls = globals()['_MetaBasicParser']
         # create rules mapping in the class from inheritance
-        cls._rules = collections.ChainMap()
-        for base in reversed(bases):
-            if (hasattr(base, '_rules') and
-                    isinstance(base._rules, collections.ChainMap)):
-                cls._rules = base._rules.new_child()
+        if not hasattr(cls, '_rules'):
+            cls._rules = collections.ChainMap()
+            print("first RULES %s" % id(cls._rules))
+        #for base in reversed(bases):
+        #    if hasattr(base, '_rules') and isinstance(base._rules, collections.ChainMap):
+        #        cls._rules = base._rules.new_child()
+        else:
+            cls._rules = cls._rules.new_child()
+            print("chain RULES %s" % id(cls._rules))
         # create hooks mapping in the class from inheritance
-        cls._hooks = collections.ChainMap()
-        for base in reversed(bases):
-            if (hasattr(base, '_hooks') and
-                    isinstance(base._hooks, collections.ChainMap)):
-                cls._hooks = base._hooks.new_child()
+        if not hasattr(cls, '_hooks'):
+            cls._hooks = collections.ChainMap()
+            print("first HOOKS %s" % id(cls._hooks))
+        #for base in reversed(bases):
+        #     if hasattr(base, '_hooks') and isinstance(base._hooks, collections.ChainMap):
+        #        cls._hooks = base._hooks.new_child()
+        else:
+            cls._hooks = cls._hooks.new_child()
+            print("chain HOOKS %s" % id(cls._hooks))
         # create directives mapping in the class from inheritance
-        cls._directives = collections.ChainMap()
-        for base in reversed(bases):
-            if (hasattr(base, '_directives') and
-                    isinstance(base._directives, collections.ChainMap)):
-                cls._directives = base._directives.new_child()
+        if not hasattr(cls, '_directives'):
+            cls._directives = collections.ChainMap()
+        #for base in reversed(bases):
+        #    if hasattr(base, '_directives') and isinstance(base._directives, collections.ChainMap):
+        #        cls._directives = base._directives.new_child()
+        else:
+            cls._directives = cls._directives.new_child()
         return cls
-
 
 class BasicParser(metaclass=MetaBasicParser):
     """Emtpy basic parser, contains no rule nor hook.
@@ -89,12 +101,10 @@ class BasicParser(metaclass=MetaBasicParser):
 
 ### VARIABLE PRIMITIVES
 
-#TODO(iopi): change beginTag, endTag, and getTag for multicapture,
-#            and typesetting at endTag (i.e: readCChar, readCString need
-#            transcoding)
+# TODO(iopi): change for beginTag,endTag,getTag for multicapture, and typesetting at endTag (i.e: readCChar,readCString need transcoding)
     def begin_tag(self, name: str) -> Node:
         """Save the current index under the given name."""
-        self.__tags[name] = {'begin': self._stream.index}
+        self.__tags[name] = {'begin' : self._stream.index}
         return Node(True)
 
     def end_tag(self, name: str) -> Node:
@@ -143,8 +153,8 @@ class BasicParser(metaclass=MetaBasicParser):
 
     @classmethod
     def set_one(cls, chainmap, thing_name, callobject):
-        """Add a mapping with key thing_name for callobject in chainmap with
-           namespace handling.
+        """ Add a mapping with key thing_name for callobject in chainmap with
+            namespace handling.
         """
         namespaces = reversed(thing_name.split("."))
         if namespaces is None:
@@ -153,6 +163,8 @@ class BasicParser(metaclass=MetaBasicParser):
         for name in namespaces:
             lstname.insert(0, name)
             strname = '.'.join(lstname)
+            #if isinstance(chainmap, collections.ChainMap):
+            #    print("%s ADD IN A %s(%d): %s %s" % (cls.__name__, type(chainmap), id(chainmap), strname, callobject))
             chainmap[strname] = callobject
 
     def handle_var_ctx(self, res: Node, name: str) -> Node:
@@ -171,8 +183,7 @@ class BasicParser(metaclass=MetaBasicParser):
         self.push_rule_nodes()
         # create a slot value for the result
         self.rulenodes[-1][name] = Node()
-        #TODO(iopi): think about rule proto? global data etc...
-        res = self.__class__._rules[name](self)
+        res = self.__class__._rules[name](self) # TODO: think about rule proto? global data etc...
         res = self.handle_var_ctx(res, name)
         self.pop_rule_nodes()
         return res
@@ -180,6 +191,8 @@ class BasicParser(metaclass=MetaBasicParser):
     def eval_hook(self, name: str, ctx: list) -> Node:
         """Evaluate the hook by its name"""
         # TODO: think of hooks prototype!!!
+        #for it in self.__class__._hooks.maps:
+        #    print("HOOK IN %s[%s] (%s)" % (self.__class__.__name__, it, id(it)))
         return self.__class__._hooks[name](self, *ctx)
 
 ### PARSING PRIMITIVES
@@ -221,8 +234,8 @@ class BasicParser(metaclass=MetaBasicParser):
         while not self.read_eof():
             if self._stream.peek_char == inhibitor:
                 # Delete inhibitor and inhibited character
-                self._stream.incpos()
-                self._stream.incpos()
+                self._stream.incpos() # Deletion of the inhibitor.
+                self._stream.incpos() # Deletion of the inhibited character.
             if self._stream.peek_char == c:
                 self._stream.incpos()
                 return self._stream.validate_context()
