@@ -1,5 +1,6 @@
 from pyrser.parsing.parserTree import ParserTree
-from pyrser.parsing.parserTree import Call, CallTrue, Hook, Rule, Directive, DirectiveWrapper
+from pyrser.parsing.parserTree import Call, CallTrue
+from pyrser.parsing.parserTree import Hook, Rule, Directive, DirectiveWrapper
 from pyrser.parsing.parserTree import Alt, Seq
 from pyrser.parsing.parserTree import Rep0N, Rep1N, RepOptional
 from pyrser.parsing.parserTree import Capture, Scope

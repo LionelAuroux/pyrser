@@ -1,14 +1,18 @@
 from collections import ChainMap
+import unittest
+
+import pyrser
+from pyrser import Grammar, meta, parsing
+
+
 oldsetitem = ChainMap.__setitem__
+
+
 def new_set_item(self, k, v):
     global oldsetitem
     print("SET IN CM: %s %s" % (k, v))
     return oldsetitem(self, k, v)
 ChainMap.__setitem__ = oldsetitem
-
-import unittest
-import pyrser
-from pyrser import Grammar, meta, parsing
 
 
 class GrammarBasic_Test(unittest.TestCase):
@@ -20,10 +24,12 @@ class GrammarBasic_Test(unittest.TestCase):
                 if convention == "null":
                     parser.push_ignore(parsing.Parser.ignore_null)
                 return True
+
             def end(self, parser, convention: str):
                 parser.pop_ignore()
                 return True
-        class   WordList(Grammar):
+
+        class WordList(Grammar):
             grammar = """
                 wordlist ::= [word:w #add_to(wordlist, w)]+
                 ;

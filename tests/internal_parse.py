@@ -11,18 +11,21 @@ class InternalParse_Test(unittest.TestCase):
     def test_00_Directive(self):
         """Test Directive/DirectiveWrapper
         """
-        class   DummyDirective(parsing.DirectiveWrapper):
+        class DummyDirective(parsing.DirectiveWrapper):
             def begin(self, test, a: int, b: int):
-                test.assertTrue(a == 1, "failed to recv first parameter into DummyDirective.begin")
-                test.assertTrue(b == 2, "failed to recv second parameter into DummyDirective.begin")
+                test.assertEqual(a, 1)
+                test.assertEqual(b, 2)
                 return True
+
             def end(self, test, a: int, b: int):
-                test.assertTrue(a == 1, "failed to recv first parameter into DummyDirective.end")
-                test.assertTrue(b == 2, "failed to recv second parameter into DummyDirective.end")
+                test.assertEqual(a, 1)
+                test.assertEqual(b, 2)
                 return True
+
         def dummyParser(p):
             return True
-        direct = parsing.Directive(DummyDirective(), [(1, int), (2, int)], dummyParser)
+        direct = parsing.Directive(DummyDirective(), [(1, int), (2, int)],
+                                   dummyParser)
         direct(self)
 
     def test_01_readIdentifier(self):
@@ -323,7 +326,8 @@ class InternalParse_Test(unittest.TestCase):
             res.text = "cool"
             self.rulenodes[-1]["test"] = res
             return res
-        parsing.Parser.set_one(parsing.Parser._rules, "A.B.C.test", parsing.Call(parsing.Parser.dummy))
+        parsing.Parser.set_one(parsing.Parser._rules, "A.B.C.test",
+                               parsing.Call(parsing.Parser.dummy))
         bRes = parser.eval_rule('test')
         self.assertEqual(bRes.text, "cool",
                          "failed rule node in global namespace")
@@ -337,19 +341,18 @@ class InternalParse_Test(unittest.TestCase):
         self.assertEqual(bRes.text, "cool",
                          "failed rule node in global namespace")
 
-
     def test_12_Metabasicparser(self):
         """
         Test the metaclass of BasicParser
         """
-        class   A(metaclass=parsing.MetaBasicParser):
+        class A(metaclass=parsing.MetaBasicParser):
             pass
-        self.assertTrue('_rules' in dir(A), "failed metaclass don't add _rules")
-        self.assertIsInstance(A._rules, collections.ChainMap, "failed _rules is not a ChainMap")
-        self.assertTrue('_hooks' in dir(A), "failed metaclass don't add _hooks")
-        self.assertIsInstance(A._hooks, collections.ChainMap, "failed _hooks is not a ChainMap")
-        self.assertTrue('_directives' in dir(A), "failed metaclass don't add _directives")
-        self.assertIsInstance(A._directives, collections.ChainMap, "failed _directives is not a ChainMap")
+        self.assertTrue('_rules' in dir(A))
+        self.assertIsInstance(A._rules, collections.ChainMap)
+        self.assertTrue('_hooks' in dir(A))
+        self.assertIsInstance(A._hooks, collections.ChainMap)
+        self.assertTrue('_directives' in dir(A))
+        self.assertIsInstance(A._directives, collections.ChainMap)
 
     def test_13_defaultRules(self):
         """

@@ -1,7 +1,9 @@
+import collections
+
 from pyrser import meta
 from pyrser.parsing.parserStream import Stream
 from pyrser.parsing.node import Node
-import collections
+
 
 class MetaBasicParser(type):
     """Metaclass for all parser."""
@@ -11,19 +13,23 @@ class MetaBasicParser(type):
         # create rules mapping in the class from inheritance
         cls._rules = collections.ChainMap()
         for base in reversed(bases):
-            if hasattr(base, '_rules') and isinstance(base._rules, collections.ChainMap):
+            if (hasattr(base, '_rules') and
+                    isinstance(base._rules, collections.ChainMap)):
                 cls._rules = base._rules.new_child()
         # create hooks mapping in the class from inheritance
         cls._hooks = collections.ChainMap()
         for base in reversed(bases):
-            if hasattr(base, '_hooks') and isinstance(base._hooks, collections.ChainMap):
+            if (hasattr(base, '_hooks') and
+                    isinstance(base._hooks, collections.ChainMap)):
                 cls._hooks = base._hooks.new_child()
         # create directives mapping in the class from inheritance
         cls._directives = collections.ChainMap()
         for base in reversed(bases):
-            if hasattr(base, '_directives') and isinstance(base._directives, collections.ChainMap):
+            if (hasattr(base, '_directives') and
+                    isinstance(base._directives, collections.ChainMap)):
                 cls._directives = base._directives.new_child()
         return cls
+
 
 class BasicParser(metaclass=MetaBasicParser):
     """Emtpy basic parser, contains no rule nor hook.
@@ -83,10 +89,12 @@ class BasicParser(metaclass=MetaBasicParser):
 
 ### VARIABLE PRIMITIVES
 
-# TODO(iopi): change for beginTag,endTag,getTag for multicapture, and typesetting at endTag (i.e: readCChar,readCString need transcoding)
+#TODO(iopi): change beginTag, endTag, and getTag for multicapture,
+#            and typesetting at endTag (i.e: readCChar, readCString need
+#            transcoding)
     def begin_tag(self, name: str) -> Node:
-        """        Save the current index under the given name."""
-        self.__tags[name] = {'begin' : self._stream.index}
+        """Save the current index under the given name."""
+        self.__tags[name] = {'begin': self._stream.index}
         return Node(True)
 
     def end_tag(self, name: str) -> Node:
@@ -135,8 +143,8 @@ class BasicParser(metaclass=MetaBasicParser):
 
     @classmethod
     def set_one(cls, chainmap, thing_name, callobject):
-        """
-        Add one thing (with namespace handling) that call callobject in the given chainmap.
+        """Add a mapping with key thing_name for callobject in chainmap with
+           namespace handling.
         """
         namespaces = reversed(thing_name.split("."))
         if namespaces is None:
@@ -145,8 +153,6 @@ class BasicParser(metaclass=MetaBasicParser):
         for name in namespaces:
             lstname.insert(0, name)
             strname = '.'.join(lstname)
-            #if isinstance(chainmap, collections.ChainMap):
-            #    print("%s ADD IN A %s(%d): %s %s" % (cls.__name__, type(chainmap), id(chainmap), strname, callobject))
             chainmap[strname] = callobject
 
     def handle_var_ctx(self, res: Node, name: str) -> Node:
@@ -165,7 +171,8 @@ class BasicParser(metaclass=MetaBasicParser):
         self.push_rule_nodes()
         # create a slot value for the result
         self.rulenodes[-1][name] = Node()
-        res = self.__class__._rules[name](self) # TODO: think about rule proto? global data etc...
+        #TODO(iopi): think about rule proto? global data etc...
+        res = self.__class__._rules[name](self)
         res = self.handle_var_ctx(res, name)
         self.pop_rule_nodes()
         return res
@@ -173,8 +180,6 @@ class BasicParser(metaclass=MetaBasicParser):
     def eval_hook(self, name: str, ctx: list) -> Node:
         """Evaluate the hook by its name"""
         # TODO: think of hooks prototype!!!
-        #for it in self.__class__._hooks.maps:
-        #    print("HOOK IN %s[%s] (%s)" % (self.__class__.__name__, it, id(it)))
         return self.__class__._hooks[name](self, *ctx)
 
 ### PARSING PRIMITIVES
@@ -215,8 +220,9 @@ class BasicParser(metaclass=MetaBasicParser):
         self._stream.save_context()
         while not self.read_eof():
             if self._stream.peek_char == inhibitor:
-                self._stream.incpos() # Deletion of the inhibitor.
-                self._stream.incpos() # Deletion of the inhibited character.
+                # Delete inhibitor and inhibited character
+                self._stream.incpos()
+                self._stream.incpos()
             if self._stream.peek_char == c:
                 self._stream.incpos()
                 return self._stream.validate_context()
@@ -302,6 +308,7 @@ class BasicParser(metaclass=MetaBasicParser):
             self._lastIgnoreIndex = self._stream.index
         return True
 
+
 class Parser(BasicParser):
     """An ascii parsing primitive library."""
     def __init__(self, *args):
@@ -309,10 +316,12 @@ class Parser(BasicParser):
 
 ### BASE RULES
 
+
 @meta.rule(BasicParser, "Base.eof")
 def read_eof(self) -> bool:
     """Returns true if reached end of the stream."""
     return self._stream.index == self._stream.eos_index
+
 
 @meta.rule(Parser, "Base.eol")
 def read_eol(self) -> bool:
@@ -324,6 +333,7 @@ def read_eol(self) -> bool:
     if self.read_char('\n'):
         return self._stream.validate_context()
     return self._stream.restore_context()
+
 
 @meta.rule(Parser, "Base.num")
 def read_integer(self) -> bool:
@@ -344,6 +354,7 @@ def read_integer(self) -> bool:
                 self._stream.incpos()
             return self._stream.validate_context()
     return self._stream.restore_context()
+
 
 @meta.rule(Parser, "Base.id")
 def read_identifier(self) -> bool:
@@ -366,6 +377,7 @@ def read_identifier(self) -> bool:
             return self._stream.validate_context()
     return self._stream.restore_context()
 
+
 @meta.rule(Parser, "Base.string")
 def read_cstring(self) -> bool:
     """
@@ -380,6 +392,7 @@ def read_cstring(self) -> bool:
         res.value = txt.strip('"')
         return res
     return self._stream.restore_context()
+
 
 @meta.rule(Parser, "Base.char")
 def read_cchar(self) -> bool:

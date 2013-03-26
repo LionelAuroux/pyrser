@@ -102,7 +102,8 @@ class TestHook(unittest.TestCase):
 class TestRule(unittest.TestCase):
     def test_it_attach_method_as_rule_to_class(self):
         functioname = mock.Mock(__name__='functioname')
-        cls = mock.Mock(**{'set_one.return_value': functioname, '_rules': 42, '__name__': 'classname'})
+        cls = mock.Mock(**{'set_one.return_value': functioname,
+                           '_rules': 42, '__name__': 'classname'})
         del cls.functioname
         meta.rule(cls)(functioname)
         self.assertIs(functioname, cls.functioname)
@@ -110,7 +111,9 @@ class TestRule(unittest.TestCase):
 
     def test_it_attach_method_as_rule_to_class_with_rulename(self):
         method = mock.Mock(__name__='method')
-        cls = mock.Mock(**{'set_one.return_value':method, '_rules': {'rulename':42}, '__name__': 'classname'})
+        cls = mock.Mock(**{'set_one.return_value': method,
+                           '_rules': {'rulename': 42},
+                           '__name__': 'classname'})
         del cls.method
         meta.rule(cls, 'rulename')(method)
         self.assertIs(method, cls.method)
@@ -119,8 +122,10 @@ class TestRule(unittest.TestCase):
     def test_it_does_not_attach_a_rule_if_method_already_exist(self):
         class cls:
             _rules = {}
+
             def method(self):
                 pass
+
         method = mock.Mock(__name__='method')
         with self.assertRaises(AttributeError):
             meta.rule(cls, 'rulename')(method)

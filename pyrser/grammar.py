@@ -13,6 +13,7 @@ class MetaGrammar(parsing.MetaBasicParser):
             cls._rules.update(dsl_object.get_rules())
         return cls
 
+
 class Grammar(parsing.Parser, metaclass=MetaGrammar):
     """
     Base class for all grammars.

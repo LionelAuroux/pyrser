@@ -105,7 +105,8 @@ def hook(cls, hookname=None):
        The method is registered with its name unless hookname is provided.
     """
     if not hasattr(cls, '_hooks'):
-        raise TypeError("%s didn't seems to be a BasicParser subsclasse" % cls.__name__)
+        raise TypeError(
+            "%s didn't seems to be a BasicParser subsclasse" % cls.__name__)
     class_hook_list = cls._hooks
 
     def wrapper(f):
@@ -126,7 +127,8 @@ def rule(cls, rulename=None):
        The method is registered with its name unless rulename is provided.
     """
     if not hasattr(cls, '_rules'):
-        raise TypeError("%s didn't seems to be a BasicParser subsclasse" % cls.__name__)
+        raise TypeError(
+            "%s didn't seems to be a BasicParser subsclasse" % cls.__name__)
     class_rule_list = cls._rules
 
     def wrapper(f):
@@ -138,13 +140,15 @@ def rule(cls, rulename=None):
         return f
     return wrapper
 
+
 def directive(cls, directname=None):
     """Attach a class to a parsing class and register it as a parser directive.
 
         The class is registered with its name unless directname is provided.
     """
     if not hasattr(cls, '_directives'):
-        raise TypeError("%s didn't seems to be a BasicParser subsclasse" % cls.__name__)
+        raise TypeError(
+            "%s didn't seems to be a BasicParser subsclasse" % cls.__name__)
     class_dir_list = cls._directives
 
     def wrapper(f):

@@ -1,6 +1,8 @@
+import types
+
 from pyrser.parsing.parserBase import BasicParser
 from pyrser.parsing.node import Node
-import types
+
 
 class ParserTree:
     """Dummy Base class for all parse tree classes.
@@ -204,13 +206,17 @@ class MetaDirectiveWrapper(type):
     def __new__(metacls, name, bases, namespace):
         cls = type.__new__(metacls, name, bases, namespace)
         if 'begin' not in namespace:
-            raise TypeError("DirectiveWrapper %s must have a begin method" % name)
+            raise TypeError(
+                "DirectiveWrapper %s must have a begin method" % name)
         if not(isinstance(namespace['begin'], types.FunctionType)):
-            raise TypeError("'begin' not a function class in DirectiveWrapper %s" % name)
+            raise TypeError(
+                "'begin' not a function class in DirectiveWrapper %s" % name)
         if 'end' not in namespace:
-            raise TypeError("DirectiveWrapper %s subclasse must have a end method" % name)
+            raise TypeError(
+                "DirectiveWrapper %s subclasse must have a end method" % name)
         if not(isinstance(namespace['end'], types.FunctionType)):
-            raise TypeError("'end' not a function class in DirectiveWrapper %s" % name)
+            raise TypeError(
+                "'end' not a function class in DirectiveWrapper %s" % name)
         return cls
 
 
@@ -221,7 +227,8 @@ class DirectiveWrapper(metaclass=MetaDirectiveWrapper):
         ParserTree.__init__(self)
 
     def checkParam(self, params: list):
-        if ('begin' not in dir(self.__class__)) or ('end' not in dir(self.__class__)):
+        if (not hasattr(self.__class__, 'begin') or
+                not hasattr(self.__class__, 'end')):
             return False
         pbegin = self.__class__.begin.__code__.co_varnames
         tbegin = self.__class__.begin.__annotations__
@@ -230,16 +237,25 @@ class DirectiveWrapper(metaclass=MetaDirectiveWrapper):
         idx = 0
         for pname in pbegin:
             if pname in tbegin:
-                if tbegin[pname] != type(params[idx]):
-                    raise TypeError("{}:Wrong parameter in begin method parameter {} expected {} got {}"
-                        .format(self.__class__.__name__, idx, type(params[idx]), tbegin[pname]))
+                if not isinstance(params[idx], tbegin[pname]):
+                    raise TypeError(
+                        "{}: Wrong parameter in begin method parameter {} "
+                        "expected {} got {}".format(
+                            self.__class__.__name__,
+                            idx, type(params[idx]),
+                            tbegin[pname]))
                 idx += 1
         idx = 0
         for pname in pend:
             if pname in tend:
-                if tend[pname] != type(params[idx]):
-                    raise TypeError("{}:Wrong parameter in end method parameter {} expected {} got {}"
-                        .format(self.__class__.__name__, idx, type(params[idx]), tend[pname]))
+                if not isinstance(params[idx], tend[pname]):
+                    raise TypeError(
+                        "{}: Wrong parameter in end method parameter {} "
+                        "expected {} got {}".format(
+                            self.__class__.__name__,
+                            idx,
+                            type(params[idx]),
+                            tend[pname]))
                 idx += 1
         return True
 
@@ -249,17 +265,20 @@ class DirectiveWrapper(metaclass=MetaDirectiveWrapper):
     def end(self):
         pass
 
+
 class Directive(ParserTree):
     """functor to wrap directive HOOKS"""
 
-    def __init__(self, directive: DirectiveWrapper, param: [(object, type)], pt: ParserTree):
+    def __init__(self, directive: DirectiveWrapper, param: [(object, type)],
+                 pt: ParserTree):
         ParserTree.__init__(self)
         self.directive = directive
         self.pt = pt
         # compose the list of value param, check type
         for v, t in param:
             if type(t) is not type:
-                raise TypeError("Must be pair of value and type (i.e: int, str, Node)")
+                raise TypeError(
+                    "Must be pair of value and type (i.e: int, str, Node)")
         self.param = param
 
     def __call__(self, parser: BasicParser) -> Node:
@@ -270,7 +289,8 @@ class Directive(ParserTree):
             elif type(v) is t:
                 valueparam.append(v)
             else:
-                raise TypeError("Type mismatch expected {} got {}".format(t, type(v)))
+                raise TypeError(
+                    "Type mismatch expected {} got {}".format(t, type(v)))
         if not self.directive.checkParam(valueparam):
             return False
         if not self.directive.begin(parser, *valueparam):
@@ -279,4 +299,3 @@ class Directive(ParserTree):
         if not self.directive.end(parser, *valueparam):
             return False
         return res
-

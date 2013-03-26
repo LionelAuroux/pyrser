@@ -9,7 +9,7 @@ class TestGrammar(unittest.TestCase):
         bnf = mock.Mock()
         rule = mock.Mock()
         dsl = mock.Mock()
-        dsl.return_value.get_rules.return_value = { 'rulename': rule }
+        dsl.return_value.get_rules.return_value = {'rulename': rule}
 
         class Grammar(pyrser.Grammar):
             grammar = bnf
@@ -23,7 +23,7 @@ class TestGrammar(unittest.TestCase):
         bnf = mock.Mock()
         rule = mock.Mock()
         dsl = mock.Mock()
-        dsl.return_value.get_rules.return_value = { 'rulename': rule }
+        dsl.return_value.get_rules.return_value = {'rulename': rule}
         source = mock.Mock()
 
         class StubGrammar(pyrser.Grammar):
