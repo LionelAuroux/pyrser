@@ -1,14 +1,11 @@
+import collections
 import unittest
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from unittest import mock
 
 from pyrser import meta
 from pyrser import parsing
-from pyrser.parsing import MetaBasicParser
 import pyrser.passes.dumpParseTree
-import collections
+
 
 class InternalParse_Test(unittest.TestCase):
     def test_00_Directive(self):

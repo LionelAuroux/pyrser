@@ -1,14 +1,9 @@
 import unittest
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from unittest import mock
 
 from pyrser import meta
-import collections
 
-@unittest.skipIf(not hasattr(meta.inspect, 'signature'),
-                 "python3.2 inspect module does not support signature")
+
 class TestCheckTypes(unittest.TestCase):
     def test_it_calls_function_without_annotation_normally(self):
         @meta.checktypes
