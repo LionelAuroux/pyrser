@@ -4,6 +4,7 @@ from unittest import mock
 
 from pyrser import meta
 from pyrser import parsing
+from pyrser import grammar
 import pyrser.passes.dumpParseTree
 
 
@@ -326,8 +327,8 @@ class InternalParse_Test(unittest.TestCase):
             res.text = "cool"
             self.rulenodes[-1]["test"] = res
             return res
-        parsing.Parser.set_one(parsing.Parser._rules, "A.B.C.test",
-                               parsing.Call(parsing.Parser.dummy))
+        meta.set_one(parsing.Parser._rules, "A.B.C.test",
+                     parsing.Call(parsing.Parser.dummy))
         bRes = parser.eval_rule('test')
         self.assertEqual(bRes.text, "cool",
                          "failed rule node in global namespace")
@@ -345,14 +346,46 @@ class InternalParse_Test(unittest.TestCase):
         """
         Test the metaclass of BasicParser
         """
-        class A(metaclass=parsing.MetaBasicParser):
+        class FakeBasic(metaclass=parsing.MetaBasicParser):
+            _rules = collections.ChainMap()
+            _hooks = collections.ChainMap()
             pass
+
+        class A(FakeBasic):
+            pass
+
+        class B(FakeBasic):
+            _rules = {'key': 'value'}
+            _hooks = {'key': 'value'}
+
         self.assertTrue('_rules' in dir(A))
         self.assertIsInstance(A._rules, collections.ChainMap)
         self.assertTrue('_hooks' in dir(A))
         self.assertIsInstance(A._hooks, collections.ChainMap)
-        self.assertTrue('_directives' in dir(A))
-        self.assertIsInstance(A._directives, collections.ChainMap)
+        self.assertEqual(id(A), id(parsing.parserBase._MetaBasicParser['A']),
+                         "failed to found metaclass A in global registry")
+        self.assertEqual(id(B._rules.maps[1]), id(FakeBasic._rules.maps[0]),
+                         "failed to chain FakeBasic._rules and B._rules")
+        self.assertEqual(id(B._hooks.maps[1]), id(FakeBasic._hooks.maps[0]),
+                         "failed to chain FakeBasic._hooks and B._hooks")
+        FakeBasic._rules['newrule'] = 'oldvalue'
+        FakeBasic._hooks['newhook'] = 'oldvalue'
+        self.assertIn('newrule', B._rules,
+                      "failed global modification in FakeBasic._rules"
+                      " not impacted in B._rules")
+        self.assertIn('newhook', B._hooks,
+                      "failed global modification in FakeBasic._hooks"
+                      " not impacted in B._hooks")
+        B._rules['newrule'] = 'newvalue'
+        B._hooks['newhook'] = 'newvalue'
+        self.assertEqual(B._rules['newrule'], 'newvalue',
+                         "failed in local rules modification")
+        self.assertEqual(B._hooks['newhook'], 'newvalue',
+                         "failed in local hooks modification")
+        self.assertEqual(FakeBasic._rules['newrule'], 'oldvalue',
+                         "failed local rules modification must be local")
+        self.assertEqual(FakeBasic._hooks['newhook'], 'oldvalue',
+                         "failed local hooks modification must be local")
 
     def test_13_defaultRules(self):
         """
@@ -366,3 +399,16 @@ class InternalParse_Test(unittest.TestCase):
                         "failed no found Base.string")
         self.assertTrue("Base.string" in parser._rules,
                         "failed no found Base.string")
+
+    def test_14_MetaGrammar(self):
+        """
+        Test the metaclass of Grammar
+        """
+        class FakeGrammar(metaclass=grammar.MetaGrammar):
+            pass
+
+        class SubGrammar(parsing.Parser, FakeGrammar):
+            pass
+
+        # TODO:
+        #print("Test Grammar")

@@ -460,9 +460,9 @@ def hook_param(self, hook, p):
 
 @meta.hook(EBNF, "EBNF.add_directive")
 def add_directive(self, sequence, d, s):
-    if not hasattr(EBNF, '_directives'):
-        raise TypeError("empty _directives dictionnary in dsl.EBNF")
-    the_class = EBNF._directives[d.name]
+    if d.name not in meta._directives:
+        raise TypeError("Unkown directive %s" % d.name)
+    the_class = meta._directives[d.name]
     sequence.parser_tree = parsing.Directive(the_class(), d.listparam,
                                              s.parser_tree)
     return True

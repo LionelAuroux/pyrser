@@ -1,6 +1,7 @@
 # Some meta prog stuff
 import functools
 import inspect
+import collections
 
 
 #From PEP 362: http://www.python.org/dev/peps/pep-0362/
@@ -81,6 +82,21 @@ def checktypes(func):
     return wrapper
 
 
+# TODO: could be better in a tool module?
+def set_one(chainmap, thing_name, callobject):
+    """ Add a mapping with key thing_name for callobject in chainmap with
+        namespace handling.
+    """
+    namespaces = reversed(thing_name.split("."))
+    if namespaces is None:
+        namespaces = [thing_name]
+    lstname = []
+    for name in namespaces:
+        lstname.insert(0, name)
+        strname = '.'.join(lstname)
+        chainmap[strname] = callobject
+
+
 def _get_base_class(cls):
     base = cls
     while base.__bases__[0] is not object:
@@ -116,7 +132,7 @@ def hook(cls, hookname=None):
             hookname = f.__name__
         if '.' not in hookname:
             hookname = cls.__module__ + '.' + cls.__name__ + '.' + hookname
-        cls.set_one(class_hook_list, hookname, f)
+        set_one(class_hook_list, hookname, f)
         return f
     return wrapper
 
@@ -136,26 +152,27 @@ def rule(cls, rulename=None):
         add_method(cls)(f)
         if rulename is None:
             rulename = f.__name__
-        cls.set_one(class_rule_list, rulename, f)
+        set_one(class_rule_list, rulename, f)
         return f
     return wrapper
 
 
-def directive(cls, directname=None):
+# module variable for DirectiveWrapper registering
+_directives = collections.ChainMap()
+
+
+def directive(directname=None):
     """Attach a class to a parsing class and register it as a parser directive.
 
         The class is registered with its name unless directname is provided.
     """
-    if not hasattr(cls, '_directives'):
-        raise TypeError(
-            "%s didn't seems to be a BasicParser subsclasse" % cls.__name__)
-    class_dir_list = cls._directives
+    global _directives
+    class_dir_list = _directives
 
     def wrapper(f):
         nonlocal directname
-        add_method(cls)(f)
         if directname is None:
             directname = f.__name__
-        cls.set_one(class_dir_list, directname, f)
+        set_one(class_dir_list, directname, f)
         return f
     return wrapper

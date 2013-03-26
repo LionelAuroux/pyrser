@@ -1,34 +1,70 @@
 from pyrser import dsl
 from pyrser import parsing
+from collections import ChainMap
 
 
 class MetaGrammar(parsing.MetaBasicParser):
     """Metaclass for all grammars."""
     def __new__(metacls, name, bases, namespace):
-        import collections
-        #cls = parsing.MetaBasicParser.__new__(metacls, name, bases, namespace)
-        if '_MetaGrammar' not in globals():
-            cls = type.__new__(metacls, name, bases, namespace)
-            print("FIRST META %s" % id(cls))
-            global _MetaGrammar
-            _MetaGrammar = cls
+        # for multi heritance we have a simple inheritance relation
+        # from the first class in declaration order.
+        metabp = parsing.MetaBasicParser
+        if len(bases) <= 1:
+            cls = metabp.__new__(metacls, name, bases, namespace)
         else:
-            cls = globals()['_MetaGrammar']
-        #global _MetaBasicParser
-        #cls = _MetaBasicParser
-        grammar = namespace.get('grammar')
-        print("METAGRAMMAR %s!!!!" % cls.__name__)
-        if grammar is not None:
-            dsl_object = cls.dsl_parser(grammar)
-            cls._rules.new_child()
-            cls._rules.update(dsl_object.get_rules())
-            print("from BasicParser %s" % id(parsing.Parser._hooks))
-            #cls._hooks = parsing.Parser._hooks.new_child()
-            cls._hooks = cls._hooks.new_child()
-            print("CHILD name %s (%s)" % (cls.__name__, id(cls._hooks)))
+            b = tuple([bases[0]])
+            cls = metabp.__new__(metacls, name, b, namespace)
+        # lookup for the metaclass of parsing.
+        # Grammar magically inherit rules&hooks from Parser
+        if 'Parser' in parsing.parserBase._MetaBasicParser:
+            clsbase = parsing.parserBase._MetaBasicParser['Parser']
+            # link rules&hooks
+            cls._rules = clsbase._rules.new_child()
+            cls._hooks = clsbase._hooks.new_child()
+            # add rules from DSL
+            if 'grammar' in namespace and namespace['grammar'] is not None:
+                dsl_object = cls.dsl_parser(namespace['grammar'])
+                cls._rules.update(dsl_object.get_rules())
+            # add localy define rules (and thus overloads)
+            if '_rules' in namespace and namespace['_rules'] is not None:
+                cls._rules.update(namespace['_rules'])
+            # add localy define hooks
+            if '_hooks' in namespace and namespace['_hooks'] is not None:
+                cls._hooks.update(namespace['_hooks'])
+        # Manage Aggregation
+        if len(bases) > 1:
+            aggreg_rules = ChainMap()
+            aggreg_hooks = ChainMap()
+            for subgrammar in bases:
+                if hasattr(subgrammar, '_rules'):
+                    aggreg_rules = ChainMap(*(aggreg_rules.maps
+                                            + subgrammar._rules.maps))
+                if hasattr(subgrammar, '_hooks'):
+                    aggreg_hooks = ChainMap(*(aggreg_hooks.maps
+                                            + subgrammar._hooks.maps))
+            # aggregate at toplevel the branch grammar
+            cls._rules = ChainMap(*(cls._rules.maps + aggreg_rules.maps))
+            cls._hooks = ChainMap(*(cls._hooks.maps + aggreg_hooks.maps))
+            # clean redondant in chain for rules
+            orderedunique_rules = []
+            tocpy_rules = set([id(_) for _ in cls._rules.maps])
+            for ch in cls._rules.maps:
+                idch = id(ch)
+                if idch in tocpy_rules:
+                    orderedunique_rules.append(ch)
+                    tocpy_rules.remove(idch)
+            cls._rules = ChainMap(*orderedunique_rules)
+            # clean redondant in chain for hooks
+            orderedunique_hooks = []
+            tocpy_hooks = set([id(_) for _ in cls._hooks.maps])
             for ch in cls._hooks.maps:
-                print("CHILD CH %d" % id(ch))
+                idch = id(ch)
+                if idch in tocpy_hooks:
+                    orderedunique_hooks.append(ch)
+                    tocpy_hooks.remove(idch)
+            cls._hooks = ChainMap(*orderedunique_hooks)
         return cls
+
 
 class Grammar(parsing.Parser, metaclass=MetaGrammar):
     """
@@ -45,14 +81,13 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
     # DSL parsing class
     dsl_parser = dsl.EBNF
 
-    def __init__(self):
-        if getattr(self, 'entry', None) is None and type(self) is not Grammar:
+    def parse(self, source=None, entry=None):
+        """Parse the grammar"""
+        if source is not None:
+            self.parsed_stream(source)
+        if self.__class__.entry is not None:
+            entry = self.__class__.entry
+        if entry is None:
             raise ValueError("No entry rule name defined for {}".format(
                 self.__class__.__name__))
-
-    def parse(self, source):
-        """Parse the grammar"""
-        parser = self.__class__.dsl_parser(source)
-        parser.__class__.set_rules(self.__class__._rules)
-        print("ENTRY : %s" % self.__class__)
-        return parser.eval_rule(self.__class__.entry)
+        return self.eval_rule(entry)
