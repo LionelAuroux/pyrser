@@ -82,30 +82,23 @@ class TestAddMethod(unittest.TestCase):
 
 class TestHook(unittest.TestCase):
     def test_it_attach_method_as_hook_to_class(self):
-        class cls:
-            _hooks = {}
-            pass
-        method = mock.Mock(__name__='method')
-        meta.hook(cls)(method)
-        self.assertIs(method, cls.method)
-        self.assertIn('method', cls._hooks)
-        self.assertIs(method, cls._hooks['method'])
+        cls = mock.Mock(__name__='cls')
+        del cls.fn
+        fn = mock.Mock(__name__='fn')
+        meta.hook(cls)(fn)
+        self.assertIs(fn, cls.fn)
+        cls.set_one.assert_call_once_with(cls._hooks, 'cls.fn', fn)
 
     def test_it_attach_method_as_hook_to_class_with_rulename(self):
-        class cls:
-            _hooks = {}
-            pass
-        method = mock.Mock(__name__='method')
-        meta.hook(cls, 'hookname')(method)
-        self.assertIs(method, cls.method)
-        self.assertIn('hookname', cls._hooks)
-        self.assertIs(method, cls._hooks['hookname'])
+        cls = mock.Mock(__name__='cls')
+        del cls.fn
+        fn = mock.Mock(__name__='fn')
+        meta.hook(cls, 'hookname')(fn)
+        self.assertIs(fn, cls.fn)
+        cls.set_one.assert_call_once_with(cls._hooks, 'cls.hookname', fn)
 
     def test_it_does_not_attach_a_hook_if_method_already_exist(self):
-        class cls:
-            _hooks = {}
-            def method(self):
-                pass
+        cls = mock.Mock(__name__='cls')
         method = mock.Mock(__name__='method')
         with self.assertRaises(AttributeError):
             meta.hook(cls, 'rulename')(method)

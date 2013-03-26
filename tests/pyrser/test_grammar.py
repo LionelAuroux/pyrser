@@ -10,36 +10,35 @@ import pyrser
 class TestGrammar(unittest.TestCase):
     def test_it_parses_a_grammar_and_attach_parsing_rules(self):
         bnf = mock.Mock()
-        rules = {'rule0': mock.Mock(), 'rule1': mock.Mock()}
-        parser = mock.Mock(**{'parse.return_value': rules})
-        dsl = mock.Mock(return_value=parser)
+        rule = mock.Mock()
+        dsl = mock.Mock()
+        dsl.return_value.get_rules.return_value = { 'rulename': rule }
 
         class Grammar(pyrser.Grammar):
             grammar = bnf
             dsl_parser = dsl
 
         dsl.assert_called_once_with(bnf)
-        parser.parse.assert_called_once_with()
-        self.assertEqual(rules, Grammar.rules)
+        dsl.return_value.get_rules.assert_called_once_with()
+        self.assertIs(rule, Grammar._rules['rulename'])
 
     def test_it_parses_source_using_rules(self):
-        source, res = mock.Mock(), mock.Mock()
-        source.__len__ = lambda x: 0
-        res.__getitem__.return_value = 0
-        rules = mock.Mock()
-        parser = mock.Mock(**{'set_rules.return_value': None,
-                              'eval_rule.return_value': res})
-        with mock.patch('pyrser.grammar.parsing.Parser',
-                        return_value=parser) as parser_cls:
-            class StubGrammar(pyrser.Grammar):
-                entry = 'rulename'
+        bnf = mock.Mock()
+        rule = mock.Mock()
+        dsl = mock.Mock()
+        dsl.return_value.get_rules.return_value = { 'rulename': rule }
+        source = mock.Mock()
 
-            StubGrammar.rules = rules
-            grammar = StubGrammar()
-            self.assertEqual(res, grammar.parse(source))
-            parser_cls.assert_called_once_with(source)
-            parser.setRules.assert_called_once_with(rules)
-            parser.evalRule.assert_called_once_with('rulename')
+        class StubGrammar(pyrser.Grammar):
+            entry = 'rulename'
+            dsl_parser = dsl
+
+        grammar = StubGrammar()
+        self.assertEqual(dsl.return_value.eval_rule.return_value,
+                         grammar.parse(source))
+        dsl.assert_called_once_with(source)
+        dsl.return_value.set_rules.assert_called_once_with(StubGrammar._rules)
+        dsl.return_value.eval_rule.assert_called_once_with('rulename')
 
     def test_it_raises_valueerror_without_entry_rulename(self):
         class UselessGrammar(pyrser.Grammar):

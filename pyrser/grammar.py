@@ -5,7 +5,6 @@ from pyrser import parsing
 class MetaGrammar(parsing.MetaBasicParser):
     """Metaclass for all grammars."""
     def __new__(metacls, name, bases, namespace):
-        import collections
         cls = parsing.MetaBasicParser.__new__(metacls, name, bases, namespace)
         grammar = namespace.get('grammar')
         if grammar is not None:
@@ -36,6 +35,6 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
 
     def parse(self, source):
         """Parse the grammar"""
-        parser = self.__class__.dsl_parser(source)
-        parser.__class__.set_rules(self.__class__._rules)
-        return parser.eval_rule(self.__class__.entry)
+        parser = self.dsl_parser(source)
+        parser.set_rules(self._rules)
+        return parser.eval_rule(self.entry)
