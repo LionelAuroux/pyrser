@@ -85,9 +85,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
         """Parse the grammar"""
         if source is not None:
             self.parsed_stream(source)
-        if self.__class__.entry is not None:
-            entry = self.__class__.entry
-        if entry is None:
+        if self.entry is None:
             raise ValueError("No entry rule name defined for {}".format(
                 self.__class__.__name__))
-        return self.eval_rule(entry)
+        return self.eval_rule(self.entry)

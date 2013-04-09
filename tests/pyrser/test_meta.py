@@ -77,20 +77,22 @@ class TestAddMethod(unittest.TestCase):
 
 class TestHook(unittest.TestCase):
     def test_it_attach_method_as_hook_to_class(self):
-        cls = mock.Mock(__name__='cls')
+        hooks = {}
+        cls = mock.Mock(__name__='cls', _hooks=hooks)
         del cls.fn
         fn = mock.Mock(__name__='fn')
         meta.hook(cls)(fn)
         self.assertIs(fn, cls.fn)
-        cls.set_one.assert_call_once_with(cls._hooks, 'cls.fn', fn)
+        cls.set_one.assert_call_once_with(hooks, 'cls.fn', fn)
 
     def test_it_attach_method_as_hook_to_class_with_rulename(self):
-        cls = mock.Mock(__name__='cls')
+        hooks = {}
+        cls = mock.Mock(__name__='cls', _hooks=hooks)
         del cls.fn
         fn = mock.Mock(__name__='fn')
         meta.hook(cls, 'hookname')(fn)
         self.assertIs(fn, cls.fn)
-        cls.set_one.assert_call_once_with(cls._hooks, 'cls.hookname', fn)
+        cls.set_one.assert_call_once_with(hooks, 'cls.hookname', fn)
 
     def test_it_does_not_attach_a_hook_if_method_already_exist(self):
         cls = mock.Mock(__name__='cls')
@@ -103,11 +105,12 @@ class TestRule(unittest.TestCase):
     def test_it_attach_method_as_rule_to_class(self):
         functioname = mock.Mock(__name__='functioname')
         cls = mock.Mock(**{'set_one.return_value': functioname,
-                           '_rules': 42, '__name__': 'classname'})
+                           '_rules': {}, '__name__': 'classname'})
         del cls.functioname
         meta.rule(cls)(functioname)
         self.assertIs(functioname, cls.functioname)
-        cls.set_one.assert_call_once_with(42, 'functioname', functioname)
+        cls.set_one.assert_call_once_with(
+            cls._rules, 'functioname', functioname)
 
     def test_it_attach_method_as_rule_to_class_with_rulename(self):
         method = mock.Mock(__name__='method')

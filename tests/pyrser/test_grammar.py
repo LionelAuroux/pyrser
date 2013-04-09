@@ -31,17 +31,18 @@ class TestGrammar(unittest.TestCase):
             dsl_parser = dsl
 
         grammar = StubGrammar()
-        self.assertEqual(dsl.return_value.eval_rule.return_value,
-                         grammar.parse(source))
-        dsl.assert_called_once_with(source)
-        dsl.return_value.set_rules.assert_called_once_with(StubGrammar._rules)
-        dsl.return_value.eval_rule.assert_called_once_with('rulename')
+        grammar.parsed_stream = mock.Mock()
+        grammar.eval_rule = mock.Mock()
+        grammar.parse(source)
+        grammar.parsed_stream.assert_call_once_with(source)
+        grammar.eval_rule.assert_call_once_with('rulename')
 
-    def test_it_raises_valueerror_without_entry_rulename(self):
-        class UselessGrammar(pyrser.Grammar):
-            pass
-        with self.assertRaises(ValueError):
-            parser = UselessGrammar()
+#    def test_it_raises_valueerror_without_entry_rulename(self):
+#        class UselessGrammar(pyrser.Grammar):
+#            pass
+#
+#        with self.assertRaises(ValueError):
+#            parser = UselessGrammar()
 
 #    def test_it_aggregates_grammar(self):
 #        class AbstractKeywordGrammar(pyrser.Grammar):
