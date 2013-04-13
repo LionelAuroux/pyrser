@@ -5,13 +5,25 @@ from pyrser import parsing
 
 @meta.add_method(parsing.Parser)
 def dumpParseTree(self):
-    res = "{"
-    for k, v in self.rules.items():
-        if isinstance(v, ParserTree):
-            res += "\n\t{} : {}\t,".format(repr(k), v.dumpParseTree(1))
+    res = ""
+    for k, v in self.__class__._rules.items():
+        if isinstance(v, parsing.ParserTree):
+            res += "\n\t{} ::= {}\t;".format(k, v.dumpParseTree(1))
         else:
-            res += "\n\t{} : {},".format(repr(k), repr(v))
-    res += "\n}"
+            res += "\n\t{} ::= {};".format(k, repr(v))
+    return res
+
+
+def _dumpParam(pt):
+    res = ""
+    if len(pt.param) > 0:
+        lsparam = []
+        for p in pt.param:
+            if p[1] is str:
+                lsparam.append('"' + p[0] + '"')
+            else:
+                lsparam.append(p[0])
+        res = "({})".format(", ".join(lsparam))
     return res
 
 
@@ -22,7 +34,7 @@ def dumpParseTree(self, level=0):
 
 @meta.add_method(parsing.Hook)
 def dumpParseTree(self, level=0):
-    return "{}#{}".format('\t' * level, self.name)
+    return "{}#{}{}".format('\t' * level, self.name, _dumpParam(self))
 
 
 @meta.add_method(parsing.Call)
@@ -51,6 +63,16 @@ def dumpParseTree(self, level=0):
     res = "\n{}[{}\n".format('\t' * (level + 1), self.begin.dumpParseTree(0))
     res += self.pt.dumpParseTree(level + 1)
     res += "\n{}]{}\n".format('\t' * (level + 1), self.end.dumpParseTree(0))
+    return res
+
+
+@meta.add_method(parsing.Directive)
+def dumpParseTree(self, level=0):
+    # TODO: process parameter
+    res = "\n{}@{}{}".format('\t' * (level + 1),
+                             self.directive.ns_name,
+                             _dumpParam(self))
+    res += self.pt.dumpParseTree(level + 1)
     return res
 
 

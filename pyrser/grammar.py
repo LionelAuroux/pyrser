@@ -1,5 +1,6 @@
 from pyrser import dsl
 from pyrser import parsing
+from pyrser import meta
 from collections import ChainMap
 
 
@@ -24,7 +25,13 @@ class MetaGrammar(parsing.MetaBasicParser):
             # add rules from DSL
             if 'grammar' in namespace and namespace['grammar'] is not None:
                 dsl_object = cls.dsl_parser(namespace['grammar'])
-                cls._rules.update(dsl_object.get_rules())
+                # namespace rules with module/classe name
+                for rule_name, rule_pt in dsl_object.get_rules().items():
+                    if '.' not in rule_name:
+                        rule_name = cls.__module__ \
+                            + '.' + cls.__name__ \
+                            + '.' + rule_name
+                    meta.set_one(cls._rules, rule_name, rule_pt)
             # add localy define rules (and thus overloads)
             if '_rules' in namespace and namespace['_rules'] is not None:
                 cls._rules.update(namespace['_rules'])

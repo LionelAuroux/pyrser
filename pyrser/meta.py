@@ -152,6 +152,8 @@ def rule(cls, rulename=None):
         add_method(cls)(f)
         if rulename is None:
             rulename = f.__name__
+        if '.' not in rulename:
+            rulename = cls.__module__ + '.' + cls.__name__ + '.' + rulename
         set_one(class_rule_list, rulename, f)
         return f
     return wrapper
@@ -173,6 +175,7 @@ def directive(directname=None):
         nonlocal directname
         if directname is None:
             directname = f.__name__
+        f.ns_name = directname
         set_one(class_dir_list, directname, f)
         return f
     return wrapper

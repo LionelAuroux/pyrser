@@ -260,7 +260,7 @@ class InternalParse_Test(unittest.TestCase):
 
         parser = parsing.Parser()
         parser.parsed_stream("asbga    12121      njnj 89898")
-        parser.rulenodes[-1]['test'] = self
+        parser.rulenodes['test'] = self
         parser.set_hooks({'checkWord': check_word, 'checkInt': check_int})
         parser.set_rules({
             'main': parsing.Seq(
@@ -305,13 +305,13 @@ class InternalParse_Test(unittest.TestCase):
         Basic test for context variables
         """
         parser = parsing.Parser()
-        parser.rulenodes[-1].update({'coucou': 42, 'toto': [12, 33]})
-        self.assertEqual(parser.rulenodes[-1]['toto'], [12, 33],
+        parser.rulenodes.update({'coucou': 42, 'toto': [12, 33]})
+        self.assertEqual(parser.rulenodes['toto'], [12, 33],
                          "failed comparing list")
         parser.push_rule_nodes()
-        parser.rulenodes[-1].update({'local1': 666, 'local2': 777})
-        parser.rulenodes[-1]['toto'] = [1, 2, 3, 4]
-        self.assertEqual(parser.rulenodes[-1]['coucou'], 42,
+        parser.rulenodes.update({'local1': 666, 'local2': 777})
+        parser.rulenodes['toto'] = [1, 2, 3, 4]
+        self.assertEqual(parser.rulenodes['coucou'], 42,
                          "failed outer scope not visible in local")
         parser.pop_rule_nodes()
 
@@ -325,7 +325,7 @@ class InternalParse_Test(unittest.TestCase):
         def dummy(self):
             res = parsing.Node()
             res.text = "cool"
-            self.rulenodes[-1]["test"] = res
+            self.rulenodes["test"] = res
             return res
         meta.set_one(parsing.Parser._rules, "A.B.C.test",
                      parsing.Call(parsing.Parser.dummy))

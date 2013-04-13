@@ -81,7 +81,9 @@ class Capture(ParserTree):
 
     def __call__(self, parser: BasicParser) -> Node:
         if parser.begin_tag(self.tagname):
-            parser.rulenodes[-1][self.tagname] = Node()
+            # create a node for the capture (visible during rule evaluation)
+            if self.tagname not in parser.rulenodes:
+                parser.rulenodes[self.tagname] = Node()
             res = self.pt(parser)
             if res and parser.end_tag(self.tagname):
                 text = parser.get_tag(self.tagname)
@@ -92,7 +94,7 @@ class Capture(ParserTree):
                 # capture
                 if not hasattr(res, 'value'):
                     res.value = text
-                parser.rulenodes[-1][self.tagname] = res
+                parser.rulenodes[self.tagname].dup(res)
                 return res
         return False
 
@@ -124,14 +126,15 @@ class RepOptional(ParserTree):
 
     def __call__(self, parser: BasicParser) -> bool:
         parser.skip_ignore()
-        self.pt(parser)
+        res = self.pt(parser)
+        if res:
+            return res
         return True
 
 
 class Rep0N(ParserTree):
     """[]* bnf primitive as a functor."""
 
-    #TODO(iopi): at each turn, pop/push rulenodes
     def __init__(self, pt: Seq):
         ParserTree.__init__(self)
         self.pt = pt
@@ -146,7 +149,6 @@ class Rep0N(ParserTree):
 class Rep1N(ParserTree):
     """[]+ bnf primitive as a functor."""
 
-    #TODO(iopi): at each turn, pop/push rulenodes
     def __init__(self, pt: Seq):
         ParserTree.__init__(self)
         self.pt = pt
@@ -191,7 +193,10 @@ class Hook(ParserTree):
         for v, t in self.param:
             if t is Node:
                 import weakref
-                valueparam.append(weakref.proxy(parser.rulenodes[-1][v]))
+                if type(parser.rulenodes[v]) is weakref.ProxyType:
+                    valueparam.append(parser.rulenodes[v])
+                else:
+                    valueparam.append(weakref.proxy(parser.rulenodes[v]))
             elif type(v) is t:
                 valueparam.append(v)
             else:
@@ -285,7 +290,7 @@ class Directive(ParserTree):
         valueparam = []
         for v, t in self.param:
             if t is Node:
-                valueparam.append(weakref.proxy(parser.rulenodes[-1][v]))
+                valueparam.append(weakref.proxy(parser.rulenodes[v]))
             elif type(v) is t:
                 valueparam.append(v)
             else:

@@ -56,7 +56,7 @@ class BasicParser(metaclass=MetaBasicParser):
         self._ignores = [BasicParser.ignore_blanks]
         self.__streams = [Stream(content, "root")]
         self.__tags = {}
-        self.rulenodes = [{}]
+        self.rulenodes = collections.ChainMap()
         self._lastIgnoreIndex = 0
         self._lastIgnore = False
 
@@ -78,15 +78,12 @@ class BasicParser(metaclass=MetaBasicParser):
 
     def push_rule_nodes(self) -> bool:
         """Push context variable to store rule nodes."""
-        # outer scope visible in local
-        if (len(self.rulenodes) > 0):
-            self.rulenodes.append(self.rulenodes[-1].copy())
+        self.rulenodes = self.rulenodes.new_child()
         return True
 
     def pop_rule_nodes(self) -> bool:
         """Pop context variable that store rule nodes"""
-        if len(self.rulenodes) > 0:
-            del self.rulenodes[-1]
+        self.rulenodes = self.rulenodes.parents
         return True
 
 ### STREAM
@@ -131,6 +128,10 @@ class BasicParser(metaclass=MetaBasicParser):
         """
         cls._rules = cls._rules.new_child()
         for rule_name, rule_pt in rules.items():
+            if '.' not in rule_name:
+                rule_name = cls.__module__ \
+                    + '.' + cls.__name__ \
+                    + '.' + rule_name
             meta.set_one(cls._rules, rule_name, rule_pt)
         return True
 
@@ -141,6 +142,10 @@ class BasicParser(metaclass=MetaBasicParser):
         """
         cls._hooks = cls._hooks.new_child()
         for hook_name, hook_pt in hooks.items():
+            if '.' not in hook_name:
+                hook_name = cls.__module__ \
+                    + '.' + cls.__name__ \
+                    + '.' + hook_name
             meta.set_one(cls._hooks, hook_name, hook_pt)
         return True
 
@@ -153,15 +158,8 @@ class BasicParser(metaclass=MetaBasicParser):
         meta._directives = meta._directives.new_child()
         for dir_name, dir_pt in directives.items():
             meta.set_one(meta._directives, dir_name, dir_pt)
+            dir_pt.ns_name = dir_name
         return True
-
-    def handle_var_ctx(self, res: Node, name: str) -> Node:
-        unnsname = name.split(".")[-1]
-        # default behavior the returned node is transfered
-        # if a rulenodes have the name $$, it's use for return
-        if res and unnsname in self.rulenodes[-1]:
-            res = self.rulenodes[-1][unnsname]
-        return res
 
     #TODO(iopi): define what should be sent globally to all rules
     #TODO(iopi): think about rule proto? global data etc...
@@ -170,9 +168,12 @@ class BasicParser(metaclass=MetaBasicParser):
         """Evaluate a rule by name."""
         self.push_rule_nodes()
         # create a slot value for the result
-        self.rulenodes[-1][name] = Node()
+        return_code = Node()
+        import weakref
+        self.rulenodes['_'] = weakref.proxy(return_code)
         res = self.__class__._rules[name](self)
-        res = self.handle_var_ctx(res, name)
+        if res:
+            res = return_code
         self.pop_rule_nodes()
         return res
 
@@ -204,7 +205,7 @@ class BasicParser(metaclass=MetaBasicParser):
         if self.read_eof():
             return False
         self._stream.save_context()
-        if self._stream.peek_char == c:
+        if c == self._stream.peek_char:
             self._stream.incpos()
             return self._stream.validate_context()
         return self._stream.restore_context()
@@ -296,7 +297,8 @@ class BasicParser(metaclass=MetaBasicParser):
 
     def skip_ignore(self) -> bool:
         self._lastIgnoreIndex = self._stream.index
-        self._ignores[-1](self)
+        if len(self._ignores) > 0:
+            self._ignores[-1](self)
         self._lastIgnore = (self._stream.index != self._lastIgnoreIndex)
         return True
 
@@ -324,7 +326,7 @@ def read_eof(self) -> bool:
 @meta.rule(Parser, "Base.eol")
 def read_eol(self) -> bool:
     """Return True if the parser can consume an EOL byte sequence."""
-    if self.read_eol():
+    if self.read_eof():
         return False
     self._stream.save_context()
     self.read_char('\r')
