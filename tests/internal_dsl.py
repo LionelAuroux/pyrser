@@ -29,11 +29,16 @@ class InternalDsl_Test(unittest.TestCase):
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
-        self.assertIsInstance(res['the_rule'], parsing.Seq, "failed in ParserTree type for node Seq")
-        self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule, "failed in ParserTree type for node Rule")
-        self.assertTrue(res['the_rule'].ptlist[0].name == "a", "failed in name of rule 'a'")
-        self.assertIsInstance(res['the_rule'].ptlist[1], parsing.Rule, "failed in ParserTree type for node Rule")
-        self.assertTrue(res['the_rule'].ptlist[1].name == "b", "failed in name of rule 'b'")
+        self.assertIsInstance(res['the_rule'], parsing.Seq,
+                              "failed in ParserTree type for node Seq")
+        self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule,
+                              "failed in ParserTree type for node Rule")
+        self.assertTrue(res['the_rule'].ptlist[0].name == "a",
+                        "failed in name of rule 'a'")
+        self.assertIsInstance(res['the_rule'].ptlist[1], parsing.Rule,
+                              "failed in ParserTree type for node Rule")
+        self.assertTrue(res['the_rule'].ptlist[1].name == "b",
+                        "failed in name of rule 'b'")
         self.assertIsInstance(res['the_rule'], parsing.Seq)
         self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule)
         self.assertTrue(res['the_rule'].ptlist[0].name == "a")
