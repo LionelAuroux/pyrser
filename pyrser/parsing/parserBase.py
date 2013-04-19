@@ -390,6 +390,9 @@ def read_cstring(self) -> bool:
         txt = self._stream[idx:self._stream.index]
         res = Node(self._stream.validate_context())
         res.value = txt.strip('"')
+        # as result if called from eval_rule
+        if '_' in self.rulenodes:
+            self.rulenodes['_'].dup(res)
         return res
     return self._stream.restore_context()
 
@@ -407,5 +410,8 @@ def read_cchar(self) -> bool:
         txt = self._stream[idx:self._stream.index]
         res = Node(self._stream.validate_context())
         res.value = txt.strip("'")
+        # as result if called from eval_rule
+        if '_' in self.rulenodes:
+            self.rulenodes['_'].dup(res)
         return res
     return self._stream.restore_context()

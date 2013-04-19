@@ -15,9 +15,9 @@ class InternalDsl_Test(unittest.TestCase):
             ;
         """)
         res = bnf.get_rules()
-        self.assertTrue('the_rule' in res, "failed to fetch the rule name")
+        self.assertIn('the_rule', res)
         self.assertIsInstance(res['the_rule'], parsing.Rule)
-        self.assertTrue(res['the_rule'].name == "a")
+        self.assertEqual(res['the_rule'].name, 'a')
 
     def test_02_two_rules(self):
         """
@@ -29,6 +29,11 @@ class InternalDsl_Test(unittest.TestCase):
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
+        self.assertIsInstance(res['the_rule'], parsing.Seq, "failed in ParserTree type for node Seq")
+        self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule, "failed in ParserTree type for node Rule")
+        self.assertTrue(res['the_rule'].ptlist[0].name == "a", "failed in name of rule 'a'")
+        self.assertIsInstance(res['the_rule'].ptlist[1], parsing.Rule, "failed in ParserTree type for node Rule")
+        self.assertTrue(res['the_rule'].ptlist[1].name == "b", "failed in name of rule 'b'")
         self.assertIsInstance(res['the_rule'], parsing.Seq)
         self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule)
         self.assertTrue(res['the_rule'].ptlist[0].name == "a")
@@ -217,8 +222,11 @@ class InternalDsl_Test(unittest.TestCase):
     def test_14_hookOneParamStr(self):
         @meta.hook(parsing.Parser)
         def my_hook_txt(self, txt):
+            self.test.assertEqual(txt, "cool",
+                                  'failed to receive "cool" in hook')
             self.test.assertTrue(txt == "cool")
             return True
+
         bnf = dsl.EBNF("""
             the_rule ::= #my_hook_txt("cool")
             ;
@@ -235,7 +243,7 @@ class InternalDsl_Test(unittest.TestCase):
     def test_15_hookOneParamChar(self):
         @meta.hook(parsing.Parser)
         def my_hook_char(self, txt):
-            self.test.assertTrue(txt == "\t", 'failed to receive "\t" in hook')
+            self.test.assertEqual(txt, "\t", 'failed to receive "\t" in hook')
             return True
         bnf = dsl.EBNF("""
             the_rule ::= #my_hook_char('\t')
@@ -253,8 +261,11 @@ class InternalDsl_Test(unittest.TestCase):
     def test_16_hookOneParamNum(self):
         @meta.hook(parsing.Parser)
         def my_hook_num(self, num):
+            self.test.assertEqual(num, 123456,
+                                  'failed to receive 123456 in hook')
             self.test.assertTrue(num == 123456)
             return True
+
         bnf = dsl.EBNF("""
             the_rule ::= #my_hook_num(123456)
             ;
@@ -273,8 +284,9 @@ class InternalDsl_Test(unittest.TestCase):
         def my_hook_id(self, n):
             self.test.assertIsInstance(n, parsing.Node)
             return True
+
         bnf = dsl.EBNF("""
-            the_rule ::= #my_hook_id(the_rule)
+            the_rule ::= #my_hook_id(_)
             ;
         """)
         res = bnf.get_rules()
@@ -293,8 +305,9 @@ class InternalDsl_Test(unittest.TestCase):
             self.test.assertTrue(num == 123456)
             self.test.assertTrue(txt == "cool")
             return True
+
         bnf = dsl.EBNF("""
-            the_rule ::= #my_hook_params(the_rule, 123456, "cool")
+            the_rule ::= #my_hook_params(_, 123456, "cool")
             ;
         """)
         res = bnf.get_rules()
@@ -313,6 +326,7 @@ class InternalDsl_Test(unittest.TestCase):
             self.test.assertTrue(n2.value == "toto")
             self.test.assertTrue(n3.value == "blabla")
             return True
+
         bnf = dsl.EBNF("""
             the_rule ::= Base.num : nth Base.string : t Base.id : i
                          #my_hook_multi(nth, t, i)
@@ -353,6 +367,7 @@ class InternalDsl_Test(unittest.TestCase):
             self.test.assertTrue(self.workflow == 1)
             self.workflow = 2
             return True
+
         dsl.EBNF.set_directives({'toto.dummyDir': dummyDir})
         bnf = dsl.EBNF("""
             the_rule ::= @toto.dummyDir(1, 2, 3) test

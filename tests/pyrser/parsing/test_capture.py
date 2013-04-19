@@ -7,15 +7,18 @@ from pyrser import parsing
 class TestCapture(unittest.TestCase):
     def test_it_returns_clause_result(self):
         res = mock.Mock()
-        parser = mock.Mock(rulenodes=[{}])
+        res.__len__ = lambda x: 0
+        parser = mock.Mock(rulenodes={}, **{'begin_tag.return_value': True})
         clause = mock.Mock(return_value=res)
         capture = parsing.Capture('tagname', clause)
+        print("TEST<")
         self.assertIs(capture(parser), res)
+        print(">TEST")
         clause.assert_called_once_with(parser)
 
     def test_it_wraps_boolean_result_in_node(self):
         res = mock.Mock()
-        parser = mock.Mock(rulenodes=[{}], **{'get_tag.return_value': res})
+        parser = mock.Mock(rulenodes={}, **{'get_tag.return_value': res})
         clause = mock.Mock(return_value=True)
         capture = parsing.Capture('tagname', clause)
         expected_res = parsing.Node(True)
@@ -30,7 +33,7 @@ class TestCapture(unittest.TestCase):
         parser.begin_tag.assert_called_once_with('tagname')
 
     def test_it_is_false_when_clause_is_false(self):
-        parser = mock.Mock(rulenodes=[{}], **{'begin_tag.return_value': True})
+        parser = mock.Mock(rulenodes={}, **{'begin_tag.return_value': True})
         clause = mock.Mock(return_value=False)
         capture = parsing.Capture('tagname', clause)
         self.assertFalse(capture(parser))
@@ -38,7 +41,7 @@ class TestCapture(unittest.TestCase):
 
     @unittest.skip
     def test_it_is_false_when_undoIgnore_is_false(self):
-        parser = mock.Mock(rulenodes=[{}],
+        parser = mock.Mock(rulenodes={},
                            **{'begin_tag.return_value': True,
                               'undo_ignore.return_value': False})
         clause = mock.Mock(return_value=True)
@@ -46,7 +49,7 @@ class TestCapture(unittest.TestCase):
         self.assertFalse(capture(parser))
 
     def test_it_is_false_when_endtag_is_false(self):
-        parser = mock.Mock(rulenodes=[{}],
+        parser = mock.Mock(rulenodes={},
                            **{'begin_tag.return_value': True,
                               'undo_ignore.return_value': True,
                               'end_tag.return_value': False})

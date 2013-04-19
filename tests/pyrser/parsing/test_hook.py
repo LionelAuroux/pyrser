@@ -36,7 +36,7 @@ class TestHook(unittest.TestCase):
         node = parsing.Node()
         parser = mock.Mock(
             spec=parsing.BasicParser,
-            **{'rulenodes': [{'hooknode': node}]})
+            **{'rulenodes': {'hooknode': node}})
         hook = parsing.Hook('hook', [('hooknode', parsing.Node)])
         hook(parser)
         parser.eval_hook.assert_called_once_with('hook', [node])

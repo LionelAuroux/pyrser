@@ -88,8 +88,6 @@ def set_one(chainmap, thing_name, callobject):
         namespace handling.
     """
     namespaces = reversed(thing_name.split("."))
-    if namespaces is None:
-        namespaces = [thing_name]
     lstname = []
     for name in namespaces:
         lstname.insert(0, name)
@@ -131,7 +129,7 @@ def hook(cls, hookname=None):
         if hookname is None:
             hookname = f.__name__
         if '.' not in hookname:
-            hookname = cls.__module__ + '.' + cls.__name__ + '.' + hookname
+            hookname = '.'.join([cls.__module__, cls.__name__, hookname])
         set_one(class_hook_list, hookname, f)
         return f
     return wrapper
