@@ -52,9 +52,9 @@ class BasicParser(metaclass=MetaBasicParser):
     _rules = collections.ChainMap()
     _hooks = collections.ChainMap()
 
-    def __init__(self, content: str=''):
+    def __init__(self, content: str='', stream_name: str="root"):
         self._ignores = [BasicParser.ignore_blanks]
-        self.__streams = [Stream(content, "root")]
+        self.__streams = [Stream(content, stream_name)]
         self.__tags = {}
         self.rulenodes = collections.ChainMap()
         self._lastIgnoreIndex = 0

@@ -9,12 +9,14 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from tests import internal_parse, internal_dsl
+from tests import grammar_basic
 
 
 # Test cases in order
 test_cases = (
     internal_parse.InternalParse_Test,
     internal_dsl.InternalDsl_Test,
+    grammar_basic.GrammarBasic_Test
 )
 
 

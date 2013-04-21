@@ -412,3 +412,21 @@ class InternalParse_Test(unittest.TestCase):
 
         # TODO:
         #print("Test Grammar")
+
+    def test_15_error_index(self):
+        """
+        Test error index
+        """
+        parser = parsing.Parser()
+        parser.parsed_stream("bla\n12abcd\nblu")
+        self.assertTrue(parser.read_text("bla\n") and parser.read_integer(),
+                        "failed to parse begin of stream")
+        self.assertTrue(not parser.read_text("abcde"),
+                        "failed to not parse abcde")
+        self.assertEqual(parser._stream[parser._stream._cursor
+                         .max_readed_position.index],
+                         'a',
+                         "failed when checking the correction position of last"
+                         " readed character")
+        self.assertEqual(parser._stream.last_readed_line, "12abcd",
+                         "failed to get the correct last readed line")

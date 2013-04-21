@@ -2,7 +2,7 @@ from collections import ChainMap
 import unittest
 
 import pyrser
-from pyrser import Grammar, meta, parsing
+from pyrser import grammar, meta, parsing
 
 import weakref
 from pyrser.passes import dumpParseTree
@@ -21,7 +21,7 @@ class Ignore(parsing.DirectiveWrapper):
         return True
 
 
-class WordList(Grammar):
+class WordList(grammar.Grammar):
     grammar = """
         wordlist ::= [word : w #add_to(_, w)]+ eof
         ;
@@ -32,7 +32,7 @@ class WordList(Grammar):
     entry = "wordlist"
 
 
-class CSV(Grammar):
+class CSV(grammar.Grammar):
     entry = "csv"
     grammar = """
         csv ::= [@ignore("null") line : l #add_line(_, l)]+ eof
@@ -48,7 +48,7 @@ class CSV(Grammar):
     """
 
 
-class CSV2(Grammar, CSV):
+class CSV2(grammar.Grammar, CSV):
     entry = "csv2"
     # copy the result of CSV.csv as result of csv2
     grammar = """
@@ -133,3 +133,17 @@ class GrammarBasic_Test(unittest.TestCase):
                          "failed to reach tab[1][0] as empty string")
         self.assertEqual(res.tab[1][1], "",
                          "failed to reach tab[1][1] as empty string")
+
+    def test_04_parse_error_csv(self):
+        """
+        Test parser error in CSV
+        """
+        csv = CSV()
+        with self.assertRaises(grammar.ParseError) as pe:
+            res = csv.parse("""
+            1;2;3;4
+            a;b;c;';4;5
+            o;l;p
+            """)
+        print("RECV : %s" % pe.exception.msg)
+        self.assertEqual(pe.exception.error_position.col_offset, 19, "failed to get the correct position")

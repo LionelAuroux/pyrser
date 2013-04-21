@@ -16,6 +16,8 @@ class Cursor:
     It can be initialized or set from an immutable Position.
     """
     def __init__(self, position: Position=Position(0, 1, 1)):
+        self.__maxindex = 0
+        self.__maxcol = 0
         self.__index = position.index
         self.__lineno = position.lineno
         self.__col_offset = position.col_offset
@@ -47,10 +49,18 @@ class Cursor:
         self.__lineno = position.lineno
         self.__col_offset = position.col_offset
 
+    @property
+    def max_readed_position(self) -> Position:
+        """The index of the deepest character readed."""
+        return Position(self.__maxindex, self.__lineno, self.__maxcol)
+
     def step_next_char(self):
         """Puts the cursor on the next character."""
         self.__index += 1
         self.__col_offset += 1
+        if self.__index > self.__maxindex:
+            self.__maxindex = self.__index
+            self.__maxcol = self.__col_offset
 
     def step_prev_char(self):
         """Puts the cursor on the previous character."""
@@ -114,6 +124,25 @@ class Stream:
     def peek_char(self) -> str:
         """The current position character value."""
         return self.__content[self._cursor.index]
+
+    @property
+    def last_readed_line(self) -> str:
+        """Usefull string to compute error message."""
+        mpos = self._cursor.max_readed_position
+        mindex = mpos.index
+        # search last \n
+        prevline = mindex
+        while True:
+            prevline -= 1
+            if prevline == 0 or self.__content[prevline] == '\n':
+                break
+        nextline = mindex
+        while True:
+            nextline += 1
+            if nextline == self.eos_index or self.__content[nextline] == '\n':
+                break
+        last_line = self.__content[prevline + 1:nextline]
+        return last_line
 
     def incpos(self, length: int=1) -> int:
         """Increment the cursor to the next character."""
