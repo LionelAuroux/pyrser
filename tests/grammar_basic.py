@@ -139,11 +139,24 @@ class GrammarBasic_Test(unittest.TestCase):
         Test parser error in CSV
         """
         csv = CSV()
-        with self.assertRaises(grammar.ParseError) as pe:
+        with self.assertRaises(meta.ParseError) as pe:
             res = csv.parse("""
             1;2;3;4
             a;b;c;';4;5
             o;l;p
             """)
         print("RECV : %s" % pe.exception.msg)
-        self.assertEqual(pe.exception.error_position.col_offset, 19, "failed to get the correct position")
+        self.assertEqual(pe.exception.error_position.col_offset, 19,
+                         "failed to get the correct position")
+
+    def test_05_parse_error_dsl(self):
+        """
+        Test parser error in the DSL
+        """
+        with self.assertRaises(meta.ParseError) as pe:
+            class TestDsl(grammar.Grammar):
+                grammar = """
+                    not_finished_bnf ::= clause
+                """
+                entry = "not_finished_bnf"
+        print("DSL EXECPT: %s" % pe.exception.msg)

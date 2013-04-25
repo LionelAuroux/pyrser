@@ -73,23 +73,6 @@ class MetaGrammar(parsing.MetaBasicParser):
         return cls
 
 
-class ParseError(Exception):
-    def __init__(self, message, stream_name="", rule="<default entry>", pos=None, line=""):
-        self.msg = message.format(**{\
-                                  'stream_name': stream_name,
-                                  'rule': rule,
-                                  'line': pos.lineno,
-                                  'col': pos.col_offset,
-                                  'last_readed_line': line,
-                                  'underline': "%s^" % ('-' * (pos.col_offset - 1))
-                                  })
-        Exception.__init__(self, self.msg)
-        self.stream_name = stream_name
-        self.rule = rule
-        self.error_position = pos
-        self.error_line = line
-
-
 class Grammar(parsing.Parser, metaclass=MetaGrammar):
     """
     Base class for all grammars.
@@ -116,13 +99,14 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
                 self.__class__.__name__))
         res = self.eval_rule(entry)
         if not res:
-            parse_error = ParseError("Parse error with the rule {rule}"
-                             " in {stream_name} at line {line} col {col}\n"
-                             "{last_readed_line}\n"
-                             "{underline}",
-                             stream_name=self._stream.name,
-                             rule=entry,
-                             pos=self._stream._cursor.max_readed_position,
-                             line=self._stream.last_readed_line)
+            parse_error =\
+                meta.ParseError("Parse error with the rule {rule}"
+                                " in {stream_name} at line {line} col {col}\n"
+                                "{last_readed_line}\n"
+                                "{underline}",
+                                stream_name=self._stream.name,
+                                rule=entry,
+                                pos=self._stream._cursor.max_readed_position,
+                                line=self._stream.last_readed_line)
             raise parse_error
         return res

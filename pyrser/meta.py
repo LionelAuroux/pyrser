@@ -82,6 +82,25 @@ def checktypes(func):
     return wrapper
 
 
+class ParseError(Exception):
+    def __init__(self, message, stream_name="", rule="<default entry>",
+                 pos=None, line=""):
+        underline = "%s^" % ('-' * (pos.col_offset - 1))
+        self.msg = message.format(**{
+                                  'stream_name': stream_name,
+                                  'rule': rule,
+                                  'line': pos.lineno,
+                                  'col': pos.col_offset,
+                                  'last_readed_line': line,
+                                  'underline': underline
+                                  })
+        Exception.__init__(self, self.msg)
+        self.stream_name = stream_name
+        self.rule = rule
+        self.error_position = pos
+        self.error_line = line
+
+
 # TODO: could be better in a tool module?
 def set_one(chainmap, thing_name, callobject):
     """ Add a mapping with key thing_name for callobject in chainmap with

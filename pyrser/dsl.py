@@ -5,7 +5,19 @@ from pyrser import meta
 class EBNF(parsing.Parser):
     """Basic class for BNF DSL PARSING."""
     def get_rules(self) -> parsing.Node:
-        return self.eval_rule('bnf_dsl')
+        res = self.eval_rule('bnf_dsl')
+        if not res:
+            parse_error =\
+                meta.ParseError("Parse error with the rule {rule}"
+                                " in {stream_name} at line {line} col {col}\n"
+                                "{last_readed_line}\n"
+                                "{underline}",
+                                stream_name=self._stream.name,
+                                rule='bnf_dsl',
+                                pos=self._stream._cursor.max_readed_position,
+                                line=self._stream.last_readed_line)
+            raise parse_error
+        return res
 
     def __init__(self, stream=''):
         super().__init__(stream)

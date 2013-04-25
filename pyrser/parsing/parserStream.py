@@ -139,7 +139,7 @@ class Stream:
         nextline = mindex
         while True:
             nextline += 1
-            if nextline == self.eos_index or self.__content[nextline] == '\n':
+            if nextline >= self.eos_index or self.__content[nextline] == '\n':
                 break
         last_line = self.__content[prevline + 1:nextline]
         return last_line
