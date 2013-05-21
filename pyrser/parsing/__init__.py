@@ -4,6 +4,7 @@ from pyrser.parsing.parserTree import Hook, Rule, Directive, DirectiveWrapper
 from pyrser.parsing.parserTree import Alt, Seq
 from pyrser.parsing.parserTree import Rep0N, Rep1N, RepOptional
 from pyrser.parsing.parserTree import Capture, Scope
+from pyrser.parsing.parserTree import Error
 from pyrser.parsing.parserBase import BasicParser, Parser, MetaBasicParser
 from pyrser.parsing.parserStream import Stream
 from pyrser.parsing.node import Node
@@ -17,6 +18,7 @@ __all__ = [
     'Capture',
     'Directive',
     'DirectiveWrapper',
+    'Error',
     'Hook',
     'Node',
     'ParserTree',

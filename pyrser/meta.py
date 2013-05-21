@@ -83,17 +83,22 @@ def checktypes(func):
 
 
 class ParseError(Exception):
-    def __init__(self, message, stream_name="", rule="<default entry>",
-                 pos=None, line=""):
+    def __init__(self, message, stream_name="",
+                 pos=None, line="", **kwargs):
+        msg = message + """ in {stream_name} at line {line} col {col}
+                {last_readed_line}
+                {underline}"""
         underline = "%s^" % ('-' * (pos.col_offset - 1))
-        self.msg = message.format(**{
-                                  'stream_name': stream_name,
-                                  'rule': rule,
-                                  'line': pos.lineno,
-                                  'col': pos.col_offset,
-                                  'last_readed_line': line,
-                                  'underline': underline
-                                  })
+        kwargs.update(**{
+                      'stream_name': stream_name,
+                      'rule': rule,
+                      'line': pos.lineno,
+                      'col': pos.col_offset,
+                      'last_readed_line': line,
+                      'underline': underline
+                      })
+        self.raw_msg = message
+        self.msg = msg.format(**kwargs)
         Exception.__init__(self, self.msg)
         self.stream_name = stream_name
         self.rule = rule

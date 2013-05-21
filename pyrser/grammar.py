@@ -100,10 +100,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
         res = self.eval_rule(entry)
         if not res:
             parse_error =\
-                meta.ParseError("Parse error with the rule {rule}"
-                                " in {stream_name} at line {line} col {col}\n"
-                                "{last_readed_line}\n"
-                                "{underline}",
+                meta.ParseError("Parse error with the rule {rule}",
                                 stream_name=self._stream.name,
                                 rule=entry,
                                 pos=self._stream._cursor.max_readed_position,
