@@ -16,11 +16,9 @@ class Cursor:
     It can be initialized or set from an immutable Position.
     """
     def __init__(self, position: Position=Position(0, 1, 1)):
-        self.__maxindex = 0
-        self.__maxcol = 0
-        self.__index = position.index
+        self.__maxindex = self.__index = position.index
+        self.__maxcol = self.__col_offset = position.col_offset
         self.__lineno = position.lineno
-        self.__col_offset = position.col_offset
         self.__eol = []
 
     @property
@@ -131,16 +129,13 @@ class Stream:
         mpos = self._cursor.max_readed_position
         mindex = mpos.index
         # search last \n
-        prevline = mindex
-        while True:
+        prevline = mindex - 1 if mindex == self.eos_index else mindex
+        while prevline >= 0 and self.__content[prevline] != '\n':
             prevline -= 1
-            if prevline == 0 or self.__content[prevline] == '\n':
-                break
+        # search next \n
         nextline = mindex
-        while True:
+        while nextline < self.eos_index and self.__content[nextline] != '\n':
             nextline += 1
-            if nextline >= self.eos_index or self.__content[nextline] == '\n':
-                break
         last_line = self.__content[prevline + 1:nextline]
         return last_line
 
