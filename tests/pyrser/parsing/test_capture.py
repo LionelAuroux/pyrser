@@ -7,13 +7,14 @@ from pyrser import parsing
 class TestCapture(unittest.TestCase):
     def test_it_returns_clause_result(self):
         res = mock.Mock()
+        # if __len__ == 0, bool(res) is False
+        # overrides with __bool__
         res.__len__ = lambda x: 0
+        res.__bool__ = lambda x: True
         parser = mock.Mock(rulenodes={}, **{'begin_tag.return_value': True})
         clause = mock.Mock(return_value=res)
         capture = parsing.Capture('tagname', clause)
-        print("TEST<")
         self.assertIs(capture(parser), res)
-        print(">TEST")
         clause.assert_called_once_with(parser)
 
     def test_it_wraps_boolean_result_in_node(self):
