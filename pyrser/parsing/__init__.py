@@ -1,5 +1,6 @@
 from pyrser.parsing.parserTree import ParserTree
-from pyrser.parsing.parserTree import Call, CallTrue, Complement, Neg
+from pyrser.parsing.parserTree import Call, CallTrue
+from pyrser.parsing.parserTree import Complement, LookAhead, Neg
 from pyrser.parsing.parserTree import Hook, Rule, Directive, DirectiveWrapper
 from pyrser.parsing.parserTree import Alt, Seq
 from pyrser.parsing.parserTree import Rep0N, Rep1N, RepOptional
@@ -21,6 +22,7 @@ __all__ = [
     'DirectiveWrapper',
     'Error',
     'Hook',
+    'LookAhead',
     'Neg',
     'Node',
     'ParserTree',

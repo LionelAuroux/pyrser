@@ -50,6 +50,19 @@ class Scope(ParserTree):
         return res
 
 
+class LookAhead(ParserTree):
+    """!!A bnf primitive as a functor."""
+    def __init__(self, pt: ParserTree):
+        ParserTree.__init__(self)
+        self.pt = pt
+
+    def __call__(self, parser: BasicParser) -> bool:
+        parser._stream.save_context()
+        res = self.pt(parser)
+        parser._stream.restore_context()
+        return not res
+
+
 class Neg(ParserTree):
     """!A bnf primitive as a functor."""
 

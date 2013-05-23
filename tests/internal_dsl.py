@@ -244,7 +244,25 @@ class InternalDsl_Test(unittest.TestCase):
         with self.assertRaises(meta.ParseError):
             bnf.get_rules()
 
-    def test_16_hookNoParam(self):
+    def test_16_lookaheadRule(self):
+        bnf = dsl.EBNF("""
+            the_rule ::= !!a
+            ;
+        """)
+        res = bnf.get_rules()
+        self.assertTrue('the_rule' in res)
+        self.assertIsInstance(res['the_rule'], parsing.LookAhead)
+        self.assertEqual(res['the_rule'].pt.name, 'a')
+
+    def test_17_negatedRepeatedRule(self):
+        bnf = dsl.EBNF("""
+            the_rule ::= !!a+
+            ;
+        """)
+        with self.assertRaises(meta.ParseError):
+            bnf.get_rules()
+
+    def test_18_hookNoParam(self):
         bnf = dsl.EBNF("""
             the_rule ::= #hook
             ;
@@ -253,7 +271,7 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue('the_rule' in res)
         self.assertIsInstance(res['the_rule'], parsing.Hook)
 
-    def test_17_hookOneParamStr(self):
+    def test_19_hookOneParamStr(self):
         @meta.hook(parsing.Parser)
         def my_hook_txt(self, txt):
             self.test.assertEqual(txt, "cool",
@@ -274,7 +292,7 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData.test = self
         self.assertTrue(dummyData.eval_rule('the_rule'))
 
-    def test_18_hookOneParamChar(self):
+    def test_20_hookOneParamChar(self):
         @meta.hook(parsing.Parser)
         def my_hook_char(self, txt):
             self.test.assertEqual(txt, "\t", 'failed to receive "\t" in hook')
@@ -292,7 +310,7 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData.test = self
         self.assertTrue(dummyData.eval_rule('the_rule'))
 
-    def test_19_hookOneParamNum(self):
+    def test_21_hookOneParamNum(self):
         @meta.hook(parsing.Parser)
         def my_hook_num(self, num):
             self.test.assertEqual(num, 123456,
@@ -313,7 +331,7 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData.test = self
         self.assertTrue(dummyData.eval_rule('the_rule'))
 
-    def test_20_hookOneParamId(self):
+    def test_22_hookOneParamId(self):
         @meta.hook(parsing.Parser)
         def my_hook_id(self, n):
             self.test.assertIsInstance(n, parsing.Node)
@@ -332,7 +350,7 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData.test = self
         self.assertTrue(dummyData.eval_rule('the_rule'))
 
-    def test_21_hookParams(self):
+    def test_23_hookParams(self):
         @meta.hook(parsing.Parser)
         def my_hook_params(self, n, num, txt):
             self.test.assertIsInstance(n, parsing.Node)
@@ -353,7 +371,7 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData.test = self
         self.assertTrue(dummyData.eval_rule('the_rule'))
 
-    def test_22_hookAndCapture(self):
+    def test_24_hookAndCapture(self):
         @meta.hook(parsing.Parser)
         def my_hook_multi(self, n1, n2, n3):
             self.test.assertTrue(n1.value == "456")
@@ -377,7 +395,7 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData.test = self
         self.assertTrue(dummyData.eval_rule('the_rule'))
 
-    def test_23_directive(self):
+    def test_25_directive(self):
         class dummyDir(parsing.DirectiveWrapper):
             def begin(self, parser, a: int, b: int, c: int):
                 parser.test.assertTrue(a == 1)

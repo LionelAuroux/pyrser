@@ -88,7 +88,7 @@ class EBNF(parsing.Parser):
 
             #
             # sequence ::=
-            #     [ '~' | '!' ]?: mod
+            #     [ '~' | '!!' | '!' ]?: mod
             #     [ ns_name : rid #add_ruleclause_name(_, rid)
             #       | Base.string : txt #add_text(_, txt)
             #       | Base.char : begin ".." Base.char : end
@@ -110,6 +110,7 @@ class EBNF(parsing.Parser):
                         parsing.RepOptional(
                             parsing.Alt(
                                 parsing.Call(parsing.Parser.read_char, '~'),
+                                parsing.Call(parsing.Parser.read_text, '!!'),
                                 parsing.Call(parsing.Parser.read_char, '!')))),
                     parsing.Alt(
                         parsing.Seq(
@@ -363,6 +364,8 @@ class EBNF(parsing.Parser):
 def add_mod(self, seq, mod):
     if mod.value == '~':
         seq.parser_tree = parsing.Complement(seq.parser_tree)
+    elif mod.value == '!!':
+        seq.parser_tree = parsing.LookAhead(seq.parser_tree)
     elif mod.value == '!':
         seq.parser_tree = parsing.Neg(seq.parser_tree)
     return True
@@ -447,6 +450,12 @@ def add_range(self, sequence, begin, end):
 
 @meta.hook(EBNF, "EBNF.add_rpt")
 def add_rpt(self, sequence, mod, pt):
+    if mod.value == '!!':
+        raise meta.ParseError(
+            "Cannot repeat a lookahead rule",
+            stream_name=self._stream.name,
+            pos=self._stream._cursor.max_readed_position,
+            line=self._stream.last_readed_line)
     if mod.value == '!':
         raise meta.ParseError(
             "Cannot repeat a negated rule",
