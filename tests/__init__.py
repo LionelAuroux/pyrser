@@ -2,12 +2,14 @@ import unittest
 
 from tests import internal_parse
 from tests import internal_dsl
+from tests import grammar_basic
 
 
 # Use cases in order
 use_cases = (
     internal_parse.InternalParse_Test,
     internal_dsl.InternalDsl_Test,
+    grammar_basic.GrammarBasic_Test
 )
 
 
