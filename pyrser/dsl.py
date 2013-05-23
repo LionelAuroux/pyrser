@@ -7,13 +7,11 @@ class EBNF(parsing.Parser):
     def get_rules(self) -> parsing.Node:
         res = self.eval_rule('bnf_dsl')
         if not res:
-            parse_error =\
-                meta.ParseError("Parse error with the rule {rule}",
-                                stream_name=self._stream.name,
-                                rule='bnf_dsl',
-                                pos=self._stream._cursor.max_readed_position,
-                                line=self._stream.last_readed_line)
-            raise parse_error
+            raise meta.ParseError("Parse error with the rule {rule!r}",
+                                  stream_name=self._stream.name,
+                                  rule='bnf_dsl',
+                                  pos=self._stream._cursor.max_readed_position,
+                                  line=self._stream.last_readed_line)
         return res
 
     def __init__(self, stream=''):

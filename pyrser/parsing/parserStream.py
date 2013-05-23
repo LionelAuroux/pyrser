@@ -141,8 +141,8 @@ class Stream:
 
     def incpos(self, length: int=1) -> int:
         """Increment the cursor to the next character."""
-        #TODO(bps): raise explicit error for invalid length
-        assert length > 0
+        if length <= 0:
+            raise ValueError("length must be positive")
         for _ in range(length):
             if self._cursor.index < self.__len:
                 if self.peek_char == '\n':
@@ -151,8 +151,8 @@ class Stream:
         return self._cursor.index
 
     def decpos(self, length: int=1) -> int:
-        #TODO(bps): raise explicit error for invalid length
-        assert length > 0
+        if length <= 0:
+            raise ValueError("length must be positive")
         for _ in range(length):
             if 0 < self._cursor.index:
                 self._cursor.step_prev_char()

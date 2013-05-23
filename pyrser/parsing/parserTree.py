@@ -1,8 +1,9 @@
 import types
 
+from pyrser import meta
 from pyrser.parsing.parserBase import BasicParser
 from pyrser.parsing.node import Node
-from pyrser.meta import ParseError
+
 
 class ParserTree:
     """Dummy Base class for all parse tree classes.
@@ -171,12 +172,10 @@ class Error(ParserTree):
         self.kw = kwargs
 
     def __call__(self, parser: BasicParser) -> bool:
-        self.kw.update(**{
-                      'stream_name': parser._stream.name,
-                      'pos': parser._stream._cursor.max_readed_position,
-                      'line': parser._stream.last_readed_line
-                      })
-        raise ParseError(self.msg, **self.kw)
+        self.kw.update(stream_name=parser._stream.name,
+                       pos=parser._stream._cursor.max_readed_position,
+                       line=parser._stream.last_readed_line)
+        raise meta.ParseError(self.msg, **self.kw)
 
 
 class Rule(ParserTree):
