@@ -83,7 +83,7 @@ class Capture(ParserTree):
     def __call__(self, parser: BasicParser) -> Node:
         if parser.begin_tag(self.tagname):
             # create a node for the capture (visible during rule evaluation)
-            if self.tagname not in parser.rulenodes:
+            if self.tagname not in parser.rulenodes.maps[0]:
                 parser.rulenodes[self.tagname] = Node()
             res = self.pt(parser)
             if res and parser.end_tag(self.tagname):
