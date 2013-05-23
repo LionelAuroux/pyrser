@@ -1,5 +1,5 @@
 from pyrser.parsing.parserTree import ParserTree
-from pyrser.parsing.parserTree import Call, CallTrue
+from pyrser.parsing.parserTree import Call, CallTrue, Complement
 from pyrser.parsing.parserTree import Hook, Rule, Directive, DirectiveWrapper
 from pyrser.parsing.parserTree import Alt, Seq
 from pyrser.parsing.parserTree import Rep0N, Rep1N, RepOptional
@@ -16,6 +16,7 @@ __all__ = [
     'Call',
     'CallTrue',
     'Capture',
+    'Complement',
     'Directive',
     'DirectiveWrapper',
     'Error',

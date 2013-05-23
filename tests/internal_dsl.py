@@ -215,6 +215,17 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue(res['the_rule'].pt.ptlist[0].name == 'a')
         self.assertTrue(res['the_rule'].pt.ptlist[1].params[0] == "toto")
 
+    def test_13_complementedRepeatedRule(self):
+        bnf = dsl.EBNF("""
+            the_rule ::= ~a+
+            ;
+        """)
+        res = bnf.get_rules()
+        self.assertTrue('the_rule' in res)
+        self.assertIsInstance(res['the_rule'], parsing.Rep1N)
+        self.assertIsInstance(res['the_rule'].pt, parsing.Complement)
+        self.assertEqual(res['the_rule'].pt.pt.name, 'a')
+
     def test_13_hookNoParam(self):
         bnf = dsl.EBNF("""
             the_rule ::= #hook

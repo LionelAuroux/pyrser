@@ -87,24 +87,27 @@ class EBNF(parsing.Parser):
             ),
 
             #
-            # sequence ::= [
-            #               ns_name : rid #add_ruleclause_name(_, rid)
-            #               | Base.string : txt #add_text(_, txt)
-            #               | Base.char : begin ".." Base.char : end
-            #                 #add_range(_, begin, end)
-            #               | Base.char : c #add_char(_, c)
-            #               | '[' alternatives : subsequence ']'
-            #                 #add_subsequence(_, subsequence)
-            #           ]
-            #           [repeat : rpt #add_rpt(_, rpt) ]?
-            #           [':' Base.id : cpt #add_capture(_, cpt) ]?
-            #           | hook : h #add_hook(_, h)
-            #           | directive : d sequence : s
-            #             #add_directive(_, d, s)
+            # sequence ::= '~'? : neg
+            #     [ ns_name : rid #add_ruleclause_name(_, rid)
+            #       | Base.string : txt #add_text(_, txt)
+            #       | Base.char : begin ".." Base.char : end
+            #         #add_range(_, begin, end)
+            #       | Base.char : c #add_char(_, c)
+            #       | '[' alternatives : subsequence ']'
+            #         #add_subsequence(_, subsequence)
+            #     ] #add_neg(_, neg)
+            #     [repeat : rpt #add_rpt(_, rpt) ]?
+            #     [':' Base.id : cpt #add_capture(_, cpt) ]?
+            #     | hook : h #add_hook(_, h)
+            #     | directive : d sequence : s #add_directive(_, d, s)
             # ;
             #
             'sequence': parsing.Alt(
                 parsing.Seq(
+                    parsing.Capture(
+                        'neg',
+                        parsing.RepOptional(
+                            parsing.Call(parsing.Parser.read_char, '~'))),
                     parsing.Alt(
                         parsing.Seq(
                             parsing.Capture('rid', parsing.Rule('ns_name')),
@@ -151,6 +154,8 @@ class EBNF(parsing.Parser):
                                           ("subsequence", parsing.Node)]),
                         )
                     ),
+                    parsing.Hook('add_neg', [("_", parsing.Node),
+                                             ("neg", parsing.Node)]),
                     parsing.RepOptional(
                         parsing.Seq(
                             parsing.Capture('rpt', parsing.Rule('repeat')),
@@ -348,6 +353,13 @@ class EBNF(parsing.Parser):
                 ),
             ),
         })
+
+
+@meta.hook(EBNF, "EBNF.add_neg")
+def add_neg(self, seq, neg):
+    if neg.value:
+        seq.parser_tree = parsing.Complement(seq.parser_tree)
+    return True
 
 
 @meta.hook(EBNF, "EBNF.add_ruleclause_name")

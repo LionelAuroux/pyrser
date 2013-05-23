@@ -50,6 +50,27 @@ class Scope(ParserTree):
         return res
 
 
+class Complement(ParserTree):
+    """!A bnf primitive as a functor."""
+
+    def __init__(self, pt: ParserTree):
+        ParserTree.__init__(self)
+        self.pt = pt
+
+    def __call__(self, parser: BasicParser) -> bool:
+        if parser.read_eof():
+            return False
+        parser.skip_ignore()
+        parser._stream.save_context()
+        res = self.pt(parser)
+        if not res:
+            parser._stream.incpos()
+            return parser._stream.validate_context()
+        parser._stream.restore_context()
+        parser.undo_ignore()
+        return False
+
+
 class Call(ParserTree):
     """Functor wrapping a BasicParser method call in a BNF clause."""
 
