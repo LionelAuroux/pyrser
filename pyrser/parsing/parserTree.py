@@ -50,8 +50,22 @@ class Scope(ParserTree):
         return res
 
 
-class Complement(ParserTree):
+class Neg(ParserTree):
     """!A bnf primitive as a functor."""
+
+    def __init__(self, pt: ParserTree):
+        ParserTree.__init__(self)
+        self.pt = pt
+
+    def __call__(self, parser: BasicParser):
+        parser._stream.save_context()
+        if self.pt(parser):
+            return parser._stream.restore_context()
+        return parser._stream.validate_context()
+
+
+class Complement(ParserTree):
+    """~A bnf primitive as a functor."""
 
     def __init__(self, pt: ParserTree):
         ParserTree.__init__(self)
