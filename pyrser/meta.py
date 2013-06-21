@@ -3,6 +3,12 @@ import functools
 import inspect
 import collections
 
+def enum(*sequential, **named):
+    # build enums from parameter
+    enums = dict(zip(sequential, range(len(sequential))), **named)
+    # build reverse mapping
+    enums['reverse_mapping'] = dict((value, key) for key, value in enums.items())
+    return type('Enum', (), enums)
 
 #From PEP 362: http://www.python.org/dev/peps/pep-0362/
 def checktypes(func):
@@ -122,9 +128,9 @@ def _get_base_class(cls):
 def add_method(cls):
     """Attach a method to a class."""
     def wrapper(f):
-        if hasattr(cls, f.__name__):
-            raise AttributeError("{} already has a '{}' attribute".format(
-                cls.__name__, f.__name__))
+        #if hasattr(cls, f.__name__):
+        #    raise AttributeError("{} already has a '{}' attribute".format(
+        #        cls.__name__, f.__name__))
         setattr(cls, f.__name__, f)
         return f
     return wrapper
