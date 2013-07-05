@@ -1,6 +1,5 @@
 import types
-
-from pyrser import meta
+from pyrser import meta, error
 from pyrser.parsing.parserBase import BasicParser
 from pyrser.parsing.node import Node
 
@@ -143,7 +142,7 @@ class Capture(ParserTree):
                 # capture
                 if not hasattr(res, 'value'):
                     res.value = text
-                parser.rulenodes[self.tagname].dup(res)
+                parser.rulenodes[self.tagname].set(res)
                 return res
         return False
 
@@ -220,10 +219,7 @@ class Error(ParserTree):
         self.kw = kwargs
 
     def __call__(self, parser: BasicParser) -> bool:
-        self.kw.update(stream_name=parser._stream.name,
-                       pos=parser._stream._cursor.max_readed_position,
-                       line=parser._stream.last_readed_line)
-        raise meta.ParseError(self.msg, **self.kw)
+        error.throw(self.msg, parser, **self.kw)
 
 
 class Rule(ParserTree):

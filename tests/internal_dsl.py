@@ -3,6 +3,7 @@ import unittest
 from pyrser import parsing
 from pyrser import dsl
 from pyrser import meta
+from pyrser import error
 
 
 class InternalDsl_Test(unittest.TestCase):
@@ -24,7 +25,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule ::= a b
+            the_rule::=a b c
             ;
         """)
         res = bnf.get_rules()
@@ -241,7 +242,7 @@ class InternalDsl_Test(unittest.TestCase):
             the_rule ::= !a+
             ;
         """)
-        with self.assertRaises(meta.ParseError):
+        with self.assertRaises(error.ParseError):
             bnf.get_rules()
 
     def test_16_lookaheadRule(self):
@@ -259,7 +260,7 @@ class InternalDsl_Test(unittest.TestCase):
             the_rule ::= !!a+
             ;
         """)
-        with self.assertRaises(meta.ParseError):
+        with self.assertRaises(error.ParseError):
             bnf.get_rules()
 
     def test_18_hookNoParam(self):

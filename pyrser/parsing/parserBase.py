@@ -1,4 +1,5 @@
 from pyrser import meta
+from pyrser import error
 from pyrser.parsing.parserStream import Stream
 from pyrser.parsing.node import Node
 import collections
@@ -171,6 +172,8 @@ class BasicParser(metaclass=MetaBasicParser):
         return_code = Node()
         import weakref
         self.rulenodes['_'] = weakref.proxy(return_code)
+        if name not in self.__class__._rules:
+            error.throw("Unknown rule : %s" % name, self)
         res = self.__class__._rules[name](self)
         if res:
             res = return_code
@@ -317,6 +320,15 @@ class Parser(BasicParser):
 ### BASE RULES
 
 
+@meta.rule(BasicParser, "Base.read_byte")
+def read_one_char(self) -> bool:
+    """Read one byte in stream"""
+    if self.read_eof():
+        return False
+    self._stream.incpos()
+    return True
+
+
 @meta.rule(BasicParser, "Base.eof")
 def read_eof(self) -> bool:
     """Returns true if reached end of the stream."""
@@ -392,7 +404,7 @@ def read_cstring(self) -> bool:
         res.value = txt.strip('"')
         # as result if called from eval_rule
         if '_' in self.rulenodes:
-            self.rulenodes['_'].dup(res)
+            self.rulenodes['_'].set(res)
         return res
     return self._stream.restore_context()
 
@@ -412,6 +424,6 @@ def read_cchar(self) -> bool:
         res.value = txt.strip("'")
         # as result if called from eval_rule
         if '_' in self.rulenodes:
-            self.rulenodes['_'].dup(res)
+            self.rulenodes['_'].set(res)
         return res
     return self._stream.restore_context()

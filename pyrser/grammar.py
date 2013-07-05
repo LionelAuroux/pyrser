@@ -1,6 +1,7 @@
 from pyrser import dsl
 from pyrser import parsing
 from pyrser import meta
+from pyrser import error
 from collections import ChainMap
 
 
@@ -99,9 +100,17 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
                 self.__class__.__name__))
         res = self.eval_rule(entry)
         if not res:
-            raise meta.ParseError("Parse error with the rule {rule!r}",
+            raise error.ParseError("Parse error with the rule {rule!r}",
                                   stream_name=self._stream.name,
                                   rule=entry,
                                   pos=self._stream._cursor.max_readed_position,
                                   line=self._stream.last_readed_line)
         return res
+
+generated_class = 0
+def grammar_class(inherit :[type], **kw):
+    global generated_class
+    class_name = "gen_class_" + str(generated_class)
+    generated_class += 1
+    inherit.insert(0, Grammar)
+    return type(class_name, tuple(inherit), kw)

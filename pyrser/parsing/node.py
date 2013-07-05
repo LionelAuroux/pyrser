@@ -18,7 +18,9 @@ class Node(dict):
             items.append("{} = {}".format(k, repr(v)))
         return "{}({})".format(self.__class__.__name__, ', '.join(items))
 
-    def dup(self, othernode):
+    def set(self, othernode):
+        """allow to completly mutate the node with another instance"""
+        self.__class__ = othernode.__class__
         if len(othernode) > 0:
             for k, v in othernode.items():
                 self[k] = v

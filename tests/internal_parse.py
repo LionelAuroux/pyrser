@@ -325,7 +325,7 @@ class InternalParse_Test(unittest.TestCase):
         def dummy(self):
             res = parsing.Node()
             res.text = "cool"
-            self.rulenodes["_"].dup(res)
+            self.rulenodes["_"].set(res)
             return res
         meta.set_one(parsing.Parser._rules, "A.B.C.test",
                      parsing.Call(parsing.Parser.dummy))

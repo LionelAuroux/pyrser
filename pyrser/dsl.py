@@ -1,5 +1,6 @@
 from pyrser import parsing
 from pyrser import meta
+from pyrser import error
 
 
 class EBNF(parsing.Parser):
@@ -7,7 +8,7 @@ class EBNF(parsing.Parser):
     def get_rules(self) -> parsing.Node:
         res = self.eval_rule('bnf_dsl')
         if not res:
-            raise meta.ParseError("Parse error with the rule {rule!r}",
+            raise error.ParseError("Parse error with the rule {rule!r}",
                                   stream_name=self._stream.name,
                                   rule='bnf_dsl',
                                   pos=self._stream._cursor.max_readed_position,
@@ -451,17 +452,9 @@ def add_range(self, sequence, begin, end):
 @meta.hook(EBNF, "EBNF.add_rpt")
 def add_rpt(self, sequence, mod, pt):
     if mod.value == '!!':
-        raise meta.ParseError(
-            "Cannot repeat a lookahead rule",
-            stream_name=self._stream.name,
-            pos=self._stream._cursor.max_readed_position,
-            line=self._stream.last_readed_line)
+        error.throw("Cannot repeat a lookahead rule", self)
     if mod.value == '!':
-        raise meta.ParseError(
-            "Cannot repeat a negated rule",
-            stream_name=self._stream.name,
-            pos=self._stream._cursor.max_readed_position,
-            line=self._stream.last_readed_line)
+        error.throw("Cannot repeat a negated rule", self)
     oldnode = sequence
     sequence.parser_tree = pt.functor(oldnode.parser_tree)
     return True

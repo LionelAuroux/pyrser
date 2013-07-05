@@ -1,8 +1,7 @@
 from collections import ChainMap
 import unittest
 
-import pyrser
-from pyrser import grammar, meta, parsing
+from pyrser import grammar, meta, parsing, error
 
 import weakref
 from pyrser.passes import dumpParseTree
@@ -74,7 +73,6 @@ class GrammarBasic_Test(unittest.TestCase):
             return True
 
         ws = WordList("ab cd ef gh")
-        print("PARSE TREE :%s" % ws.dumpParseTree())
         res = ws.parse()
         self.assertTrue(res, "failed to parse WordList")
         self.assertEqual(res.lst[2], "ef", "failed to reach lst[2]")
@@ -139,7 +137,7 @@ class GrammarBasic_Test(unittest.TestCase):
         Test parser error in CSV
         """
         csv = CSV()
-        with self.assertRaises(meta.ParseError) as pe:
+        with self.assertRaises(error.ParseError) as pe:
             res = csv.parse("""
             1;2;3;4
             a;b;c;';4;5
@@ -152,7 +150,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(meta.ParseError) as pe:
+        with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf"""
@@ -166,7 +164,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(meta.ParseError) as pe:
+        with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf ::= clause"""
@@ -180,7 +178,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(meta.ParseError) as pe:
+        with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf ::= #hook(12"""
@@ -194,7 +192,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(meta.ParseError) as pe:
+        with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf ::= @dir(12"""
@@ -208,7 +206,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(meta.ParseError) as pe:
+        with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf ::= #hook(12,"""
@@ -222,7 +220,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(meta.ParseError) as pe:
+        with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf ::= #hook("""
@@ -236,7 +234,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(meta.ParseError) as pe:
+        with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf ::= @dir(12,"""
@@ -250,7 +248,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(meta.ParseError) as pe:
+        with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf ::= @dir("""
@@ -264,7 +262,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(meta.ParseError) as pe:
+        with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf ::= [a"""
@@ -278,7 +276,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(meta.ParseError) as pe:
+        with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf ::= ["""
