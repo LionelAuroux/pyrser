@@ -214,7 +214,7 @@ class Rep1N(ParserTree):
 class Error(ParserTree):
     """Raise an error."""
 
-    def __init__(self, msg : str, **kwargs):
+    def __init__(self, msg: str, **kwargs):
         self.msg = msg
         self.kw = kwargs
 

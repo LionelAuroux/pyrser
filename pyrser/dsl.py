@@ -8,11 +8,12 @@ class EBNF(parsing.Parser):
     def get_rules(self) -> parsing.Node:
         res = self.eval_rule('bnf_dsl')
         if not res:
-            raise error.ParseError("Parse error with the rule {rule!r}",
-                                  stream_name=self._stream.name,
-                                  rule='bnf_dsl',
-                                  pos=self._stream._cursor.max_readed_position,
-                                  line=self._stream.last_readed_line)
+            raise error.ParseError(
+                "Parse error with the rule {rule!r}",
+                stream_name=self._stream.name,
+                rule='bnf_dsl',
+                pos=self._stream._cursor.max_readed_position,
+                line=self._stream.last_readed_line)
         return res
 
     def __init__(self, stream=''):
@@ -41,16 +42,14 @@ class EBNF(parsing.Parser):
                 parsing.Capture("rn", parsing.Rule('ns_name')),
                 parsing.Alt(
                     parsing.Call(parsing.Parser.read_text, "::="),
-                    parsing.Error("Expected '::='")
-                    ),
+                    parsing.Error("Expected '::='")),
                 parsing.Capture("alts", parsing.Rule('alternatives')),
                 parsing.Hook('add_rule', [("_", parsing.Node),
                                           ("rn", parsing.Node),
                                           ("alts", parsing.Node)]),
                 parsing.Alt(
                     parsing.Call(parsing.Parser.read_char, ';'),
-                    parsing.Error("Expected ';'")
-                    )
+                    parsing.Error("Expected ';'"))
             ),
 
             #
@@ -148,12 +147,10 @@ class EBNF(parsing.Parser):
                             parsing.Alt(
                                 parsing.Capture('subsequence',
                                                 parsing.Rule('alternatives')),
-                                parsing.Error("Expected sequences")
-                                ),
+                                parsing.Error("Expected sequences")),
                             parsing.Alt(
-                                    parsing.Call(parsing.Parser.read_char, "]"),
-                                    parsing.Error("Expected ']'")
-                                ),
+                                parsing.Call(parsing.Parser.read_char, "]"),
+                                parsing.Error("Expected ']'")),
                             parsing.Hook('add_subsequence',
                                          [("_", parsing.Node),
                                           ("subsequence", parsing.Node)]),
@@ -214,8 +211,8 @@ class EBNF(parsing.Parser):
                                                  "."),
                                     parsing.Alt(
                                         parsing.Rule('Base.id'),
-                                        parsing.Error("Expected identifier after '.'")
-                                        )
+                                        parsing.Error(
+                                            "Expected identifier after '.'"))
                                 )
                             )
                         )
@@ -264,26 +261,24 @@ class EBNF(parsing.Parser):
                         parsing.Call(parsing.Parser.read_char, '('),
                         parsing.Alt(
                             parsing.Capture('p', parsing.Rule('param')),
-                            parsing.Error("Expected parameter")
-                            ),
+                            parsing.Error("Expected parameter")),
                         parsing.Hook('hook_param', [('_', parsing.Node),
                                                     ('p', parsing.Node)]),
                         parsing.Rep0N(
                             parsing.Seq(
                                 parsing.Call(parsing.Parser.read_char, ','),
                                 parsing.Alt(
-                                    parsing.Capture('p', parsing.Rule('param')),
-                                    parsing.Error("Expected parameter")
-                                    ),
+                                    parsing.Capture(
+                                        'p',
+                                        parsing.Rule('param')),
+                                    parsing.Error("Expected parameter")),
                                 parsing.Hook('hook_param',
                                              [('_', parsing.Node),
-                                              ('p', parsing.Node)]),
-                            )
+                                              ('p', parsing.Node)]))
                         ),
                         parsing.Alt(
                             parsing.Call(parsing.Parser.read_char, ')'),
-                            parsing.Error("Expected ')'")
-                            )
+                            parsing.Error("Expected ')'"))
                     )
                 ),
             ),
@@ -304,8 +299,7 @@ class EBNF(parsing.Parser):
                         parsing.Call(parsing.Parser.read_char, '('),
                         parsing.Alt(
                             parsing.Capture('p', parsing.Rule('param')),
-                            parsing.Error("Expected parameter")
-                            ),
+                            parsing.Error("Expected parameter")),
                         parsing.Hook('hook_param',
                                      [('_', parsing.Node),
                                       ('p', parsing.Node)]),
@@ -313,9 +307,10 @@ class EBNF(parsing.Parser):
                             parsing.Seq(
                                 parsing.Call(parsing.Parser.read_char, ','),
                                 parsing.Alt(
-                                    parsing.Capture('p', parsing.Rule('param')),
-                                    parsing.Error("Expected parameter")
-                                    ),
+                                    parsing.Capture(
+                                        'p',
+                                        parsing.Rule('param')),
+                                    parsing.Error("Expected parameter")),
                                 parsing.Hook('hook_param',
                                              [('_', parsing.Node),
                                               ('p', parsing.Node)]),
@@ -323,8 +318,7 @@ class EBNF(parsing.Parser):
                         ),
                         parsing.Alt(
                             parsing.Call(parsing.Parser.read_char, ')'),
-                            parsing.Error("Expected ')'")
-                            )
+                            parsing.Error("Expected ')'"))
                     )
                 ),
             ),

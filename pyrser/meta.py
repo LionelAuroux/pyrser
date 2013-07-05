@@ -3,12 +3,15 @@ import functools
 import inspect
 import collections
 
+
 def enum(*sequential, **named):
     # build enums from parameter
     enums = dict(zip(sequential, range(len(sequential))), **named)
     # build reverse mapping
-    enums['reverse_mapping'] = dict((value, key) for key, value in enums.items())
+    for key, value in enums.items():
+        enums['reverse_mapping'][key] = value
     return type('Enum', (), enums)
+
 
 #From PEP 362: http://www.python.org/dev/peps/pep-0362/
 def checktypes(func):

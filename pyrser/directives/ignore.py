@@ -1,5 +1,6 @@
 from pyrser import meta, parsing
 
+
 @meta.directive("ignore")
 class Ignore(parsing.DirectiveWrapper):
     def begin(self, parser, convention: str):
