@@ -101,6 +101,30 @@ def dumpParseTree(self, level=0):
     return res
 
 
+@meta.add_method(parsing.Neg)
+def dumpParseTree(self, level=0):
+    res = ("\n{}![\n".format('\t' * level))
+    res += self.pt.dumpParseTree(level + 1)
+    res += ("\n{}]\n".format('\t' * level))
+    return res
+
+
+@meta.add_method(parsing.Complement)
+def dumpParseTree(self, level=0):
+    res = ("\n{}~[\n".format('\t' * level))
+    res += self.pt.dumpParseTree(level + 1)
+    res += ("\n{}]\n".format('\t' * level))
+    return res
+
+
+@meta.add_method(parsing.LookAhead)
+def dumpParseTree(self, level=0):
+    res = ("\n{}!![\n".format('\t' * level))
+    res += self.pt.dumpParseTree(level + 1)
+    res += ("\n{}]\n".format('\t' * level))
+    return res
+
+
 @meta.add_method(parsing.RepOptional)
 def dumpParseTree(self, level=0):
     res = ("\n{}[\n".format('\t' * level))

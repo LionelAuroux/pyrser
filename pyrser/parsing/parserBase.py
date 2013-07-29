@@ -183,6 +183,8 @@ class BasicParser(metaclass=MetaBasicParser):
     def eval_hook(self, name: str, ctx: list) -> Node:
         """Evaluate the hook by its name"""
         # TODO: think of hooks prototype!!!
+        if name not in self.__class__._hooks:
+            error.throw("Unknown hook : %s" % name, self)
         return self.__class__._hooks[name](self, *ctx)
 
 ### PARSING PRIMITIVES
@@ -401,10 +403,6 @@ def read_cstring(self) -> bool:
     if self.read_char('\"') and self.read_until('\"', '\\'):
         txt = self._stream[idx:self._stream.index]
         res = Node(self._stream.validate_context())
-        res.value = txt.strip('"')
-        # as result if called from eval_rule
-        if '_' in self.rulenodes:
-            self.rulenodes['_'].set(res)
         return res
     return self._stream.restore_context()
 
@@ -421,9 +419,5 @@ def read_cchar(self) -> bool:
     if self.read_char('\'') and self.read_until('\'', '\\'):
         txt = self._stream[idx:self._stream.index]
         res = Node(self._stream.validate_context())
-        res.value = txt.strip("'")
-        # as result if called from eval_rule
-        if '_' in self.rulenodes:
-            self.rulenodes['_'].set(res)
         return res
     return self._stream.restore_context()

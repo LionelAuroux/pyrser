@@ -171,7 +171,7 @@ class InternalParse_Test(unittest.TestCase):
 
     def test_07_RepXN(self):
         """
-            Basic test for repeater
+            Basic test for repeater operator
         """
         parser = parsing.Parser()
         parser.parsed_stream("12343 91219****1323 23")
@@ -430,3 +430,56 @@ class InternalParse_Test(unittest.TestCase):
                          " readed character")
         self.assertEqual(parser._stream.last_readed_line, "12abcd",
                          "failed to get the correct last readed line")
+
+    def test_16_Negation(self):
+        """
+        Basic test for negation !R
+        """
+        parser = parsing.Parser()
+        parser.parsed_stream("==")
+        parseTree = parsing.Seq(
+            parsing.Call(parsing.Parser.read_char, '='),
+            parsing.Neg(parsing.Call(parsing.Parser.read_char, '=')),
+            )
+        parseTree.dumpParseTree()
+        res = parseTree(parser)
+        self.assertEqual(res, False, "failed to get the correct final value")
+        self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 0,
+                         "failed to get the correct index after a negation")
+
+    def test_17_Lookahead(self):
+        """
+        Basic test for lookahead !!R
+        """
+        parser = parsing.Parser()
+        parser.parsed_stream("==")
+        parseTree = parsing.Seq(
+            parsing.Call(parsing.Parser.read_char, '='),
+            parsing.LookAhead(parsing.Call(parsing.Parser.read_char, '=')),
+            )
+        parseTree.dumpParseTree()
+        res = parseTree(parser)
+        self.assertEqual(res, True, "failed to get the correct final value")
+        self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 1,
+                         "failed to get the correct index after a lookahead")
+
+    def test_18_Complement(self):
+        """
+        Basic test for complement ~R
+        """
+        parser = parsing.Parser()
+        parser.parsed_stream("==")
+        parseTree = parsing.Seq(
+            parsing.Call(parsing.Parser.read_char, '='),
+            parsing.Complement(parsing.Call(parsing.Parser.read_char, '=')),
+            )
+        parseTree.dumpParseTree()
+        res = parseTree(parser)
+        self.assertEqual(res, False, "failed to get the correct final value")
+        self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 0,
+                         "failed to get the correct index after a lookahead")
+        parser.parsed_stream("=+")
+        res = parseTree(parser)
+        self.assertEqual(res, True, "failed to get the correct final value")
+        self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 2,
+                         "failed to get the correct index after a lookahead")

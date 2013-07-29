@@ -376,12 +376,22 @@ class InternalDsl_Test(unittest.TestCase):
         @meta.hook(parsing.Parser)
         def my_hook_multi(self, n1, n2, n3):
             self.test.assertTrue(n1.value == "456")
-            self.test.assertTrue(n2.value == "toto")
+            self.test.assertTrue(n2.value == '"toto"')
             self.test.assertTrue(n3.value == "blabla")
             return True
 
         bnf = dsl.EBNF("""
-            the_rule ::= Base.num : nth Base.string : t Base.id : i
+
+            N ::= Base.num
+            ;
+
+            S ::= Base.string
+            ;
+
+            I ::= Base.id
+            ;
+
+            the_rule ::= N:nth S:t I:i
                          #my_hook_multi(nth, t, i)
             ;
         """)
@@ -390,11 +400,12 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertIsInstance(res['the_rule'], parsing.Seq)
         self.assertTrue(res['the_rule'].ptlist[-1].name == "my_hook_multi")
         dummyData = parsing.Parser("""
-            456 "toto" blabla
+            456    "toto"        blabla      
             """)
         dummyData.set_rules(res)
         dummyData.test = self
-        self.assertTrue(dummyData.eval_rule('the_rule'))
+        eval_res = dummyData.eval_rule('the_rule')
+        self.assertTrue(eval_res)
 
     def test_25_directive(self):
         class dummyDir(parsing.DirectiveWrapper):
@@ -435,3 +446,35 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData.set_rules(res)
         dummyData.test = self
         self.assertTrue(dummyData.eval_rule('the_rule'))
+
+    def test_25_list_id(self):
+        @meta.hook(parsing.Parser)
+        def in_list(self, ls, ident):
+            if not hasattr(ls, 'list'):
+                ls.list = []
+            ls.list.append(ident.value)
+            return True
+
+        bnf = dsl.EBNF("""
+        
+            I ::= id
+            ;
+
+            list ::= [I : i #in_list(_, i) ]+
+            ;
+        """)
+        res = bnf.get_rules()
+        self.assertTrue('list' in res)
+        dummyData = parsing.Parser("""
+            a     b c   d        e   f
+        """)
+        dummyData.set_rules(res)
+        dummyData.test = self
+        eval_res = dummyData.eval_rule('list')
+        self.assertTrue(eval_res)
+        self.assertTrue(eval_res.list[0] == "a")
+        self.assertTrue(eval_res.list[1] == "b")
+        self.assertTrue(eval_res.list[2] == "c")
+        self.assertTrue(eval_res.list[3] == "d")
+        self.assertTrue(eval_res.list[4] == "e")
+        self.assertTrue(eval_res.list[5] == "f")

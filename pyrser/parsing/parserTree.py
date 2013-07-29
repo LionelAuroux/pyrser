@@ -24,11 +24,12 @@ class Seq(ParserTree):
         self.ptlist = ptlist
 
     def __call__(self, parser: BasicParser) -> bool:
+        parser._stream.save_context()
         for pt in self.ptlist:
             parser.skip_ignore()
             if not pt(parser):
-                return False
-        return True
+                return parser._stream.restore_context()
+        return parser._stream.validate_context()
 
 
 class Scope(ParserTree):
@@ -59,7 +60,7 @@ class LookAhead(ParserTree):
         parser._stream.save_context()
         res = self.pt(parser)
         parser._stream.restore_context()
-        return not res
+        return res
 
 
 class Neg(ParserTree):
@@ -72,7 +73,8 @@ class Neg(ParserTree):
     def __call__(self, parser: BasicParser):
         parser._stream.save_context()
         if self.pt(parser):
-            return parser._stream.restore_context()
+            res = parser._stream.restore_context()
+            return res
         return parser._stream.validate_context()
 
 
@@ -86,6 +88,7 @@ class Complement(ParserTree):
     def __call__(self, parser: BasicParser) -> bool:
         if parser.read_eof():
             return False
+        ## skip/undo?
         parser.skip_ignore()
         parser._stream.save_context()
         res = self.pt(parser)
@@ -202,13 +205,15 @@ class Rep1N(ParserTree):
         self.pt = pt
 
     def __call__(self, parser: BasicParser) -> bool:
+        parser._stream.save_context()
+        # skip/undo
         parser.skip_ignore()
         if self.pt(parser):
             parser.skip_ignore()
             while self.pt(parser):
                 parser.skip_ignore()
-            return True
-        return False
+            return parser._stream.validate_context()
+        return parser._stream.restore_context()
 
 
 class Error(ParserTree):
@@ -252,6 +257,8 @@ class Hook(ParserTree):
         for v, t in self.param:
             if t is Node:
                 import weakref
+                if v not in parser.rulenodes:
+                    error.throw("Unknown capture variable : %s" % v, parser)
                 if type(parser.rulenodes[v]) is weakref.ProxyType:
                     valueparam.append(parser.rulenodes[v])
                 else:

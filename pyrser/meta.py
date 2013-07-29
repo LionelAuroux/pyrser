@@ -8,6 +8,7 @@ def enum(*sequential, **named):
     # build enums from parameter
     enums = dict(zip(sequential, range(len(sequential))), **named)
     # build reverse mapping
+    enums['reverse_mapping'] = {}
     for key, value in enums.items():
         enums['reverse_mapping'][key] = value
     return type('Enum', (), enums)

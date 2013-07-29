@@ -113,6 +113,9 @@ generated_class = 0
 
 
 def grammar_class(inherit: [type], **kw):
+    """
+    Convenient function to create a grammar class on the fly
+    """
     global generated_class
     class_name = "gen_class_" + str(generated_class)
     generated_class += 1
