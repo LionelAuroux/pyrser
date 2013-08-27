@@ -1,6 +1,7 @@
 from pyrser import parsing
 from pyrser import meta
 from pyrser import error
+from pyrser.directives import ignore
 
 
 class EBNF(parsing.Parser):
@@ -21,10 +22,22 @@ class EBNF(parsing.Parser):
         #TODO(iopi): allow comment, so ignoreCxx
         self.set_rules({
             #
-            # bnf_dsl ::= [rule : r #add_rules(_, r) ]+ Base.eof
+            # bnf_dsl ::= @ignore("C/C++") bnf_stmts
             # ;
             #
             'bnf_dsl': parsing.Seq(
+                # parserTree is not already construct but Directive need it
+                # forward it thru a lambda
+                parsing.Directive(ignore.Ignore(),
+                                  [("C/C++", str)],
+                                  lambda parser: self.__class__._rules['bnf_stmts'](parser)),
+            ),
+
+            #
+            # bnf_stmts ::= [rule : r #add_rules(_, r) ]+ Base.eof
+            # ;
+            #
+            'bnf_stmts': parsing.Seq(
                 parsing.Rep1N(parsing.Seq(
                     parsing.Capture("r", parsing.Rule('rule')),
                     parsing.Hook('add_rules', [("_", parsing.Node),

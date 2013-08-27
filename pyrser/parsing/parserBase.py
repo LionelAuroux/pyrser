@@ -169,14 +169,14 @@ class BasicParser(metaclass=MetaBasicParser):
         """Evaluate a rule by name."""
         self.push_rule_nodes()
         # create a slot value for the result
-        return_code = Node()
+        return_node = Node()
         import weakref
-        self.rulenodes['_'] = weakref.proxy(return_code)
+        self.rulenodes['_'] = weakref.proxy(return_node)
         if name not in self.__class__._rules:
             error.throw("Unknown rule : %s" % name, self)
         res = self.__class__._rules[name](self)
         if res:
-            res = return_code
+            res = return_node
         self.pop_rule_nodes()
         return res
 
@@ -282,12 +282,12 @@ class BasicParser(metaclass=MetaBasicParser):
         return True
 
     def ignore_blanks(self) -> bool:
-        """Consume comments and whitespace characters."""
+        """Consume whitespace characters."""
         self._stream.save_context()
-        while not self.read_eof():
-            if self._stream.peek_char not in " \t\r\n":
-                return self._stream.validate_context()
-            self._stream.incpos()
+        if not self.read_eof() and self._stream.peek_char in " \t\f\r\n":
+            while not self.read_eof() and self._stream.peek_char in " \t\f\r\n":
+               self._stream.incpos()
+            return self._stream.validate_context()
         return self._stream.validate_context()
 
     def push_ignore(self, ignoreConvention) -> bool:

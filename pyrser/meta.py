@@ -2,15 +2,17 @@
 import functools
 import inspect
 import collections
-
+import copy
 
 def enum(*sequential, **named):
     # build enums from parameter
     enums = dict(zip(sequential, range(len(sequential))), **named)
+    enums['map'] = copy.copy(enums)
     # build reverse mapping
-    enums['reverse_mapping'] = {}
+    enums['rmap'] = {}
     for key, value in enums.items():
-        enums['reverse_mapping'][key] = value
+        if type(value) is int:
+            enums['rmap'][value] = key
     return type('Enum', (), enums)
 
 

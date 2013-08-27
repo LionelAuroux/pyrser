@@ -2,23 +2,11 @@ from collections import ChainMap
 import unittest
 
 from pyrser import grammar, meta, parsing, error
+from pyrser.hooks import copy
+from pyrser.directives import ignore
 
 import weakref
 from pyrser.passes import dumpParseTree
-
-
-# directive must be declare before class definition
-@meta.directive("ignore")
-class Ignore(parsing.DirectiveWrapper):
-    def begin(self, parser, convention: str):
-        if convention == "null":
-            parser.push_ignore(parsing.Parser.ignore_null)
-        return True
-
-    def end(self, parser, convention: str):
-        parser.pop_ignore()
-        return True
-
 
 class WordList(grammar.Grammar):
     grammar = """
@@ -55,6 +43,14 @@ class CSV2(grammar.Grammar, CSV):
         ;
 
         item ::= [CSV.item]?:_
+        ;
+    """
+
+
+class DummyCpp(grammar.Grammar):
+    entry = "main"
+    grammar = """
+        main ::= @ignore("C/C++") [id:i #copy(_, i)]+
         ;
     """
 
@@ -285,3 +281,17 @@ class GrammarBasic_Test(unittest.TestCase):
                          "failed to get the correct message")
         self.assertEqual(pe.exception.error_position.col_offset, 43,
                          "failed to get the correct position")
+
+    def test_15_ignore_cpp(self):
+        """
+        Test ignore directive for C/C++
+        """
+        cxx = DummyCpp()
+        res = cxx.parse("""
+            a b c /* comment */
+            // another comment
+            d e/**/f//
+            g
+        """)
+        self.assertTrue(res, "failed to parse dummyCpp")
+        self.assertEqual(res.value, 'g', "failed to parse comments")
