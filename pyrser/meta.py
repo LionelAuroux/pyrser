@@ -1,14 +1,18 @@
-# Some meta prog stuff
+#: Some meta prog stuff
 import functools
 import inspect
 import collections
 import copy
 
+
 def enum(*sequential, **named):
-    # build enums from parameter
+    """
+    Build an enum statement
+    """
+    #: build enums from parameter
     enums = dict(zip(sequential, range(len(sequential))), **named)
     enums['map'] = copy.copy(enums)
-    # build reverse mapping
+    #: build reverse mapping
     enums['rmap'] = {}
     for key, value in enums.items():
         if type(value) is int:
@@ -95,6 +99,7 @@ def checktypes(func):
 
 
 # TODO: could be better in a tool module?
+#: Addtototo
 def set_one(chainmap, thing_name, callobject):
     """ Add a mapping with key thing_name for callobject in chainmap with
         namespace handling.

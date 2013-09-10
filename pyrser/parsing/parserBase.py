@@ -5,7 +5,7 @@ from pyrser.parsing.node import Node
 import collections
 
 # TODO: ensure unicity of names
-# Module variable to store meta class instance by classname
+#: Module variable to store meta class instance by classname
 _MetaBasicParser = {}
 
 
@@ -89,7 +89,7 @@ class BasicParser(metaclass=MetaBasicParser):
 
 ### STREAM
 
-    def parsed_stream(self, sNewStream: str, sName="new"):
+    def parsed_stream(self, sNewStream: str, sName="string"):
         """Push a new Stream into the parser.
         All subsequent called functions will parse this new stream,
         until the 'popStream' function is called.
@@ -369,7 +369,7 @@ def read_integer(self) -> bool:
             return self._stream.validate_context()
     return self._stream.restore_context()
 
-
+# `Base.id`
 @meta.rule(Parser, "Base.id")
 def read_identifier(self) -> bool:
     """

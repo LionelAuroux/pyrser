@@ -1,3 +1,7 @@
+***************
+Developer Guide
+***************
+
 Setup your environment
 ======================
 Install setuptools and sphinx::
@@ -20,3 +24,11 @@ Don't forget to upgrade the package number or delete the package you want to
 replace on pypi before running the following command::
 
     python setup.py sdist upload
+
+
+Links for reset syntax
+======================
+- http://docutils.sourceforge.net/rst.html <http://docutils.sourceforge.net/rst.html>
+- http://docutils.sourceforge.net/docs/user/rst/quickref.html <http://docutils.sourceforge.net/docs/user/rst/quickref.html>
+- http://docutils.sourceforge.net/docs/user/rst/cheatsheet.txt <http://docutils.sourceforge.net/docs/user/rst/cheatsheet.txt>
+

@@ -2,15 +2,15 @@ from pyrser import meta
 from pyrser.parsing.parserBase import BasicParser
 
 
-@meta.hook(BasicParser, "print")
-def print_nodes(self, *rest):
+@meta.hook(BasicParser, "echo")
+def echo_nodes(self, *rest):
     """
         Print nodes
 
         example:
 
             R ::=
-                In : node #print(node)
+                In : node #echo(node)
             ;
 
     """

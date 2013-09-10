@@ -367,7 +367,9 @@ class EBNF(parsing.Parser):
             ),
         })
 
-
+#: Hooks part
+#: ----------
+#: All these functions are automatically added to class EBNF
 @meta.hook(EBNF, "EBNF.add_mod")
 def add_mod(self, seq, mod):
     if mod.value == '~':

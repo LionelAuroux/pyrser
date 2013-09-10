@@ -2,8 +2,8 @@ import collections
 import unittest
 from unittest import mock
 
-from pyrser import meta
 from pyrser import parsing
+from pyrser import meta
 from pyrser import grammar
 import pyrser.passes.dumpParseTree
 
@@ -437,10 +437,11 @@ class InternalParse_Test(unittest.TestCase):
         """
         parser = parsing.Parser()
         parser.parsed_stream("==")
-        parseTree = parsing.Seq(
-            parsing.Call(parsing.Parser.read_char, '='),
-            parsing.Neg(parsing.Call(parsing.Parser.read_char, '=')),
-            )
+        parseTree = \
+            parsing.Seq(parsing.Call(parsing.Parser.read_char, '='),
+                        parsing.Neg(parsing.Call(
+                            parsing.Parser.read_char,
+                            '=')))
         parseTree.dumpParseTree()
         res = parseTree(parser)
         self.assertEqual(res, False, "failed to get the correct final value")
@@ -453,10 +454,12 @@ class InternalParse_Test(unittest.TestCase):
         """
         parser = parsing.Parser()
         parser.parsed_stream("==")
-        parseTree = parsing.Seq(
-            parsing.Call(parsing.Parser.read_char, '='),
-            parsing.LookAhead(parsing.Call(parsing.Parser.read_char, '=')),
-            )
+        parseTree = \
+            parsing.Seq(parsing.Call(parsing.Parser.read_char, '='),
+                        parsing.LookAhead(parsing.Call(
+                            parsing.Parser.read_char,
+                            '=')),
+                        )
         parseTree.dumpParseTree()
         res = parseTree(parser)
         self.assertEqual(res, True, "failed to get the correct final value")
@@ -471,8 +474,7 @@ class InternalParse_Test(unittest.TestCase):
         parser.parsed_stream("==")
         parseTree = parsing.Seq(
             parsing.Call(parsing.Parser.read_char, '='),
-            parsing.Complement(parsing.Call(parsing.Parser.read_char, '=')),
-            )
+            parsing.Complement(parsing.Call(parsing.Parser.read_char, '=')))
         parseTree.dumpParseTree()
         res = parseTree(parser)
         self.assertEqual(res, False, "failed to get the correct final value")

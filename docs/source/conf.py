@@ -17,7 +17,7 @@ import sys, os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../../'))
 
 # -- General configuration -----------------------------------------------------
 
@@ -26,7 +26,41 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.viewcode']
+extensions = ['sphinx.ext.viewcode', 'sphinx.ext.todo', 'sphinx.ext.graphviz',
+              'sphinx.ext.inheritance_diagram', 'sphinx.ext.autodoc']
+
+autodoc_member_order = 'bysource'
+autodoc_default_flags = ['members', 'undoc-members', 'special-members',
+                         'show-inheritance']
+import inspect
+def process_signature(app, what, name, obj, options, signature, return_annotation):
+    if what == "function" or what == "method":
+        sigf = inspect.signature(obj)
+        sigp = []
+        if len(sigf.parameters) > 0:
+            for arg_name, param in sigf.parameters.items():
+                ptxt = arg_name
+                if param is not param.empty and hasattr(param.annotation, '__name__') \
+                    and param.annotation.__name__ != "_empty":
+                    ptxt += ': ' + param.annotation.__name__
+                if param.default is not param.empty:
+                    ptxt += '= ' + repr(param.default)
+                sigp.append(ptxt)
+        signature = '(' + ", ".join(sigp) + ")"
+        if sigf.return_annotation is not sigf.empty:
+            return_annotation = sigf.return_annotation.__name__
+    return (signature, return_annotation)
+
+def process_skip_member(app, what, name, obj, skip, options):
+    if name == "__dict__" or name == "__doc__" or name == "__qualname__" or name == "__module__" \
+        or name == "__weakref__" or name == "_source" or name == "_hooks" or name == "_rules":
+        return True
+    return False
+
+#!!! PROCESS EXTENSIONS
+def setup(app):
+    app.connect('autodoc-process-signature', process_signature)
+    app.connect('autodoc-skip-member', process_skip_member)
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -79,7 +113,7 @@ exclude_patterns = []
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
-#show_authors = False
+show_authors = True
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -121,7 +155,7 @@ html_theme = 'default'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+#html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.

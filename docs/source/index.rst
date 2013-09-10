@@ -6,12 +6,18 @@
 Welcome to pyrser's documentation!
 ==================================
 
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
    
    quickstart
+   tutorial
+   dsl
+   base
+   stream
+   API
    developersetup
 
 

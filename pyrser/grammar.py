@@ -90,9 +90,30 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
     dsl_parser = dsl.EBNF
 
     def parse(self, source=None, entry=None):
-        """Parse the grammar"""
+        """Parse source using the grammar"""
         if source is not None:
             self.parsed_stream(source)
+        if entry is None:
+            entry = self.entry
+        if entry is None:
+            raise ValueError("No entry rule name defined for {}".format(
+                self.__class__.__name__))
+        res = self.eval_rule(entry)
+        if not res:
+            raise error.ParseError(
+                "Parse error with the rule {rule!r}",
+                stream_name=self._stream.name,
+                rule=entry,
+                pos=self._stream._cursor.max_readed_position,
+                line=self._stream.last_readed_line)
+        return res
+
+    def parse_file(self, filename: str, entry=None):
+        """Parse filename using the grammar"""
+        import os.path
+        if os.path.exists(filename):
+            f = open(filename, 'r')
+            self.parsed_stream(f.read(), os.path.abspath(filename))
         if entry is None:
             entry = self.entry
         if entry is None:
@@ -112,12 +133,26 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
 generated_class = 0
 
 
-def grammar_class(inherit: [type], **kw):
+def from_string(bnf: str, *optional_inherit):
     """
-    Convenient function to create a grammar class on the fly
+    Create a Grammar from a string
     """
     global generated_class
     class_name = "gen_class_" + str(generated_class)
     generated_class += 1
-    inherit.insert(0, Grammar)
-    return type(class_name, tuple(inherit), kw)
+    inherit = [Grammar] + list(optional_inherit)
+    scope = {'grammar': bnf, 'entry': None}
+    return type(class_name, tuple(inherit), scope)
+
+
+def from_file(fn: str, *optional_inherit):
+    """
+    Create a Grammar from a file
+    """
+    import os.path
+    if os.path.exists(fn):
+        f = open(fn, 'r')
+        bnf = f.read()
+        f.close()
+        return from_string(bnf, *optional_inherit)
+    raise Exception("File not Found!")

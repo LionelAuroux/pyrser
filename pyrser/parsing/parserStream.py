@@ -18,7 +18,7 @@ class Cursor:
     def __init__(self, position: Position=Position(0, 1, 1)):
         self.__maxindex = self.__index = position.index
         self.__maxcol = self.__col_offset = position.col_offset
-        self.__lineno = position.lineno
+        self.__maxline = self.__lineno = position.lineno
         self.__eol = []
 
     @property
@@ -50,7 +50,7 @@ class Cursor:
     @property
     def max_readed_position(self) -> Position:
         """The index of the deepest character readed."""
-        return Position(self.__maxindex, self.__lineno, self.__maxcol)
+        return Position(self.__maxindex, self.__maxline, self.__maxcol)
 
     def step_next_char(self):
         """Puts the cursor on the next character."""
@@ -59,6 +59,7 @@ class Cursor:
         if self.__index > self.__maxindex:
             self.__maxindex = self.__index
             self.__maxcol = self.__col_offset
+            self.__maxline = self.__lineno
 
     def step_prev_char(self):
         """Puts the cursor on the previous character."""
