@@ -6,38 +6,44 @@ BNF Syntax
 
 Pyrser use the following DSL to describe a grammar.
 
-``R ::= ...;``:
-    Define a rule named R.
+``R ::= A ...;``:
+    Define a rule named R as a sequence of clauses A etc.
 
-``A B``:
-    Match A, and then match B if it succeeds. Like python's ``and``.
+``expr``:
+    expr is one of the following statements.
 
-``A | B``:
-    Try to match A. If it fails, match B instead. Like python's ``or``.
+``expr1 expr2``:
+    Match expr1, and then match expr2 if it succeeds. Like python's ``and``.
 
-``[ ... ]``:
+``expr1 | expr2``:
+    Try to match expr1. If it fails, match expr2 instead. Like python's ``or``.
+
+``[ expr1 expr2 expr3 ... ]``:
     Group some clauses.
 
-``A*``:
-    Match A zero or more times.
+``expr*``:
+    Match expr zero or more times.
 
-``A+``:
-    Match A one or more times.
+``expr+``:
+    Match expr one or more times.
 
-``A?``:
-    Try to match A.
+``expr?``:
+    Try to match expr.
 
-``!A``:
-    Negative lookahead. Fails if the next item in the input matches A. Consumes no input.
+``!expr``:
+    Negative lookahead. Fails if the next item in the input matches expr. Consumes no input.
 
-``!!A``:
-    Positive lookahead. Fails if the next item in the input does *not* matches A. Consumes no input.
+``!!expr``:
+    Positive lookahead. Fails if the next item in the input does *not* matches expr. Consumes no input.
 
-``~A``:
-    Complement of A. Consumes one character if the next item in the input matches does *not* matches A.
+``~expr``:
+    Complement of expr. Consumes one character if the next item in the input matches does *not* matches expr.
 
-``->A``:
-    Read until A. Consumes N character until the next item in the input matches A.
+``->expr``:
+    Read until expr. Consumes N character until the next item in the input matches expr.
+
+``A``:
+    Read just the clause A.
 
 ``'a'``:
     Read the character ``'a'`` in the input.
@@ -57,11 +63,11 @@ Pyrser use the following DSL to describe a grammar.
 ``#hook(p1, "p2", 3)``:
     Call a hook with ``p1`` as node, ``"p2"`` as str, ``3`` as int.
 
-``@foo R``:
-    Apply the directive ``foo`` to the rule ``R``.
+``@foo A``:
+    Apply the directive ``foo`` to the clause ``A``.
 
-``@foo(p1, "p2", 3) R``:
-    Apply the directive ``foo`` to the rule ``R`` with parameter to the directive (as hooks).
+``@foo(p1, "p2", 3) A``:
+    Apply the directive ``foo`` to the clause ``A`` with parameter to the directive (as hooks).
 
 Python API: class EBNF
 ~~~~~~~~~~~~~~~~~~~~~~
