@@ -7,10 +7,10 @@ Setup your environment
 Install setuptools and sphinx::
 
     pip install setuptools sphinx
-	
+
 Clone the pyrser repository::
 
-	hg clone -b deviopi https://code.google.com/p/pyrser/
+    hg clone https://code.google.com/p/pyrser/
 
 Prepare package and documentation
 =================================
