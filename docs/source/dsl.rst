@@ -1,6 +1,9 @@
 Writing a BNF grammar
 =====================
 
+BNF Syntax
+~~~~~~~~~~
+
 Pyrser use the following DSL to describe a grammar.
 
 ``R ::= ...;``:
@@ -60,7 +63,7 @@ Pyrser use the following DSL to describe a grammar.
 ``@foo(p1, "p2", 3) R``:
     Apply the directive ``foo`` to the rule ``R`` with parameter to the directive (as hooks).
 
-Python API:
-~~~~~~~~~~~
+Python API: class EBNF
+~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: pyrser.dsl
+.. autoclass:: pyrser.dsl.EBNF

@@ -16,7 +16,6 @@ Contents:
    tutorial
    dsl
    base
-   stream
    API
    developersetup
 

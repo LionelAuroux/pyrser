@@ -5,14 +5,14 @@ from pyrser.parsing.parserBase import BasicParser
 @meta.hook(BasicParser, "echo")
 def echo_nodes(self, *rest):
     """
-        Print nodes
+    Print nodes
 
-        example:
+    example:
 
-            R ::=
-                In : node #echo(node)
-            ;
-
+        R ::=
+            In : node #echo(node)
+        ;
     """
     print(*rest)
     return True
+

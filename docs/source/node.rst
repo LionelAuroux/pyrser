@@ -1,5 +1,6 @@
-Nodes
-=====
+class Node
+==========
+
 
 .. automodule:: pyrser.parsing.node
     :members:

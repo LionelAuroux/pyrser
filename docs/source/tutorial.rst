@@ -3,7 +3,7 @@ Tutorial I: A guided JSON parser:
 
 The JSON spec here: http://json.org could be easily describe using pyrser.
 
-1- python canevas
+1- starting block
 -----------------
 
 To describe a file format you just need to write a class that inherits from ``pyrser.grammar.Grammar``::
@@ -78,11 +78,15 @@ It's better to use repeater ``+`` or ``*`` to describe the list.
 With these advices, we could translate all the BNF::
 
     from pyrser import grammar
+    from pyrser.directives import ignore
 
     class   JSON(grammar.Grammar):
         """Our JSON parser"""
-        entry = "object"
+        entry = "json"
         grammar = """
+            json ::= object eof
+            ;
+
             object ::= 
                 '{' members? '}'
             ;
@@ -145,10 +149,12 @@ With these advices, we could translate all the BNF::
 
 note 1: We could notice the use of ``@ignore("null")`` in the rule ``number``.
 This ``directive`` allow you to change ``ignore convention``.
+
 See :doc:`directives` for more informations about directives.
 
-note 2: We don't provide the ``string`` rule because this rule is a default rule provide by inheritance from
-the grammar ``Grammar``.
+note 2: We don't provide the ``string`` and ``eof`` rules because these rules are default rules provided by inheritance from the grammar ``Grammar``.
+
+See :doc:`base` for more informations about what is provided by default.
 
 5- Constructing an AST
 ----------------------
@@ -168,7 +174,7 @@ Let's focus on the ``number`` rule. We want to capture the number and convert it
 nodes
 ~~~~~
 
-To capture the result of a rule just ``suffix`` it by ':' and the name of the node::
+To capture the result of a rule just ``suffix`` it by ':' and names it::
 
     """
     ...
@@ -199,12 +205,16 @@ By default ``is_num`` is an unknown hook. Let's declare it with the following sy
         print(arg.value)
         return True
 
-note: A hook is just a function with a special decorator. The function took at least one parameter ``self``.
-This is the parser instance. ``arg`` is here the capturing node.
-With the attribute ``value``, we could fetch the captured text (parsed by ``[int frac? exp?]``).
+note: A hook is just a function with a special decorator:
 
-note: A hook must return True if the parsing must continue. You could stop parsing by returning False.
-This return provoking a parse error.
+    * The function took at least one parameter ``self``. This is the parser instance.
+    * ``arg`` is the capturing node. With the attribute ``value``, we could fetch the captured text (parsed by ``[int frac? exp?]``).
+
+note: A hook must return True if the parsing must continue. You could stop parsing by returning False (this return provoking a parse error).
+
+See :doc:`hooks` for more informations about hooks.
+
+See :doc:`node` for more informations about nodes.
 
 return values
 ~~~~~~~~~~~~~
@@ -229,12 +239,13 @@ To return something with it you must create an arbitrary attribute (but the name
 
     @meta.hook(JSON)
     def is_num(self, ast, arg):
+        # node is arbitrary
         ast.node = float(arg.value)
         return True
 
 note: The ``float`` constructor interpret directly ``arg.value`` like ``1.0`` or ``-2e+2`` to create a float object.
 
-We could process like this for all trivial values.
+We could proceed like this for all trivial values.
 
 handling arrays
 ~~~~~~~~~~~~~~~
@@ -275,13 +286,140 @@ With the following hooks::
         ast.node.append(item.node)
         return True
 
-We could proceed in the same way for ``object``.
+We could proceed in the same way for the rule ``object``.
 
 6- Final JSON parser
 ----------------------
 
+A complete grammar for a JSON parser looks like this::
+
+    from pyrser import grammar, meta
+    from pyrser.directives import ignore
+
+    class   JSON(grammar.Grammar):
+        """Pyrser JSON parser"""
+        entry = "json"
+        grammar = """
+        
+            json ::= object:_ eof
+            ;
+            
+            object ::= 
+                '{' #is_dict(_) [pair:p #add_kv(_, p) [',' pair:p #add_kv(_, p) ]*]? '}'
+            ;
+            
+            pair ::= string:s ':' value:v #is_pair(_, s, v)
+            ;
+            
+            value ::= 
+                string:s #is_str(_, s)
+                | number:_
+                | object:_
+                | array:_
+                | "true":t #is_bool(_, t)
+                | "false":f #is_bool(_, f)
+                | "null" #is_none(_)
+            ;
+            
+            array ::=
+                '[' #is_array(_) [value:v #add_item(_, v) [',' value:v #add_item(_, v)] *]? ']'
+            ;
+            
+            number ::= @ignore("null") [int frac? exp?]:n #is_num(_, n)
+            ;
+            
+            int ::= '-'? 
+                [
+                    digit1_9s
+                    | digit
+                ]
+            ;
+            
+            frac ::= '.' digits
+            ;
+            
+            exp ::= e digits
+            ;
+            
+            digit ::= '0'..'9'
+            ;
+            
+            digit1_9 ::= '1'..'9'
+            ;
+            
+            digits ::= digit+
+            ;
+            
+            digit1_9s ::= digit1_9 digits
+            ;
+            
+            e ::= ['e'|'E'] ['+'|'-']?
+            ;
+        """
+
+    @meta.hook(JSON)
+    def is_num(self, ast, n):
+        ast.node = float(n.value)
+        return True
+
+    @meta.hook(JSON)
+    def is_str(self, ast, s):
+        ast.node = s.value.strip('"')
+        return True
+
+    @meta.hook(JSON)
+    def is_bool(self, ast, b):
+        if b.value == "true":
+            ast.node = True
+        if b.value == "false":
+            ast.node = False
+        return True
+
+    @meta.hook(JSON)
+    def is_none(self, ast):
+        ast.node = None
+        return True
+
+    @meta.hook(JSON)
+    def is_pair(self, ast, s, v):
+        ast.node = (s.value.strip('"'), v.node)
+        return True
+
+    @meta.hook(JSON)
+    def is_array(self, ast):
+        ast.node = []
+        return True
+
+    @meta.hook(JSON)
+    def add_item(self, ast, item):
+        ast.node.append(item.node)
+        return True
+
+    @meta.hook(JSON)
+    def is_dict(self, ast):
+        ast.node = {}
+        return True
+
+    @meta.hook(JSON)
+    def add_kv(self, ast, item):
+        ast.node[item.node[0]] = item.node[1]
+        return True
+
+7- Parser in action
+-------------------
+
+Using the JSON class is really easy.
+
+Instanciate it and use the method ``parse`` (or ``parse_file``) to parse a content::
+
+        json = JSON()
+        res = json.parse("""
+            {
+                "test" : 12,
+                "puf" : [1, 2, 3]
+            }
+        """)
+        if res.node['puf'][1] == 2:
+            print("OK")
 
 
-See :doc:`hooks` for more informations about hooks.
-
-See :doc:`node` for more informations about nodes.

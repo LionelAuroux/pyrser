@@ -322,7 +322,7 @@ class Parser(BasicParser):
 ### BASE RULES
 
 
-@meta.rule(BasicParser, "Base.read_byte")
+@meta.rule(BasicParser, "Base.read_char")
 def read_one_char(self) -> bool:
     """Read one byte in stream"""
     if self.read_eof():
@@ -374,8 +374,7 @@ def read_integer(self) -> bool:
 def read_identifier(self) -> bool:
     """
     Read following BNF rule else return False
-    readIdentifier ::= ['a'..'z'|'A'..'Z'|'_']
-                       ['0'..'9'|'a'..'z'|'A'..'Z'|'_']* ;
+    readIdentifier ::= ['a'..'z'|'A'..'Z'|'_']['0'..'9'|'a'..'z'|'A'..'Z'|'_']* ;
     """
     if self.read_eof():
         return False

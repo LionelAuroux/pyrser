@@ -3,10 +3,21 @@ from pyrser import meta
 from pyrser import error
 from pyrser.directives import ignore
 
+##: TEST
 
 class EBNF(parsing.Parser):
-    """Basic class for BNF DSL PARSING."""
+    """
+    Basic class for BNF DSL PARSING.
+    
+    A full parser for the BNF is provided by this class.
+    We construct a tree of parserTree to represents, thru functors, BNF semantics.
+    """
+
     def get_rules(self) -> parsing.Node:
+        """
+        Parse the DSL and provide a dictionnaries of all resulting rules.
+        Call by the MetaGrammar class.
+        """
         res = self.eval_rule('bnf_dsl')
         if not res:
             raise error.ParseError(
@@ -18,8 +29,10 @@ class EBNF(parsing.Parser):
         return res
 
     def __init__(self, stream=''):
+        """
+        Define the DSL parser.
+        """
         super().__init__(stream)
-        #TODO(iopi): allow comment, so ignoreCxx
         self.set_rules({
             #
             # bnf_dsl ::= @ignore("C/C++") bnf_stmts
@@ -367,11 +380,14 @@ class EBNF(parsing.Parser):
             ),
         })
 
-#: Hooks part
-#: ----------
-#: All these functions are automatically added to class EBNF
+# Hooks part
+# ----------
+# All these functions are automatically added to class EBNF
+
+
 @meta.hook(EBNF, "EBNF.add_mod")
 def add_mod(self, seq, mod):
+    """Create a parserTree.{Complement, LookAhead, Neg}"""
     if mod.value == '~':
         seq.parser_tree = parsing.Complement(seq.parser_tree)
     elif mod.value == '!!':
@@ -383,6 +399,7 @@ def add_mod(self, seq, mod):
 
 @meta.hook(EBNF, "EBNF.add_ruleclause_name")
 def add_ruleclause_name(self, ns_name, rid) -> bool:
+    """Create a parserTree.Rule"""
     ns_name.value = rid.value
     ns_name.parser_tree = parsing.Rule(ns_name.value)
     return True
@@ -390,12 +407,14 @@ def add_ruleclause_name(self, ns_name, rid) -> bool:
 
 @meta.hook(EBNF, "EBNF.add_rules")
 def add_rules(self, bnf, r) -> bool:
+    """Attach a parser tree to the dict of rules"""
     bnf[r.rulename] = r.parser_tree
     return True
 
 
 @meta.hook(EBNF, "EBNF.add_rule")
 def add_rule(self, rule, rn, alts) -> bool:
+    """Add the rule name"""
     rule.rulename = rn.value
     rule.parser_tree = alts.parser_tree
     return True
@@ -403,6 +422,7 @@ def add_rule(self, rule, rn, alts) -> bool:
 
 @meta.hook(EBNF, "EBNF.add_sequences")
 def add_sequences(self, sequences, cla) -> bool:
+    """Create a parserTree.Seq"""
     if not hasattr(sequences, 'parser_tree'):
         # forward sublevel of sequence as is
         sequences.parser_tree = cla.parser_tree
@@ -419,6 +439,7 @@ def add_sequences(self, sequences, cla) -> bool:
 
 @meta.hook(EBNF, "EBNF.add_alt")
 def add_alt(self, alternatives, alt) -> bool:
+    """Create a parserTree.Alt"""
     if not hasattr(alternatives, 'parser_tree'):
         # forward sublevel of alt as is
         if hasattr(alt, 'parser_tree'):
@@ -438,6 +459,7 @@ def add_alt(self, alternatives, alt) -> bool:
 
 @meta.hook(EBNF, "EBNF.add_char")
 def add_char(self, sequence, c):
+    """Add a read_char primitive"""
     sequence.parser_tree = parsing.Call(parsing.Parser.read_char,
                                         c.value.strip("'"))
     return True
@@ -445,6 +467,7 @@ def add_char(self, sequence, c):
 
 @meta.hook(EBNF, "EBNF.add_text")
 def add_text(self, sequence, txt):
+    """Add a read_text primitive"""
     sequence.parser_tree = parsing.Call(parsing.Parser.read_text,
                                         txt.value.strip('"'))
     return True
@@ -452,6 +475,7 @@ def add_text(self, sequence, txt):
 
 @meta.hook(EBNF, "EBNF.add_range")
 def add_range(self, sequence, begin, end):
+    """Add a read_range primitive"""
     sequence.parser_tree = parsing.Call(parsing.Parser.read_range,
                                         begin.value.strip("'"),
                                         end.value.strip("'"))
@@ -460,6 +484,7 @@ def add_range(self, sequence, begin, end):
 
 @meta.hook(EBNF, "EBNF.add_rpt")
 def add_rpt(self, sequence, mod, pt):
+    """Add a repeater to the previous sequence"""
     if mod.value == '!!':
         error.throw("Cannot repeat a lookahead rule", self)
     if mod.value == '!':
@@ -471,66 +496,77 @@ def add_rpt(self, sequence, mod, pt):
 
 @meta.hook(EBNF, "EBNF.add_capture")
 def add_capture(self, sequence, cpt):
+    """Create a parserTree.Capture"""
     sequence.parser_tree = parsing.Capture(cpt.value, sequence.parser_tree)
     return True
 
 
 @meta.hook(EBNF, "EBNF.add_subsequence")
 def add_subsequence(self, sequence, subsequence):
+    """Add a subsequence into a sequence"""
     sequence.parser_tree = subsequence.parser_tree
     return True
 
 
 @meta.hook(EBNF, "EBNF.add_optional")
 def add_optional(self, repeat):
+    """Create a parserTree.RepOptional"""
     repeat.functor = parsing.RepOptional
     return True
 
 
 @meta.hook(EBNF, "EBNF.add_0N")
 def add_0N(self, repeat):
+    """Create a parserTree.Rep0N"""
     repeat.functor = parsing.Rep0N
     return True
 
 
 @meta.hook(EBNF, "EBNF.add_1N")
 def add_1N(self, repeat):
+    """Create a parserTree.Rep1N"""
     repeat.functor = parsing.Rep1N
     return True
 
 
 @meta.hook(EBNF, "EBNF.add_hook")
 def add_hook(self, sequence, h):
+    """Create a parserTree.Hook"""
     sequence.parser_tree = parsing.Hook(h.name, h.listparam)
     return True
 
 
 @meta.hook(EBNF, "EBNF.param_num")
 def param_num(self, param, n):
+    """Parse a int in parameter list"""
     param.pair = (int(n.value), int)
     return True
 
 
 @meta.hook(EBNF, "EBNF.param_str")
 def param_str(self, param, s):
+    """Parse a str in parameter list"""
     param.pair = (s.value.strip('"'), str)
     return True
 
 
 @meta.hook(EBNF, "EBNF.param_char")
 def param_char(self, param, c):
+    """Parse a char in parameter list"""
     param.pair = (c.value.strip("'"), str)
     return True
 
 
 @meta.hook(EBNF, "EBNF.param_id")
 def param_id(self, param, i):
+    """Parse a node name in parameter list"""
     param.pair = (i.value, parsing.Node)
     return True
 
 
 @meta.hook(EBNF, "EBNF.hook_name")
 def hook_name(self, hook, n):
+    """Parse a hook name"""
     hook.name = n.value
     hook.listparam = []
     return True
@@ -538,12 +574,14 @@ def hook_name(self, hook, n):
 
 @meta.hook(EBNF, "EBNF.hook_param")
 def hook_param(self, hook, p):
+    """Parse a hook parameter"""
     hook.listparam.append(p.pair)
     return True
 
 
 @meta.hook(EBNF, "EBNF.add_directive")
 def add_directive(self, sequence, d, s):
+    """Add a directive in the sequence"""
     if d.name not in meta._directives:
         raise TypeError("Unkown directive %s" % d.name)
     the_class = meta._directives[d.name]

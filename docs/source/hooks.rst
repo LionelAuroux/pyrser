@@ -1,5 +1,7 @@
 Hooks
-==========
+=====
+
+This provide some default hooks.
 
 .. automodule:: pyrser.hooks.echo
 

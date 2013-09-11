@@ -1,5 +1,7 @@
-Top-level grammar
-=================
+class Grammar
+=============
+
+This class provide the composition mechanism.
 
 .. inheritance-diagram:: pyrser.grammar
 .. automodule:: pyrser.grammar
