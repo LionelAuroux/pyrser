@@ -7,7 +7,7 @@ Default ignore convention
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``blanks``:
-    Default convention. Consume space,\t,\f,\r and \n silently.
+    Default convention. Consume space,\\t,\\f,\\r and \\n silently.
 
 ``null``:
     Consume nothing silently.
