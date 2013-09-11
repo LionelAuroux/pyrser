@@ -21,7 +21,7 @@ A minimal use of pyrser is ::
     class   Helloworld(grammar.Grammar):
         entry = "main"
         grammar = """
-            main ::= ["hello" | "world"]* eol
+            main ::= ["hello" | "world"]* eof
             ;
         """
     
@@ -29,6 +29,8 @@ A minimal use of pyrser is ::
     hw = Helloworld()
     if hw.parse_file(sys.argv[1]):
         print("OK")
+
+This piece of code allow you to read a list of ``hello`` or ``word``.
 
 See :doc:`tutorial` to understand how works this sample.
 
