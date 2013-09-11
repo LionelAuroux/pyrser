@@ -1,0 +1,56 @@
+// A JSON parser
+
+json ::= object:_ eof
+;
+
+object ::= 
+    '{' #is_dict(_) [pair:p #add_kv(_, p) [',' pair:p #add_kv(_, p) ]*]? '}'
+;
+
+pair ::= string:s ':' value:v #is_pair(_, s, v)
+;
+
+value ::= 
+    string:s #is_str(_, s)
+    | number:_
+    | object:_
+    | array:_
+    | "true":t #is_bool(_, t)
+    | "false":f #is_bool(_, f)
+    | "null" #is_none(_)
+;
+
+array ::=
+    '[' #is_array(_) [value:v #add_item(_, v) [',' value:v #add_item(_, v)] *]? ']'
+;
+
+number ::= @ignore("null") [int frac? exp?]:n #is_num(_, n)
+;
+
+int ::= '-'? 
+    [
+        digit1_9s
+        | digit
+    ]
+;
+
+frac ::= '.' digits
+;
+
+exp ::= e digits
+;
+
+digit ::= '0'..'9'
+;
+
+digit1_9 ::= '1'..'9'
+;
+
+digits ::= digit+
+;
+
+digit1_9s ::= digit1_9 digits
+;
+
+e ::= ['e'|'E'] ['+'|'-']?
+;

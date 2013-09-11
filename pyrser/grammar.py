@@ -1,151 +1,158 @@
-# Copyright (C) 2012 Candiotti Adrien 
-# 
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-# 
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# 
-# See the GNU General Public License for more details.
-# 
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-import sys
-from imp import load_source
-from traceback import extract_tb
-
-from parsing.parsing_context import parsingContext
-from node import next_is
-from trace import *
-from dsl_parser.dsl_parser import *
+from pyrser import dsl
+from pyrser import parsing
+from pyrser import meta
+from pyrser import error
+from collections import ChainMap
 
 
-# FIXME : virer l'importation fixe du generateur
-from code_generation.python import *
-# FIXME : solution provisoire
-from os import getenv
-# FIXME : debug
-from time import time
-# ENDFIXME
+class MetaGrammar(parsing.MetaBasicParser):
+    """Metaclass for all grammars."""
+    def __new__(metacls, name, bases, namespace):
+        # for multi heritance we have a simple inheritance relation
+        # from the first class in declaration order.
+        metabp = parsing.MetaBasicParser
+        if len(bases) <= 1:
+            cls = metabp.__new__(metacls, name, bases, namespace)
+        else:
+            b = tuple([bases[0]])
+            cls = metabp.__new__(metacls, name, b, namespace)
+        # lookup for the metaclass of parsing.
+        # Grammar magically inherit rules&hooks from Parser
+        if 'Parser' in parsing.parserBase._MetaBasicParser:
+            clsbase = parsing.parserBase._MetaBasicParser['Parser']
+            # link rules&hooks
+            cls._rules = clsbase._rules.new_child()
+            cls._hooks = clsbase._hooks.new_child()
+            # add rules from DSL
+            if 'grammar' in namespace and namespace['grammar'] is not None:
+                dsl_object = cls.dsl_parser(namespace['grammar'])
+                # namespace rules with module/classe name
+                for rule_name, rule_pt in dsl_object.get_rules().items():
+                    if '.' not in rule_name:
+                        rule_name = cls.__module__ \
+                            + '.' + cls.__name__ \
+                            + '.' + rule_name
+                    meta.set_one(cls._rules, rule_name, rule_pt)
+            # add localy define rules (and thus overloads)
+            if '_rules' in namespace and namespace['_rules'] is not None:
+                cls._rules.update(namespace['_rules'])
+            # add localy define hooks
+            if '_hooks' in namespace and namespace['_hooks'] is not None:
+                cls._hooks.update(namespace['_hooks'])
+        # Manage Aggregation
+        if len(bases) > 1:
+            aggreg_rules = ChainMap()
+            aggreg_hooks = ChainMap()
+            for subgrammar in bases:
+                if hasattr(subgrammar, '_rules'):
+                    aggreg_rules = ChainMap(*(aggreg_rules.maps
+                                            + subgrammar._rules.maps))
+                if hasattr(subgrammar, '_hooks'):
+                    aggreg_hooks = ChainMap(*(aggreg_hooks.maps
+                                            + subgrammar._hooks.maps))
+            # aggregate at toplevel the branch grammar
+            cls._rules = ChainMap(*(cls._rules.maps + aggreg_rules.maps))
+            cls._hooks = ChainMap(*(cls._hooks.maps + aggreg_hooks.maps))
+            # clean redondant in chain for rules
+            orderedunique_rules = []
+            tocpy_rules = set([id(_) for _ in cls._rules.maps])
+            for ch in cls._rules.maps:
+                idch = id(ch)
+                if idch in tocpy_rules:
+                    orderedunique_rules.append(ch)
+                    tocpy_rules.remove(idch)
+            cls._rules = ChainMap(*orderedunique_rules)
+            # clean redondant in chain for hooks
+            orderedunique_hooks = []
+            tocpy_hooks = set([id(_) for _ in cls._hooks.maps])
+            for ch in cls._hooks.maps:
+                idch = id(ch)
+                if idch in tocpy_hooks:
+                    orderedunique_hooks.append(ch)
+                    tocpy_hooks.remove(idch)
+            cls._hooks = ChainMap(*orderedunique_hooks)
+        return cls
 
-def runtime_error_handle(oType, oValue, oTraceback):
-    lCalls = extract_tb(oTraceback)
-    print "Fatal error : %s %s" % (oType, oValue)
-    print "This is a traceback of the called rules."
-    nDepth = 1
-    for iCall in lCalls:
-      for iManglingEnd in ['Rule', 'Wrapper', 'Hook']:
-	if iCall[2].endswith(iManglingEnd):
-	  sFile = iCall[0]
-	  if sFile == '<string>':
-	    sFile = 'generated grammar'
-	  print "%s+|In %s line %s: %s (%s)" %\
-	            (nDepth * '-',
-	             sFile,
-	             iCall[1],
-		     iCall[2][:-len(iManglingEnd)],
-		     iManglingEnd)
-	  if iManglingEnd == 'Rule':
-	    nDepth += 1
-    exit(1)
 
-sys.excepthook = runtime_error_handle
+class Grammar(parsing.Parser, metaclass=MetaGrammar):
+    """
+    Base class for all grammars.
 
-class Grammar(object):
-      """
-      This class turn any class A that inherit it into a grammar.
-      Taking the description of the grammar in parameter it will add
-      all what is what is needed for A to parse it.
-      """
+    This class turn any class A that inherit it into a grammar.
+    Taking the description of the grammar in parameter it will add
+    all what is what is needed for A to parse it.
+    """
+    # Text grammar to generate parsing rules for this class.
+    grammar = None
+    # Name of the default rule to parse the grammar.
+    entry = None
+    # DSL parsing class
+    dsl_parser = dsl.EBNF
 
-      # FIXME : instanciation's debug
-      nCount = 0
-      # ENDFIXME
+    def parse(self, source=None, entry=None):
+        """Parse source using the grammar"""
+        if source is not None:
+            self.parsed_stream(source)
+        if entry is None:
+            entry = self.entry
+        if entry is None:
+            raise ValueError("No entry rule name defined for {}".format(
+                self.__class__.__name__))
+        res = self.eval_rule(entry)
+        if not res:
+            raise error.ParseError(
+                "Parse error with the rule {rule!r}",
+                stream_name=self._stream.name,
+                rule=entry,
+                pos=self._stream._cursor.max_readed_position,
+                line=self._stream.last_readed_line)
+        return res
 
-      TRACE = False
-      # Borg design pattern.
-      dDefined = {}
+    def parse_file(self, filename: str, entry=None):
+        """Parse filename using the grammar"""
+        import os.path
+        if os.path.exists(filename):
+            f = open(filename, 'r')
+            self.parsed_stream(f.read(), os.path.abspath(filename))
+        if entry is None:
+            entry = self.entry
+        if entry is None:
+            raise ValueError("No entry rule name defined for {}".format(
+                self.__class__.__name__))
+        res = self.eval_rule(entry)
+        if not res:
+            raise error.ParseError(
+                "Parse error with the rule {rule!r}",
+                stream_name=self._stream.name,
+                rule=entry,
+                pos=self._stream._cursor.max_readed_position,
+                line=self._stream.last_readed_line)
+        return res
 
-      @classmethod
-      def __compile_grammar(oCls,
-	  oSon, sSource, dGlobals,
-	  bFromString,
-	  sOutFile, sLang):
 
-	  sCurrentFile = oSon.__name__
-	  if bFromString == False:
-	    sCurrentFile = sSource
-	    # FIXME : fileChecking n'existe plus, trouver une solution generique
-	    sSource = fileChecking(sSource, bFromString, parse)
+generated_class = 0
 
-          oGrammarAst = parse(sSource, {}, oSon.__name__)
-	  Grammar.nCount += 1
 
-	  # FIXME : path non absolu
-	  sPath = '%s/pyrser/lang/%s/%s.py' % (getenv('PYRSERPATH'), sLang, sLang)
-	  oLangModule = load_source(sLang, sPath)
+def from_string(bnf: str, *optional_inherit):
+    """
+    Create a Grammar from a string
+    """
+    global generated_class
+    class_name = "gen_class_" + str(generated_class)
+    generated_class += 1
+    inherit = [Grammar] + list(optional_inherit)
+    scope = {'grammar': bnf, 'entry': None}
+    return type(class_name, tuple(inherit), scope)
 
-	  dLangConf = getattr(oLangModule, sLang)
-	  
-	  # FIXME : choper la bonne classe : python/c/c++/ocaml etc
-#	  t = time()
-	  sGeneratedCode =\
-	      Python(dLangConf).translation(oSon.__name__, oGrammarAst['rules'])
-#	  print time() - t
 
-#	  print sGeneratedCode
-	  oByteCode = compile(sGeneratedCode, "<string>", "exec")
-  
-	  if dGlobals == None:
-	    dGlobals = globals()
-	  else:
-	    dGlobals.update(globals())
-
-	  eval(oByteCode, dGlobals, locals())
-
-	  dLocals = locals()
-	  for iKey, iValue in dLocals['CompiledGrammar'].__dict__.iteritems():
-	    if hasattr(iValue, '__func__'):
-	      setattr(oCls, iKey, getattr(dLocals['CompiledGrammar'], iKey))
-
-	  # FIXME : try/catch to test if a PostGeneration function was defined
-#	  return getattr(oLangModule, '%sPostGeneration' % sLang)\
-#	      (sModuleName, sOutFile, sToFile, sGrammar, self)
-
-      def __init__(self,
-	  oSon, sSource, dGlobals = None,
-	  bFromString = True,
-	  sOutFile = None, sLang = 'python'):
-	  sName = oSon.__name__
-	  if sName not in Grammar.dDefined:
-	    self.__compile_grammar(
-		oSon, sSource, dGlobals, bFromString, sOutFile, sLang)
-	    Grammar.dDefined[sName] = oSon
-
-      def parse(self, sSource, oRoot, sRuleName):
-	  next_is(oRoot, oRoot)
-	  Parsing.oBaseParser.parsedStream(sSource)
-	  if hasattr(self, '%sRule' % sRuleName) == False:
-	    raise Exception('First rule doesn\'t exist : %s' % sRuleName)
-	  if Grammar.TRACE == True:
-	    oTrace = set_stack_trace(self)
-	  bRes = getattr(self, '%sRule' % sRuleName)(oRoot)
-	  if Grammar.TRACE == True:
-	    result_stack_trace(oTrace)
-	  if not bRes:
-	    return False
-	  Parsing.oBaseParser.readWs()
-	  return Parsing.oBaseParser.readEOF()
-
-      def __getattr__(self, sName):
-	  for iManglingEnd in ['Rule', 'Hook', 'Wrapper']:
-	    if sName.endswith(iManglingEnd):
-	      raise Exception('No such %s declared : %s::%s'\
-		% (iManglingEnd.lower(),
-		  self.__class__.__name__,
-		  sName[:-len(iManglingEnd)]))
-          raise AttributeError, sName
+def from_file(fn: str, *optional_inherit):
+    """
+    Create a Grammar from a file
+    """
+    import os.path
+    if os.path.exists(fn):
+        f = open(fn, 'r')
+        bnf = f.read()
+        f.close()
+        return from_string(bnf, *optional_inherit)
+    raise Exception("File not Found!")
