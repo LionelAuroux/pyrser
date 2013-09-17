@@ -1,5 +1,7 @@
 ## Helping formating classes for to_c
 
+
+
 class   indentable:
     """
     base of all fmt objects
@@ -20,21 +22,6 @@ class   indentable:
         strinit = (self.char_indent * self.num_indent) * (self._indent - 1)
         return self.to_str(strinit, self._indent)
 
-    def __repr__(self):
-        txt = str(type(self))
-        if hasattr(self, '_beginby'):
-            txt += repr(self._beginby)
-        if hasattr(self, '_endby'):
-            txt += repr(self._endby)
-        if hasattr(self, '_ch'):
-            txt += repr(self._ch)
-        if self._lsdata != None and len(self._lsdata) > 0:
-            txt += '(\n'
-            for d in self._lsdata:
-                txt += '     ' + repr(d) + "\n"
-            txt += ')\n'
-        return txt
-
     @property
     def lsdata(self) -> list:
         return self._lsdata
@@ -46,21 +33,40 @@ class   indentable:
         if isinstance(self._lsdata, indentable):
             self._lsdata.set_indent(self._indent)
         if isinstance(self._lsdata, list):
-            for i in self._lsdata:
-                if isinstance(i, self.__class__):
-                    if not i._is_indented:
-                        i.set_indent(indent)
+            list_set_indent(self._lsdata, self._indent)
         self._is_indented = True
     
-    # copy char by char and handle \n for tabulation!!!
-    def catend(self, dst :str, src :str, _indent) -> str:
-        res = dst
-        for c in list(src):
-            if len(res) > 0 and res[-1] == '\n':
-                res += (self.char_indent * self.num_indent) * (_indent - 1) + c
-            else:
-                res += c
-        return res
+def catend(dst :str, src :str, indent) -> str:
+    """cat two strings but handle \n for tabulation"""
+    res = dst
+    txtsrc = src
+    if not isinstance(src, str):
+        txtsrc = str(src)
+    for c in list(txtsrc):
+        if len(res) > 0 and res[-1] == '\n':
+            res += (indentable.char_indent * indentable.num_indent) * (indent - 1) + c
+        else:
+            res += c
+    return res
+
+def list_set_indent(lst: list, indent: int=1):
+    """recurs into list for indentation"""
+    for i in lst:
+        if isinstance(i, indentable):
+            i.set_indent(indent)
+        if isinstance(i, list):
+            list_set_indent(i, indent)
+
+def list_to_str(lst: list, content: str, indent: int=1):
+    """recurs into list for string computing """
+    for i in lst:
+        if isinstance(i, indentable):
+            content = i.to_str(content, indent)
+        elif isinstance(i, list):
+            content = list_to_str(i, content, indent)
+        elif isinstance(i, str):
+            content = catend(content, i, indent)
+    return content
 
 class   block(indentable):
     """
@@ -77,17 +83,20 @@ class   block(indentable):
 
     def to_str(self, res: str, parent_indent) -> str:
         self.set_indent()
-        content = self.catend(res, self._beginby, parent_indent)
+        content = catend(res, self._beginby, parent_indent)
         if isinstance(self._lsdata, indentable):
-            return self.catend(self._lsdata.to_str(content, self._indent), self._endby, parent_indent)
+            return catend(self._lsdata.to_str(content, self._indent), self._endby, parent_indent)
         if isinstance(self._lsdata, list):
-            for i in self._lsdata:
-                if isinstance(i, indentable):
-                    # FIX 
-                    content = i.to_str(content, self._indent)
-                else:
-                    content = self.catend(content, i, self._indent)
-        return self.catend(content, self._endby, parent_indent)
+            content = list_to_str(self._lsdata, content, self._indent)
+#            for i in self._lsdata:
+#                   if isinstance(i, indentable):
+#                       # FIX 
+#                       content = i.to_str(content, self._indent)
+#                   elif isinstance(i, str):
+#                       content = self.catend(content, i, self._indent)
+#                   else:
+#                       content = self.catend(content, i, self._indent)
+        return catend(content, self._endby, parent_indent)
 
 class   sep(indentable):
     """
@@ -110,10 +119,12 @@ class   sep(indentable):
             for i in range(sz):
                 if isinstance(self._lsdata[i], indentable):
                     content = self._lsdata[i].to_str(content, self._indent)
+                elif isinstance(self._lsdata[i], list):
+                    content = list_to_str(self._lsdata[i], content, self._indent)
                 else:
-                    content = self.catend(content, self._lsdata[i], self._indent)
+                    content = catend(content, self._lsdata[i], self._indent)
                 if i < sz - 1:
-                    content = self.catend(content, self._ch, self._indent)
+                    content = catend(content, self._ch, self._indent)
         return content
 
 class   end(indentable):
@@ -131,14 +142,16 @@ class   end(indentable):
         self.set_indent()
         content = res
         if isinstance(self._lsdata, indentable):
-            return self.catend(self._lsdata.to_str(res, self._indent), self._ch, self._indent)
+            return catend(self._lsdata.to_str(res, self._indent), self._ch, self._indent)
         if isinstance(self._lsdata, list):
             for i in self._lsdata:
                 if isinstance(i, indentable):
                     content = i.to_str(content, self._indent)
+                elif isinstance(i, list):
+                    content = list_to_str(i, content, self._indent)
                 else:
-                    content = self.catend(content, i, self._indent)
-                content = self.catend(content, self._ch, self._indent)
+                    content = catend(content, i, self._indent)
+                content = catend(content, self._ch, self._indent)
         return content
 
 class   tab(indentable):
@@ -158,9 +171,7 @@ class   tab(indentable):
         if isinstance(self._lsdata, indentable):
             self._lsdata.set_indent(self._indent)
         if isinstance(self._lsdata, list):
-            for i in self._lsdata:
-                if isinstance(i, indentable):
-                    i.set_indent(self._indent)
+            list_set_indent(self._lsdata, self._indent)
         self._is_indented = True
 
     def to_str(self, res: str, parent_indent) -> str:
@@ -172,6 +183,8 @@ class   tab(indentable):
             for i in self._lsdata:
                 if isinstance(i, indentable):
                     content = i.to_str(content, self._indent)
+                elif isinstance(i, list):
+                    content = list_to_str(i, content, self._indent)
                 else:
-                    content = self.catend(content, i, self._indent)
+                    content = catend(content, i, self._indent)
         return content
