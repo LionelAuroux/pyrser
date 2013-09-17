@@ -5,7 +5,7 @@ from unittest import mock
 from pyrser import parsing
 from pyrser import meta
 from pyrser import grammar
-import pyrser.passes.dumpParseTree
+from pyrser.passes import dumpParseTree
 
 
 class InternalParse_Test(unittest.TestCase):

@@ -1,7 +1,10 @@
 from collections import ChainMap
 import unittest
 
-from pyrser import grammar, meta, parsing, error
+from pyrser import grammar
+from pyrser import meta
+from pyrser import parsing
+from pyrser import error
 from pyrser.hooks import copy
 from pyrser.directives import ignore
 

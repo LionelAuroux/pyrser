@@ -16,3 +16,17 @@ def echo_nodes(self, *rest):
     print(*rest)
     return True
 
+@meta.hook(BasicParser, "vars")
+def vars_nodes(self, rest):
+    """
+    Vars one node instance
+
+    example:
+
+        R ::=
+            In : node #vars(node)
+        ;
+    """
+    print(vars(rest))
+    return True
+
