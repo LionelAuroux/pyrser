@@ -89,6 +89,9 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
     # DSL parsing class
     dsl_parser = dsl.EBNF
 
+    def after_parse(self, node):
+        return node
+
     def parse(self, source=None, entry=None):
         """Parse source using the grammar"""
         if source is not None:
@@ -106,7 +109,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
                 rule=entry,
                 pos=self._stream._cursor.max_readed_position,
                 line=self._stream.last_readed_line)
-        return res
+        return self.after_parse(res)
 
     def parse_file(self, filename: str, entry=None):
         """Parse filename using the grammar"""
@@ -127,7 +130,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
                 rule=entry,
                 pos=self._stream._cursor.max_readed_position,
                 line=self._stream.last_readed_line)
-        return res
+        return self.after_parse(res)
 
 
 generated_class = 0

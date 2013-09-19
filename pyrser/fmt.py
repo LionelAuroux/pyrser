@@ -1,7 +1,5 @@
 ## Helping formating classes for to_c
 
-
-
 class   indentable:
     """
     base of all fmt objects
@@ -80,7 +78,6 @@ class   block(indentable):
             raise Exception("lsdata can't be None")
         self._lsdata = lsdata
 
-
     def to_str(self, res: str, parent_indent) -> str:
         self.set_indent()
         content = catend(res, self._beginby, parent_indent)
@@ -88,14 +85,6 @@ class   block(indentable):
             return catend(self._lsdata.to_str(content, self._indent), self._endby, parent_indent)
         if isinstance(self._lsdata, list):
             content = list_to_str(self._lsdata, content, self._indent)
-#            for i in self._lsdata:
-#                   if isinstance(i, indentable):
-#                       # FIX 
-#                       content = i.to_str(content, self._indent)
-#                   elif isinstance(i, str):
-#                       content = self.catend(content, i, self._indent)
-#                   else:
-#                       content = self.catend(content, i, self._indent)
         return catend(content, self._endby, parent_indent)
 
 class   sep(indentable):

@@ -305,7 +305,7 @@ class InternalParse_Test(unittest.TestCase):
         Basic test for context variables
         """
         parser = parsing.Parser()
-        parser.rulenodes.update({'coucou': 42, 'toto': [12, 33]})
+        parser.rulenodes.update({'coucou': 42, 'grigri': 666, 'toto': [12, 33]})
         self.assertEqual(parser.rulenodes['toto'], [12, 33],
                          "failed comparing list")
         parser.push_rule_nodes()
@@ -313,6 +313,10 @@ class InternalParse_Test(unittest.TestCase):
         parser.rulenodes['toto'] = [1, 2, 3, 4]
         self.assertEqual(parser.rulenodes['coucou'], 42,
                          "failed outer scope not visible in local")
+        parser.push_rule_nodes()
+        self.assertEqual(parser.rulenodes['grigri'], 666,
+                         "failed outer scope not visible in local")
+        self.assertTrue('grigri' in parser.rulenodes, "failed outer scope not visible in local")
         parser.pop_rule_nodes()
 
     def test_11_namespaceRules(self):
@@ -485,3 +489,18 @@ class InternalParse_Test(unittest.TestCase):
         self.assertEqual(res, True, "failed to get the correct final value")
         self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 2,
                          "failed to get the correct index after a lookahead")
+
+    def test_19_Until(self):
+        """
+        Basic test for complement ->R
+        """
+        parser = parsing.Parser()
+        parser.parsed_stream("==|=|==tutu")
+        parseTree = parsing.Seq(
+            parsing.Until(parsing.Call(parsing.Parser.read_text, '|==')),
+            parsing.Call(parsing.Parser.read_text, 'tutu'),
+            )
+        parseTree.dumpParseTree()
+        res = parseTree(parser)
+        print("cursor: %s" % vars(parser._stream._cursor))
+        self.assertEqual(res, True, "failed to get the correct final value")

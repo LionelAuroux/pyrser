@@ -114,7 +114,7 @@ class EBNF(parsing.Parser):
 
             #
             # sequence ::=
-            #     [ '~' | '!!' | '!' ]?: mod
+            #     [ '~' | "!!" | '!' | "->" ]?: mod
             #     [ ns_name : rid #add_ruleclause_name(_, rid)
             #       | Base.string : txt #add_text(_, txt)
             #       | Base.char : begin ".." Base.char : end
@@ -137,7 +137,8 @@ class EBNF(parsing.Parser):
                             parsing.Alt(
                                 parsing.Call(parsing.Parser.read_char, '~'),
                                 parsing.Call(parsing.Parser.read_text, '!!'),
-                                parsing.Call(parsing.Parser.read_char, '!')))),
+                                parsing.Call(parsing.Parser.read_char, '!'),
+                                parsing.Call(parsing.Parser.read_text, '->')))),
                     parsing.Alt(
                         parsing.Seq(
                             parsing.Capture('rid', parsing.Rule('ns_name')),
@@ -387,13 +388,15 @@ class EBNF(parsing.Parser):
 
 @meta.hook(EBNF, "EBNF.add_mod")
 def add_mod(self, seq, mod):
-    """Create a parserTree.{Complement, LookAhead, Neg}"""
+    """Create a parserTree.{Complement, LookAhead, Neg, Until}"""
     if mod.value == '~':
         seq.parser_tree = parsing.Complement(seq.parser_tree)
     elif mod.value == '!!':
         seq.parser_tree = parsing.LookAhead(seq.parser_tree)
     elif mod.value == '!':
         seq.parser_tree = parsing.Neg(seq.parser_tree)
+    elif mod.value == '->':
+        seq.parser_tree = parsing.Until(seq.parser_tree)
     return True
 
 

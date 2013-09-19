@@ -162,10 +162,7 @@ class BasicParser(metaclass=MetaBasicParser):
             dir_pt.ns_name = dir_name
         return True
 
-    #TODO(iopi): define what should be sent globally to all rules
-    #TODO(iopi): think about rule proto? global data etc...
-    #TODO(bps): Check why eval_rule gets args & kwargs but does not use them
-    def eval_rule(self, name: str, *args, **kwargs) -> Node:
+    def eval_rule(self, name: str) -> Node:
         """Evaluate a rule by name."""
         self.push_rule_nodes()
         # create a slot value for the result
@@ -182,8 +179,8 @@ class BasicParser(metaclass=MetaBasicParser):
 
     def eval_hook(self, name: str, ctx: list) -> Node:
         """Evaluate the hook by its name"""
-        # TODO: think of hooks prototype!!!
         if name not in self.__class__._hooks:
+            # TODO: don't always throw error, could have return True by default
             error.throw("Unknown hook : %s" % name, self)
         return self.__class__._hooks[name](self, *ctx)
 

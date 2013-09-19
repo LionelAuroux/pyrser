@@ -61,7 +61,6 @@ class InternalFmt_Test(unittest.TestCase):
                     + "{tab2}a;\n{tab2}b;\n{tab2}c;\n"
                     + "{tab}}}\n}}\n").format(tab=(" " * 4), tab2=(" " * 8)),
             "Failed to indent")
-        
         data = fmt.tab(["1", "2", [fmt.sep(",\n", ["tot", "tit", "tut"])], "4"])
         self.assertEqual(str(data), "{tab}12tot,\n{tab}tit,\n{tab}tut4".format(tab=" " * 4),
             "Failed to format end")

@@ -38,7 +38,7 @@ def to_yml_item(item, pp, name):
         return
     if isinstance(item, object) and hasattr(item, '__dict__'):
         inner = fmt.tab([])
-        tag = fmt.block(name + " " + str(yml_attr('type', item.__class__.__name__)) + '\n',
+        tag = fmt.block(name + " " + str(yml_attr('type', item.__class__.__name__)) + ':\n',
                         '', inner)
         for attr in sorted(vars(item)):
             to_yml_item(getattr(item, attr), inner.lsdata, attr)

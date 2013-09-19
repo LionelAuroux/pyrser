@@ -100,6 +100,27 @@ class Complement(ParserTree):
         return False
 
 
+class Until(ParserTree):
+    """->A bnf primitive as a functor."""
+
+    def __init__(self, pt: ParserTree):
+        ParserTree.__init__(self)
+        self.pt = pt
+
+    def __call__(self, parser: BasicParser) -> bool:
+        ## skip/undo?
+        parser.skip_ignore()
+        parser._stream.save_context()
+        while not parser.read_eof():
+            res = self.pt(parser)
+            if res:
+                return parser._stream.validate_context()
+            parser._stream.incpos()
+        parser._stream.restore_context()
+        parser.undo_ignore()
+        return False
+
+
 class Call(ParserTree):
     """Functor wrapping a BasicParser method call in a BNF clause."""
 
@@ -192,8 +213,10 @@ class Rep0N(ParserTree):
 
     def __call__(self, parser: BasicParser) -> bool:
         parser.skip_ignore()
+        parser.push_rule_nodes()
         while self.pt(parser):
             parser.skip_ignore()
+        parser.pop_rule_nodes()
         return True
 
 
@@ -208,11 +231,14 @@ class Rep1N(ParserTree):
         parser._stream.save_context()
         # skip/undo
         parser.skip_ignore()
+        parser.push_rule_nodes()
         if self.pt(parser):
             parser.skip_ignore()
             while self.pt(parser):
                 parser.skip_ignore()
+            parser.pop_rule_nodes()
             return parser._stream.validate_context()
+        parser.pop_rule_nodes()
         return parser._stream.restore_context()
 
 
@@ -258,6 +284,8 @@ class Hook(ParserTree):
             if t is Node:
                 import weakref
                 if v not in parser.rulenodes:
+                    from pyrser.passes.to_yml import to_yml
+                    print(to_yml(parser.rulenodes))
                     error.throw("Unknown capture variable : %s" % v, parser)
                 if type(parser.rulenodes[v]) is weakref.ProxyType:
                     valueparam.append(parser.rulenodes[v])
