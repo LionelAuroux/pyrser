@@ -1,14 +1,15 @@
 # This pass is for debug only
 from pyrser import meta, fmt
 from pyrser.parsing import node
+import weakref
 
 scalar = {'bool': bool, 'int': int, 'float': float, 'str': str}
 composed = {'list': list, 'dict': dict, 'set': set}
 
 @meta.add_method(node.Node)
 def to_yml(self):
-    pp = fmt.sep("", [])
-    to_yml_item(self, pp.lsdata, "--dump:")
+    pp = fmt.tab([])
+    to_yml_item(self, pp.lsdata, "")
     return str(pp)
 
 def yml_attr(k, v):
@@ -16,8 +17,16 @@ def yml_attr(k, v):
 
 def to_yml_item(item, pp, name):
     global scalar
+    refcount = weakref.getweakrefcount(item)
+    if refcount > 0:
+        name += " &" + str(id(item))
     if type(item).__name__ in scalar:
         tag = fmt.end('\n', fmt.sep("", [name, " ", yml_attr(type(item).__name__, repr(item))]))
+        pp.append(tag)
+        return
+    if isinstance(item, weakref.ref):
+        name += " *" + str(id(item()))
+        tag = fmt.end('\n', fmt.sep("", [name, " ", repr(item)]))
         pp.append(tag)
         return
     if isinstance(item, bytes) or isinstance(item, bytearray):
