@@ -3,13 +3,13 @@ import setuptools
 
 setuptools.setup(
     name='pyrser',
-    version='0.0.1a',
+    version='0.0.1',
     url='https://code.google.com/p/pyrser/',
     license='GPLv3',
     maintainer='Lionel Auroux',
     maintainer_email='lionel.auroux@gmail.com',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python :: 3.3',

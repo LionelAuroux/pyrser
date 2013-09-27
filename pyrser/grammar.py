@@ -117,6 +117,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
         if os.path.exists(filename):
             f = open(filename, 'r')
             self.parsed_stream(f.read(), os.path.abspath(filename))
+            f.close()
         if entry is None:
             entry = self.entry
         if entry is None:

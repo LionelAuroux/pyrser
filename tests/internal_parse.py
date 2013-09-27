@@ -502,5 +502,4 @@ class InternalParse_Test(unittest.TestCase):
             )
         parseTree.dumpParseTree()
         res = parseTree(parser)
-        print("cursor: %s" % vars(parser._stream._cursor))
         self.assertEqual(res, True, "failed to get the correct final value")
