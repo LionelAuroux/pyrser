@@ -1,14 +1,8 @@
 class Node(dict):
     """Base class for node manipulation."""
-    def __init__(self, val=True):
-        if type(val) not in (bool, Node):
-            raise TypeError(
-                "{} is neither a Node nor a Boolean".format(
-                    type(val).__name__))
-        self._bool = bool(val)
 
     def __bool__(self):
-        return self._bool
+        return True
 
     def __repr__(self):
         items = []

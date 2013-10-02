@@ -161,7 +161,7 @@ class Capture(ParserTree):
                 text = parser.get_tag(self.tagname)
                 # wrap it in a Node instance
                 if type(res) is bool:
-                    res = Node(res)
+                    res = Node()
                 #TODO(iopi): should be a future capture object for multistream
                 # capture
                 if not hasattr(res, 'value'):

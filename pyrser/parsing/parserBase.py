@@ -107,12 +107,12 @@ class BasicParser(metaclass=MetaBasicParser):
     def begin_tag(self, name: str) -> Node:
         """Save the current index under the given name."""
         self.__tags[name] = {'begin': self._stream.index}
-        return Node(True)
+        return True
 
     def end_tag(self, name: str) -> Node:
         """Extract the string between saved and current index."""
         self.__tags[name]['end'] = self._stream.index
-        return Node(True)
+        return True
 
     def get_tag(self, name: str) -> str:
         """Extract the string previously saved."""
@@ -398,8 +398,8 @@ def read_cstring(self) -> bool:
     idx = self._stream.index
     if self.read_char('\"') and self.read_until('\"', '\\'):
         txt = self._stream[idx:self._stream.index]
-        res = Node(self._stream.validate_context())
-        return res
+        #res = Node(self._stream.validate_context())
+        return self._stream.validate_context()
     return self._stream.restore_context()
 
 
@@ -414,6 +414,6 @@ def read_cchar(self) -> bool:
     idx = self._stream.index
     if self.read_char('\'') and self.read_until('\'', '\\'):
         txt = self._stream[idx:self._stream.index]
-        res = Node(self._stream.validate_context())
-        return res
+        #res = Node(self._stream.validate_context())
+        return self._stream.validate_context()
     return self._stream.restore_context()

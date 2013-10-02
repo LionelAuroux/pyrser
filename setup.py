@@ -3,7 +3,7 @@ import setuptools
 
 setuptools.setup(
     name='pyrser',
-    version='0.0.1',
+    version='0.0.2',
     url='https://code.google.com/p/pyrser/',
     license='GPLv3',
     maintainer='Lionel Auroux',
@@ -17,7 +17,7 @@ setuptools.setup(
         'Topic :: Software Development :: Compilers',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    packages=['pyrser', 'pyrser.directives', 'pyrser.hooks', 'pyrser.parsing'],
+    packages=['pyrser', 'pyrser.directives', 'pyrser.hooks', 'pyrser.parsing', 'pyrser.passes'],
 #    test_loader='unittest:TestLoader',
 #    test_suite='tests'
 )
