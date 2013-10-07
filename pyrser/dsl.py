@@ -10,7 +10,7 @@ class EBNF(parsing.Parser):
     Basic class for BNF DSL PARSING.
     
     A full parser for the BNF is provided by this class.
-    We construct a tree of parserTree to represents, thru functors, BNF semantics.
+    We construct a tree to represents, thru functors, BNF semantics.
     """
 
     def get_rules(self) -> parsing.Node:
@@ -39,7 +39,7 @@ class EBNF(parsing.Parser):
             # ;
             #
             'bnf_dsl': parsing.Seq(
-                # parserTree is not already construct but Directive need it
+                # tree is not already construct but Directive need it
                 # forward it thru a lambda
                 parsing.Directive(ignore.Ignore(),
                                   [("C/C++", str)],
@@ -388,7 +388,7 @@ class EBNF(parsing.Parser):
 
 @meta.hook(EBNF, "EBNF.add_mod")
 def add_mod(self, seq, mod):
-    """Create a parserTree.{Complement, LookAhead, Neg, Until}"""
+    """Create a tree.{Complement, LookAhead, Neg, Until}"""
     if mod.value == '~':
         seq.parser_tree = parsing.Complement(seq.parser_tree)
     elif mod.value == '!!':
@@ -402,7 +402,7 @@ def add_mod(self, seq, mod):
 
 @meta.hook(EBNF, "EBNF.add_ruleclause_name")
 def add_ruleclause_name(self, ns_name, rid) -> bool:
-    """Create a parserTree.Rule"""
+    """Create a tree.Rule"""
     ns_name.value = rid.value
     ns_name.parser_tree = parsing.Rule(ns_name.value)
     return True
@@ -425,7 +425,7 @@ def add_rule(self, rule, rn, alts) -> bool:
 
 @meta.hook(EBNF, "EBNF.add_sequences")
 def add_sequences(self, sequences, cla) -> bool:
-    """Create a parserTree.Seq"""
+    """Create a tree.Seq"""
     if not hasattr(sequences, 'parser_tree'):
         # forward sublevel of sequence as is
         sequences.parser_tree = cla.parser_tree
@@ -442,7 +442,7 @@ def add_sequences(self, sequences, cla) -> bool:
 
 @meta.hook(EBNF, "EBNF.add_alt")
 def add_alt(self, alternatives, alt) -> bool:
-    """Create a parserTree.Alt"""
+    """Create a tree.Alt"""
     if not hasattr(alternatives, 'parser_tree'):
         # forward sublevel of alt as is
         if hasattr(alt, 'parser_tree'):
@@ -499,7 +499,7 @@ def add_rpt(self, sequence, mod, pt):
 
 @meta.hook(EBNF, "EBNF.add_capture")
 def add_capture(self, sequence, cpt):
-    """Create a parserTree.Capture"""
+    """Create a tree.Capture"""
     sequence.parser_tree = parsing.Capture(cpt.value, sequence.parser_tree)
     return True
 
@@ -513,28 +513,28 @@ def add_subsequence(self, sequence, subsequence):
 
 @meta.hook(EBNF, "EBNF.add_optional")
 def add_optional(self, repeat):
-    """Create a parserTree.RepOptional"""
+    """Create a tree.RepOptional"""
     repeat.functor = parsing.RepOptional
     return True
 
 
 @meta.hook(EBNF, "EBNF.add_0N")
 def add_0N(self, repeat):
-    """Create a parserTree.Rep0N"""
+    """Create a tree.Rep0N"""
     repeat.functor = parsing.Rep0N
     return True
 
 
 @meta.hook(EBNF, "EBNF.add_1N")
 def add_1N(self, repeat):
-    """Create a parserTree.Rep1N"""
+    """Create a tree.Rep1N"""
     repeat.functor = parsing.Rep1N
     return True
 
 
 @meta.hook(EBNF, "EBNF.add_hook")
 def add_hook(self, sequence, h):
-    """Create a parserTree.Hook"""
+    """Create a tree.Hook"""
     sequence.parser_tree = parsing.Hook(h.name, h.listparam)
     return True
 

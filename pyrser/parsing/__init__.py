@@ -1,11 +1,11 @@
-from pyrser.parsing.parserTree import ParserTree
-from pyrser.parsing.parserTree import Call, CallTrue
-from pyrser.parsing.parserTree import Complement, LookAhead, Neg, Until
-from pyrser.parsing.parserTree import Hook, Rule, Directive, DirectiveWrapper
-from pyrser.parsing.parserTree import Alt, Seq
-from pyrser.parsing.parserTree import Rep0N, Rep1N, RepOptional
-from pyrser.parsing.parserTree import Capture, Scope
-from pyrser.parsing.parserTree import Error
+from pyrser.parsing.tree import ParserTree
+from pyrser.parsing.tree import Call, CallTrue
+from pyrser.parsing.tree import Complement, LookAhead, Neg, Until
+from pyrser.parsing.tree import Hook, Rule, Directive, DirectiveWrapper
+from pyrser.parsing.tree import Alt, Seq
+from pyrser.parsing.tree import Rep0N, Rep1N, RepOptional
+from pyrser.parsing.tree import Capture, Scope
+from pyrser.parsing.tree import Error
 from pyrser.parsing.base import BasicParser, Parser, MetaBasicParser
 from pyrser.parsing.stream import Stream
 from pyrser.parsing.node import Node
