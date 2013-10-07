@@ -11,6 +11,7 @@ from pyrser.directives import ignore
 import weakref
 from pyrser.passes import dumpParseTree
 
+
 class WordList(grammar.Grammar):
     grammar = """
         wordlist ::= [word : w #add_to(_, w)]+ eof

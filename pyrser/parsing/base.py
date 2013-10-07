@@ -282,8 +282,9 @@ class BasicParser(metaclass=MetaBasicParser):
         """Consume whitespace characters."""
         self._stream.save_context()
         if not self.read_eof() and self._stream.peek_char in " \t\f\r\n":
-            while not self.read_eof() and self._stream.peek_char in " \t\f\r\n":
-               self._stream.incpos()
+            while (not self.read_eof()
+                   and self._stream.peek_char in " \t\f\r\n"):
+                self._stream.incpos()
             return self._stream.validate_context()
         return self._stream.validate_context()
 
@@ -366,12 +367,15 @@ def read_integer(self) -> bool:
             return self._stream.validate_context()
     return self._stream.restore_context()
 
+
 # `Base.id`
 @meta.rule(Parser, "Base.id")
 def read_identifier(self) -> bool:
     """
     Read following BNF rule else return False
-    readIdentifier ::= ['a'..'z'|'A'..'Z'|'_']['0'..'9'|'a'..'z'|'A'..'Z'|'_']* ;
+    readIdentifier ::=
+        ['a'..'z'|'A'..'Z'|'_']['0'..'9'|'a'..'z'|'A'..'Z'|'_']*
+    ;
     """
     if self.read_eof():
         return False

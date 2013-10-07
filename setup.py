@@ -21,7 +21,8 @@ setuptools.setup(
         'Topic :: Software Development :: Compilers',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    packages=['pyrser', 'pyrser.directives', 'pyrser.hooks', 'pyrser.parsing', 'pyrser.passes'],
+    packages=['pyrser', 'pyrser.directives', 'pyrser.hooks', 'pyrser.parsing',
+              'pyrser.passes'],
 #    test_loader='unittest:TestLoader',
 #    test_suite='tests'
 )

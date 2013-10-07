@@ -1,5 +1,6 @@
 from pyrser import meta, parsing
 
+
 @meta.rule(parsing.Parser, "Base.ignore_cxx")
 def ignore_cxx(self) -> bool:
     """Consume comments and whitespace characters."""
@@ -7,8 +8,9 @@ def ignore_cxx(self) -> bool:
     while not self.read_eof():
         idxref = self._stream.index
         if self._stream.peek_char in " \t\f\r\n":
-            while not self.read_eof() and self._stream.peek_char in " \t\f\r\n":
-               self._stream.incpos()
+            while (not self.read_eof()
+                    and self._stream.peek_char in " \t\f\r\n"):
+                self._stream.incpos()
         if self.peek_text("//") and self.read_until("\n", ""):
             break
         if self.peek_text("/*"):
@@ -19,6 +21,7 @@ def ignore_cxx(self) -> bool:
         if idxref == self._stream.index:
             break
     return self._stream.validate_context()
+
 
 @meta.directive("ignore")
 class Ignore(parsing.DirectiveWrapper):

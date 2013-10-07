@@ -400,7 +400,7 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertIsInstance(res['the_rule'], parsing.Seq)
         self.assertTrue(res['the_rule'].ptlist[-1].name == "my_hook_multi")
         dummyData = parsing.Parser("""
-            456    "toto"        blabla      
+            456    "toto"        blabla
             """)
         dummyData.set_rules(res)
         dummyData.test = self
@@ -456,7 +456,7 @@ class InternalDsl_Test(unittest.TestCase):
             return True
 
         bnf = dsl.EBNF("""
-        
+
             I ::= id
             ;
 
@@ -478,4 +478,3 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue(eval_res.list[3] == "d")
         self.assertTrue(eval_res.list[4] == "e")
         self.assertTrue(eval_res.list[5] == "f")
-

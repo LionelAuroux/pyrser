@@ -116,6 +116,7 @@ def dumpParseTree(self, level=0):
     res += ("\n{}]\n".format('\t' * level))
     return res
 
+
 @meta.add_method(parsing.Until)
 def dumpParseTree(self, level=0):
     res = ("\n{}->[\n".format('\t' * level))

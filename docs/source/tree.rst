@@ -1,4 +1,4 @@
-Functors primitives: Module ``parsing.parserTree``
+Functors primitives: Module ``parsing.tree``
 ==================================================
 
-.. automodule:: pyrser.parsing.parserTree
+.. automodule:: pyrser.parsing.tree

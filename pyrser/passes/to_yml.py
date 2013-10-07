@@ -6,14 +6,17 @@ import weakref
 scalar = {'bool': bool, 'int': int, 'float': float, 'str': str}
 composed = {'list': list, 'dict': dict, 'set': set}
 
+
 @meta.add_method(node.Node)
 def to_yml(self):
     pp = fmt.tab([])
     to_yml_item(self, pp.lsdata, "")
     return str(pp)
 
+
 def yml_attr(k, v):
     return fmt.sep("=", [k, v])
+
 
 def to_yml_item(item, pp, name):
     global scalar
@@ -21,7 +24,10 @@ def to_yml_item(item, pp, name):
     if refcount > 0:
         name += " &" + str(id(item))
     if type(item).__name__ in scalar:
-        tag = fmt.end('\n', fmt.sep("", [name, " ", yml_attr(type(item).__name__, repr(item))]))
+        tag = fmt.end('\n', fmt.sep("", [name, " ",
+                                         yml_attr(type(item).__name__,
+                                         repr(item))]
+                                    ))
         pp.append(tag)
         return
     if isinstance(item, weakref.ref):
@@ -32,7 +38,7 @@ def to_yml_item(item, pp, name):
     if isinstance(item, bytes) or isinstance(item, bytearray):
         inner = fmt.tab([])
         tag = fmt.block(name + " " + str(yml_attr('type', 'bytes')) + ':\n',
-                        '----' + name +'----\n', inner)
+                        '----' + name + '----\n', inner)
         inner.lsdata.append(fmt.sep(" ", []))
         bindata = inner.lsdata[-1].lsdata
         i = 0
@@ -47,7 +53,9 @@ def to_yml_item(item, pp, name):
         return
     if isinstance(item, object) and hasattr(item, '__dict__'):
         inner = fmt.tab([])
-        tag = fmt.block(name + " " + str(yml_attr('type', item.__class__.__name__)) + ':\n',
+        tag = fmt.block(name + " " +
+                        str(yml_attr('type', item.__class__.__name__))
+                        + ':\n',
                         '', inner)
         for attr in sorted(vars(item)):
             to_yml_item(getattr(item, attr), inner.lsdata, attr)
@@ -57,8 +65,9 @@ def to_yml_item(item, pp, name):
         return
     if isinstance(item, list):
         inner = fmt.tab([])
-        tag = fmt.tab([fmt.block(name + " " + str(yml_attr('type', 'list')) + ':\n',
-                        '', inner)])
+        tag = fmt.tab([fmt.block(name + " " +
+                                 str(yml_attr('type', 'list')) + ':\n',
+                                 '', inner)])
         i = 0
         for subitem in item:
             idxname = str(fmt.sep(" ", ['[', i, ']']))
@@ -102,7 +111,7 @@ def to_yml_item(item, pp, name):
             inner.lsdata.append("\n")
         pp.append(tag)
         return
-    if item == None:
+    if item is None:
         tag = fmt.end('\n', [name])
         pp.append(tag)
         return

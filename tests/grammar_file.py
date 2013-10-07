@@ -9,6 +9,7 @@ class GrammarFile_Test(unittest.TestCase):
             plop ::= id:i #test_hook(_, i)
             ;
         """)
+
         @meta.hook(txtbnf)
         def test_hook(self, l, i):
             self.test.assertEqual(i.value, "cool")
@@ -25,15 +26,18 @@ class GrammarFile_Test(unittest.TestCase):
         """
         import os
         JSON = grammar.from_file(os.getcwd() + "/tests/bnf/json.bnf")
+
         # add hook to the dynamically created base class
         @meta.hook(JSON)
         def is_num(self, ast, n):
             ast.node = float(n.value)
             return True
+
         @meta.hook(JSON)
         def is_str(self, ast, s):
             ast.node = s.value.strip('"')
             return True
+
         @meta.hook(JSON)
         def is_bool(self, ast, b):
             if b.value == "true":
@@ -41,26 +45,32 @@ class GrammarFile_Test(unittest.TestCase):
             if b.value == "false":
                 ast.node = False
             return True
+
         @meta.hook(JSON)
         def is_none(self, ast):
             ast.node = None
             return True
+
         @meta.hook(JSON)
         def is_pair(self, ast, s, v):
             ast.node = (s.value.strip('"'), v.node)
             return True
+
         @meta.hook(JSON)
         def is_array(self, ast):
             ast.node = []
             return True
+
         @meta.hook(JSON)
         def add_item(self, ast, item):
             ast.node.append(item.node)
             return True
+
         @meta.hook(JSON)
         def is_dict(self, ast):
             ast.node = {}
             return True
+
         @meta.hook(JSON)
         def add_kv(self, ast, item):
             ast.node[item.node[0]] = item.node[1]
@@ -71,5 +81,6 @@ class GrammarFile_Test(unittest.TestCase):
         self.assertEqual(res.node['test'], 12)
         res = json.parse('{"test":12,"puf":[1,2,3]}', "json")
         self.assertEqual(res.node['puf'][1], 2)
-        res = json.parse('{"test":12,"puf":[1,2,3],"obj":{"flags":true}}', "json")
+        res = json.parse('{"test":12,"puf":[1,2,3],"obj":{"flags":true}}',
+                         "json")
         self.assertTrue(res.node['obj']['flags'])

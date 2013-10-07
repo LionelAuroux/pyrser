@@ -16,6 +16,7 @@ def echo_nodes(self, *rest):
     print(*rest)
     return True
 
+
 @meta.hook(BasicParser, "vars")
 def vars_nodes(self, rest):
     """
@@ -29,4 +30,3 @@ def vars_nodes(self, rest):
     """
     print(vars(rest))
     return True
-

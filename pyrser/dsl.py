@@ -3,12 +3,11 @@ from pyrser import meta
 from pyrser import error
 from pyrser.directives import ignore
 
-##: TEST
 
 class EBNF(parsing.Parser):
     """
     Basic class for BNF DSL PARSING.
-    
+
     A full parser for the BNF is provided by this class.
     We construct a tree to represents, thru functors, BNF semantics.
     """
@@ -43,7 +42,8 @@ class EBNF(parsing.Parser):
                 # forward it thru a lambda
                 parsing.Directive(ignore.Ignore(),
                                   [("C/C++", str)],
-                                  lambda parser: self.__class__._rules['bnf_stmts'](parser)),
+                                  lambda parser:
+                                  self.__class__._rules['bnf_stmts'](parser)),
             ),
 
             #
@@ -138,7 +138,8 @@ class EBNF(parsing.Parser):
                                 parsing.Call(parsing.Parser.read_char, '~'),
                                 parsing.Call(parsing.Parser.read_text, '!!'),
                                 parsing.Call(parsing.Parser.read_char, '!'),
-                                parsing.Call(parsing.Parser.read_text, '->')))),
+                                parsing.Call(parsing.Parser.read_text, '->')))
+                    ),
                     parsing.Alt(
                         parsing.Seq(
                             parsing.Capture('rid', parsing.Rule('ns_name')),
