@@ -18,8 +18,8 @@ class MetaGrammar(parsing.MetaBasicParser):
             cls = metabp.__new__(metacls, name, b, namespace)
         # lookup for the metaclass of parsing.
         # Grammar magically inherit rules&hooks from Parser
-        if 'Parser' in parsing.parserBase._MetaBasicParser:
-            clsbase = parsing.parserBase._MetaBasicParser['Parser']
+        if 'Parser' in parsing.base._MetaBasicParser:
+            clsbase = parsing.base._MetaBasicParser['Parser']
             # link rules&hooks
             cls._rules = clsbase._rules.new_child()
             cls._hooks = clsbase._hooks.new_child()

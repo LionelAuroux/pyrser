@@ -1,5 +1,5 @@
 from pyrser import meta
-from pyrser.parsing.parserBase import BasicParser
+from pyrser.parsing.base import BasicParser
 
 
 @meta.hook(BasicParser, "copy")

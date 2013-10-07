@@ -366,7 +366,7 @@ class InternalParse_Test(unittest.TestCase):
         self.assertIsInstance(A._rules, collections.ChainMap)
         self.assertTrue('_hooks' in dir(A))
         self.assertIsInstance(A._hooks, collections.ChainMap)
-        self.assertEqual(id(A), id(parsing.parserBase._MetaBasicParser['A']),
+        self.assertEqual(id(A), id(parsing.base._MetaBasicParser['A']),
                          "failed to found metaclass A in global registry")
         self.assertEqual(id(B._rules.maps[1]), id(FakeBasic._rules.maps[0]),
                          "failed to chain FakeBasic._rules and B._rules")

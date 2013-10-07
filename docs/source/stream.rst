@@ -1,4 +1,4 @@
-Stream primitives: Module ``parsing.parserStream``
+Stream primitives: Module ``parsing.stream``
 ==================================================
 
 .. automodule:: pyrser.parsing.stream

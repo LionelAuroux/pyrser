@@ -1,6 +1,6 @@
 import types
 from pyrser import meta, error
-from pyrser.parsing.parserBase import BasicParser
+from pyrser.parsing.base import BasicParser
 from pyrser.parsing.node import Node
 
 
