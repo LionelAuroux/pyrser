@@ -1,8 +1,9 @@
+import collections
 from pyrser import meta
 from pyrser import error
 from pyrser.parsing.stream import Stream
+from pyrser.parsing.stream import Tag
 from pyrser.parsing.node import Node
-import collections
 
 # TODO: ensure unicity of names
 #: Module variable to store meta class instance by classname
@@ -102,23 +103,24 @@ class BasicParser(metaclass=MetaBasicParser):
 
 ### VARIABLE PRIMITIVES
 
-# TODO(iopi): change for beginTag,endTag,getTag for multicapture,
-# and typesetting at endTag (i.e: readCChar,readCString need transcoding)
     def begin_tag(self, name: str) -> Node:
         """Save the current index under the given name."""
-        self.__tags[name] = {'begin': self._stream.index}
+        #self.__tags[name] = {'begin': self._stream.index}
+        self.__tags[name] = Tag(self._stream, self._stream.index)
         return True
 
     def end_tag(self, name: str) -> Node:
         """Extract the string between saved and current index."""
-        self.__tags[name]['end'] = self._stream.index
+        #self.__tags[name]['end'] = self._stream.index
+        self.__tags[name].set_end(self._stream.index)
         return True
 
-    def get_tag(self, name: str) -> str:
+    def get_tag(self, name: str) -> Tag:
         """Extract the string previously saved."""
-        begin = self.__tags[name]['begin']
-        end = self.__tags[name]['end']
-        return self._stream[begin:end]
+        #begin = self.__tags[name]['begin']
+        #end = self.__tags[name]['end']
+        #return self._stream[begin:end]
+        return self.__tags[name]
 
 ####
 

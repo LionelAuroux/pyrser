@@ -1,5 +1,4 @@
 import unittest
-
 from pyrser import grammar, meta
 
 

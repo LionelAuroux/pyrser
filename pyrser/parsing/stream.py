@@ -79,6 +79,23 @@ class Cursor:
         self.position = self.__eol.pop()
 
 
+class Tag:
+    """Provide capture facilities"""
+    def __init__(self, stream: str, begin: int, end=0):
+        self._stream = stream
+        self._begin = begin
+        if end == 0:
+            self._end = begin
+        else:
+            self._end = end
+
+    def set_end(self, end: int):
+        self._end = end
+
+    def __str__(self) -> str:
+        return self._stream[self._begin:self._end]
+
+
 class Stream:
     """Helps keep track of stream processing progress."""
     def __init__(self, content='', name='stream'):

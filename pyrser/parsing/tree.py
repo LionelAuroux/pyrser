@@ -2,6 +2,7 @@ import types
 from pyrser import meta, error
 from pyrser.parsing.base import BasicParser
 from pyrser.parsing.node import Node
+from pyrser.parsing.stream import Tag
 
 
 class ParserTree:
@@ -165,7 +166,7 @@ class Capture(ParserTree):
                 #TODO(iopi): should be a future capture object for multistream
                 # capture
                 if not hasattr(res, 'value'):
-                    res.value = text
+                    res.value = str(text)
                 parser.rulenodes[self.tagname].set(res)
                 return res
         return False

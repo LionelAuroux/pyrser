@@ -1,5 +1,4 @@
 import unittest
-
 from pyrser import parsing
 from pyrser import dsl
 from pyrser import meta

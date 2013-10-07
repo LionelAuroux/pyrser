@@ -1,7 +1,6 @@
 import collections
 import unittest
 from unittest import mock
-
 from pyrser import parsing
 from pyrser import meta
 from pyrser import grammar
@@ -42,7 +41,7 @@ class InternalParse_Test(unittest.TestCase):
             'failed in read_identifier for sujet')
         sujet = parser.get_tag('sujet')
         parser.skip_ignore()
-        self.assertEqual(sujet, "ceci", "failed in capture sujet")
+        self.assertEqual(str(sujet), "ceci", "failed in capture sujet")
         self.assertTrue(
             parser.begin_tag('verbe') and
             parser.read_identifier() and
@@ -50,14 +49,14 @@ class InternalParse_Test(unittest.TestCase):
             'failed in read_identifier for verbe')
         verbe = parser.get_tag('verbe')
         parser.skip_ignore()
-        self.assertEqual(verbe, "est", "failed in capture verbe")
+        self.assertEqual(str(verbe), "est", "failed in capture verbe")
         self.assertTrue(
             parser.begin_tag('other') and
             parser.read_until_eof() and
             parser.end_tag('other'),
             'failed in read_identifier for other')
         reste = parser.get_tag('other')
-        self.assertEqual(reste, "un test", "failed in capture other")
+        self.assertEqual(str(reste), "un test", "failed in capture other")
 
     def test_02_readInteger(self):
         """
@@ -72,7 +71,7 @@ class InternalParse_Test(unittest.TestCase):
             'failed in read_integer for n1')
         n1 = parser.get_tag('n1')
         parser.skip_ignore()
-        self.assertEqual(n1, "12", "failed in capture n1")
+        self.assertEqual(str(n1), "12", "failed in capture n1")
         self.assertTrue(
             parser.begin_tag('n2') and
             parser.read_integer() and
@@ -80,14 +79,14 @@ class InternalParse_Test(unittest.TestCase):
             'failed in read_integer for n2')
         n2 = parser.get_tag('n2')
         parser.skip_ignore()
-        self.assertEqual(n2, "333", "failed in capture n2")
+        self.assertEqual(str(n2), "333", "failed in capture n2")
         self.assertTrue(
             parser.begin_tag('n3') and
             parser.read_integer() and
             parser.end_tag('n3'),
             'failed in read_integer for n3')
         n3 = parser.get_tag('n3')
-        self.assertEqual(n3, "44444444444444444444444444",
+        self.assertEqual(str(n3), "44444444444444444444444444",
                          "failed in capture n3")
 
     def test_04_readCChar(self):
@@ -103,14 +102,14 @@ class InternalParse_Test(unittest.TestCase):
             'failed in read_cchar for c1')
         c1 = parser.get_tag('c1')
         parser.skip_ignore()
-        self.assertEqual(c1, "'c'", "failed in capture c1")
+        self.assertEqual(str(c1), "'c'", "failed in capture c1")
         self.assertTrue(
             parser.begin_tag('c2') and
             parser.read_cchar() and
             parser.end_tag('c2'),
             'failed in read_cchar for c2')
         c2 = parser.get_tag('c2')
-        self.assertEqual(c2, r"'\t'", "failed in capture c2")
+        self.assertEqual(str(c2), r"'\t'", "failed in capture c2")
 
     def test_05_readCString(self):
         """
@@ -129,7 +128,7 @@ class InternalParse_Test(unittest.TestCase):
             'failed in read_cstring for s1')
         s1 = parser.get_tag('s1')
         parser.skip_ignore()
-        self.assertEqual(s1, '"premiere chaine"', "failed in capture s1")
+        self.assertEqual(str(s1), '"premiere chaine"', "failed in capture s1")
         self.assertTrue(
             parser.begin_tag('s2') and
             parser.read_cstring() and
@@ -137,14 +136,14 @@ class InternalParse_Test(unittest.TestCase):
             'failed in read_cstring for s2')
         s2 = parser.get_tag('s2')
         parser.skip_ignore()
-        self.assertEqual(s2, '"deuxieme chaine\\n"', "failed in capture s2")
+        self.assertEqual(str(s2), '"deuxieme chaine\\n"', "failed in capture s2")
         self.assertTrue(
             parser.begin_tag('s3') and
             parser.read_cstring() and
             parser.end_tag('s3'),
             'failed in read_cstring for s3')
         s3 = parser.get_tag('s3')
-        self.assertEqual(s3, r'"troisieme chainee \"."',
+        self.assertEqual(str(s3), r'"troisieme chainee \"."',
                          "failed in capture s3")
 
     def test_06_CallAndSeq(self):
@@ -165,9 +164,9 @@ class InternalParse_Test(unittest.TestCase):
             parsing.Call(parsing.Parser.end_tag, 'i3'))
         parseTree(parser)
         # Warning! skip_ignore is called between each parsing.Seq
-        self.assertEqual(parser.get_tag("i1"), "abc ", "failed in captured i1")
-        self.assertEqual(parser.get_tag("i2"), "def ", "failed in captured i2")
-        self.assertEqual(parser.get_tag("i3"), "ghg", "failed in captured i3")
+        self.assertEqual(str(parser.get_tag("i1")), "abc ", "failed in captured i1")
+        self.assertEqual(str(parser.get_tag("i2")), "def ", "failed in captured i2")
+        self.assertEqual(str(parser.get_tag("i3")), "ghg", "failed in captured i3")
 
     def test_07_RepXN(self):
         """
@@ -190,11 +189,11 @@ class InternalParse_Test(unittest.TestCase):
             parsing.Call(parsing.Parser.read_eof))
         parseTree(parser)
         # Warning! skip_ignore is called between each parsing.Seq
-        self.assertEqual(parser.get_tag("i1"), "12343 ",
+        self.assertEqual(str(parser.get_tag("i1")), "12343 ",
                          "failed in captured i1")
-        self.assertEqual(parser.get_tag("i2"), "91219",
+        self.assertEqual(str(parser.get_tag("i2")), "91219",
                          "failed in captured i2")
-        self.assertEqual(parser.get_tag("i3"), "1323 ",
+        self.assertEqual(str(parser.get_tag("i3")), "1323 ",
                          "failed in captured i3")
 
     def test_08_RepAlt(self):
@@ -238,9 +237,9 @@ class InternalParse_Test(unittest.TestCase):
         parseTree.dump_tree()
         parseTree(parser)
         # Warning! skip_ignore is called between each parsing.Seq
-        self.assertEqual(parser.get_tag("w1"), "_ad121dwdw ",
+        self.assertEqual(str(parser.get_tag("w1")), "_ad121dwdw ",
                          "failed in captured w1")
-        self.assertEqual(parser.get_tag("w2"), "()[]",
+        self.assertEqual(str(parser.get_tag("w2")), "()[]",
                          "failed in captured w2")
 
     def test_09_RepRules(self):

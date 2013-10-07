@@ -501,6 +501,7 @@ def add_rpt(self, sequence, mod, pt):
 @meta.hook(EBNF, "EBNF.add_capture")
 def add_capture(self, sequence, cpt):
     """Create a tree.Capture"""
+    # TODO: change cpt.value by fast tag resolution
     sequence.parser_tree = parsing.Capture(cpt.value, sequence.parser_tree)
     return True
 
