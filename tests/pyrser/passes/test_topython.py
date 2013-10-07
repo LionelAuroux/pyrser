@@ -205,7 +205,7 @@ class TestToPythonPasse(unittest.TestCase):
         code = codegen.to_source(res)
         return '\n'.join([
             "========= RULE ==========",
-            rule.dumpParseTree(),
+            rule.dump_tree(),
             "========== AST ==========",
             stmts,
             "========= CODE ==========",
@@ -215,7 +215,7 @@ class TestToPythonPasse(unittest.TestCase):
     def test_topython_generates_code_for_parserdsl(self):
         from pprint import pprint
         from pyrser.dsl import EBNF
-        import pyrser.passes.dumpParseTree
+        import pyrser.passes.dump_tree
 
         dsl_rules = [
             'bnf_dsl',

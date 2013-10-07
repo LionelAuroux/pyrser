@@ -42,13 +42,13 @@ class InternalFmt_Test(unittest.TestCase):
                          "Failed to format a list end by ';\n'")
         data = fmt.tab(fmt.block("{\n", "}\n", ['a\n', 'b\n', 'c\n']))
         self.assertEqual(str(data),
-                         ("{tab}{{\n{tab}a\n"
-                         + "{tab}b\n{tab}c\n{tab}}}\n").format(tab=(" " * 4)),
+                         (("{tab}{{\n{tab}a\n"
+                         + "{tab}b\n{tab}c\n{tab}}}\n")).format(tab=(" " * 4)),
                          "Failed to indent")
         data = fmt.block("{\n", "}\n", [fmt.tab(['a\n', 'b\n', 'c\n'])])
         self.assertEqual(str(data),
-                         ("{{\n{tab}a\n{tab}b\n"
-                         + "{tab}c\n}}\n").format(tab=(" " * 4)),
+                         (("{{\n{tab}a\n{tab}b\n"
+                         + "{tab}c\n}}\n")).format(tab=(" " * 4)),
                          "Failed to indent")
         data = fmt.block("{\n", "}\n",
                          [fmt.tab(fmt.end("\n",
@@ -62,10 +62,10 @@ class InternalFmt_Test(unittest.TestCase):
                                            'c']))
                           ])
         self.assertEqual(str(data),
-                         ("{{\n{tab}a\n{tab}b\n"
+                         (("{{\n{tab}a\n{tab}b\n"
                           + "{tab2}[\n{tab2}b\n{tab2}g\n"
                           + "{tab2}o\n{tab2}e\n{tab2}]\n"
-                          + "{tab}c\n}}\n").format(tab=(" " * 4),
+                          + "{tab}c\n}}\n")).format(tab=(" " * 4),
                                                    tab2=(" " * 8)),
                          "Failed to indent")
         data = fmt.block("{\n", "}\n",
@@ -81,10 +81,10 @@ class InternalFmt_Test(unittest.TestCase):
                                            'c']))
                           ])
         self.assertEqual(str(data),
-                         ("{{\n{tab}a\n{tab}b\n"
+                         (("{{\n{tab}a\n{tab}b\n"
                           + "{tab}[\n{tab2}b\n{tab2}g\n"
                           + "{tab2}o\n{tab2}e\n{tab}]\n"
-                          + "{tab}c\n}}\n").format(tab=(" " * 4),
+                          + "{tab}c\n}}\n")).format(tab=(" " * 4),
                                                    tab2=(" " * 12)),
                          "Failed to indent")
         data = fmt.block("{\n", "}\n",
@@ -97,9 +97,9 @@ class InternalFmt_Test(unittest.TestCase):
                                   'c\n'
                                   ]))
         self.assertEqual(str(data),
-                         ("{{\n{tab}a\n"
+                         (("{{\n{tab}a\n"
                           + "{tab}{{\n{tab2}d\n{tab2}e\n{tab2}f\n{tab}}}\n"
-                          + "{tab}c\n}}\n").format(tab=(" " * 4),
+                          + "{tab}c\n}}\n")).format(tab=(" " * 4),
                                                    tab2=(" " * 8)),
                          "Failed to indent")
         data = fmt.block("{\n", "}\n",
@@ -109,9 +109,9 @@ class InternalFmt_Test(unittest.TestCase):
                                                             "b",
                                                             "c"])))))
         self.assertEqual(str(data),
-                         ("{{\n{tab}{{\n"
+                         (("{{\n{tab}{{\n"
                           + "{tab2}a;\n{tab2}b;\n{tab2}c;\n"
-                          + "{tab}}}\n}}\n").format(tab=(" " * 4),
+                          + "{tab}}}\n}}\n")).format(tab=(" " * 4),
                                                     tab2=(" " * 8)),
                          "Failed to indent")
         data = fmt.tab(["1", "2", [fmt.sep(",\n", ["tot",
@@ -121,5 +121,5 @@ class InternalFmt_Test(unittest.TestCase):
                         "4"])
         self.assertEqual(str(data),
                          ("{tab}12tot,\n{tab}tit,\n"
-                          + "{tab}tut4".format(tab=" " * 4),
-                         "Failed to format end"))
+                          + "{tab}tut4").format(tab=" " * 4),
+                         "Failed to format end")

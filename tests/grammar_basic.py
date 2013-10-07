@@ -9,7 +9,7 @@ from pyrser.hooks import copy
 from pyrser.directives import ignore
 
 import weakref
-from pyrser.passes import dumpParseTree
+from pyrser.passes import dump_tree
 
 
 class WordList(grammar.Grammar):
