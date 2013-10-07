@@ -1,5 +1,5 @@
-class Node
-==========
+Building AST: Module ``node``
+=============================
 
 
 .. automodule:: pyrser.parsing.node

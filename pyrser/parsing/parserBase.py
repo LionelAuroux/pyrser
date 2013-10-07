@@ -1,6 +1,6 @@
 from pyrser import meta
 from pyrser import error
-from pyrser.parsing.parserStream import Stream
+from pyrser.parsing.stream import Stream
 from pyrser.parsing.node import Node
 import collections
 

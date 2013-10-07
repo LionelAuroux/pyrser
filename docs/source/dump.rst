@@ -1,5 +1,5 @@
-Pretty printing DSL trees
-=========================
+Pretty printing DSL trees: Module ``passes.dumpParseTree``
+==========================================================
 
 .. automodule:: pyrser.passes.dumpParseTree
     :members:

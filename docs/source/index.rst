@@ -13,11 +13,12 @@ Contents:
    :maxdepth: 2
    
    quickstart
+   changelog
    tutorial
    dsl
    base
    API
-   developersetup
+   maintainers
 
 
 

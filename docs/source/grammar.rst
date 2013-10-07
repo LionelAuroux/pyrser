@@ -1,5 +1,5 @@
-class Grammar
-=============
+Grammar Base Class: Module ``grammar``
+======================================
 
 This class provide the composition mechanism.
 

@@ -1,5 +1,5 @@
-Hooks
-=====
+Setting Hooks: Module ``hooks``
+===============================
 
 This provide some default hooks.
 

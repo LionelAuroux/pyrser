@@ -1,6 +1,6 @@
-***************
-Developer Guide
-***************
+*****************
+Maintainers GUIDE
+*****************
 
 Setup your environment
 ======================

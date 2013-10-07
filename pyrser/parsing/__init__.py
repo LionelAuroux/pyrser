@@ -7,7 +7,7 @@ from pyrser.parsing.parserTree import Rep0N, Rep1N, RepOptional
 from pyrser.parsing.parserTree import Capture, Scope
 from pyrser.parsing.parserTree import Error
 from pyrser.parsing.parserBase import BasicParser, Parser, MetaBasicParser
-from pyrser.parsing.parserStream import Stream
+from pyrser.parsing.stream import Stream
 from pyrser.parsing.node import Node
 
 

@@ -1,9 +1,13 @@
+#!/usr/bin/env python3.3
+
 import setuptools
 
+version = '0.2'
+release = '0.2.1'
 
 setuptools.setup(
     name='pyrser',
-    version='0.0.2',
+    version=release,
     url='https://code.google.com/p/pyrser/',
     license='GPLv3',
     maintainer='Lionel Auroux',

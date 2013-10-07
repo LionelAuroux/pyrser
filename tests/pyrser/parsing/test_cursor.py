@@ -1,6 +1,6 @@
 import unittest
 
-from pyrser.parsing.parserStream import Cursor, Position
+from pyrser.parsing.stream import Cursor, Position
 
 
 class TestCursor(unittest.TestCase):

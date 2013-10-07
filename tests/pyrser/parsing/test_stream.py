@@ -1,7 +1,7 @@
 import unittest
 
 from pyrser import parsing
-from pyrser.parsing.parserStream import Position
+from pyrser.parsing.stream import Position
 
 
 class TestParserStream(unittest.TestCase):

@@ -1,5 +1,5 @@
-Magic stuff
-===========
+Magic stuff: Module ``meta``
+============================
 
 This module provides usefull functions or decorators.
 

@@ -3,7 +3,7 @@ Tutorial I: A guided JSON parser:
 
 The JSON spec here: http://json.org could be easily describe using pyrser.
 
-1- starting block
+1- Starting block
 -----------------
 
 To describe a file format you just need to write a class that inherits from ``pyrser.grammar.Grammar``::
@@ -20,7 +20,7 @@ Pyrser uses just 2 class variable to hold BNF:
     * grammar: a docstring containing the BNF description.
     * entry: the name of the rule to use as entry point.
 
-2- translate BNF
+2- Translate BNF
 ----------------
 
 In the JSON spec, the first rule ``object`` is describe as:

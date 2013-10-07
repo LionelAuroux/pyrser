@@ -1,5 +1,5 @@
-Error handling
-==============
+Error handling: Module ``error``
+================================
 
 .. automodule:: pyrser.error
     :members:

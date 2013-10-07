@@ -1,5 +1,5 @@
-Directives
-==========
+Setting Directives: Module ``directives``
+=========================================
 
 You could configure the pyrser engine to consume some character for you.
 
