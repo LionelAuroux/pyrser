@@ -11,8 +11,8 @@ class GrammarFile_Test(unittest.TestCase):
 
         @meta.hook(txtbnf)
         def test_hook(self, l, i):
-            self.test.assertEqual(i.value, "cool")
-            l.node = i.value
+            self.test.assertEqual(self.textnode(i), "cool")
+            l.node = self.textnode(i)
             return True
         itxt = txtbnf()
         itxt.test = self
@@ -29,19 +29,20 @@ class GrammarFile_Test(unittest.TestCase):
         # add hook to the dynamically created base class
         @meta.hook(JSON)
         def is_num(self, ast, n):
-            ast.node = float(n.value)
+            ast.node = float(self.textnode(n))
             return True
 
         @meta.hook(JSON)
         def is_str(self, ast, s):
-            ast.node = s.value.strip('"')
+            ast.node = self.textnode(s).strip('"')
             return True
 
         @meta.hook(JSON)
         def is_bool(self, ast, b):
-            if b.value == "true":
+            bval = self.textnode(b)
+            if bval == "true":
                 ast.node = True
-            if b.value == "false":
+            if bval == "false":
                 ast.node = False
             return True
 
@@ -52,7 +53,7 @@ class GrammarFile_Test(unittest.TestCase):
 
         @meta.hook(JSON)
         def is_pair(self, ast, s, v):
-            ast.node = (s.value.strip('"'), v.node)
+            ast.node = (self.textnode(s).strip('"'), v.node)
             return True
 
         @meta.hook(JSON)

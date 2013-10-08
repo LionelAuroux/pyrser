@@ -247,11 +247,11 @@ class InternalParse_Test(unittest.TestCase):
             Basic test for Rules
         """
         def check_word(parser, test, tutu):
-            test.assertIn(tutu.value, ('asbga', 'njnj'))
+            test.assertIn(parser.textnode(tutu), ('asbga', 'njnj'))
             return True
 
         def check_int(parser, test, toto):
-            test.assertIn(toto.value, ('12121', '89898'))
+            test.assertIn(parser.textnode(toto), ('12121', '89898'))
             return True
 
         check_word = mock.Mock(side_effect=check_word)
@@ -331,8 +331,8 @@ class InternalParse_Test(unittest.TestCase):
         def dummy(self):
             res = parsing.Node()
             res.text = "cool"
-            self.rulenodes["_"].set(res)
-            return res
+            self.rulenodes["_"] = res
+            return True
         meta.set_one(parsing.Parser._rules, "A.B.C.test",
                      parsing.Call(parsing.Parser.dummy))
         bRes = parser.eval_rule('test')

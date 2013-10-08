@@ -67,7 +67,7 @@ class Cursor:
         self.__index -= 1
 
     def step_next_line(self):
-        """Sets cursor as begin of next line."""
+        """Sets cursor as beginning of next line."""
         self.__eol.append(self.position)
         self.__lineno += 1
         self.__col_offset = 0
@@ -89,6 +89,9 @@ class Tag:
         else:
             self._end = end
 
+    def set_begin(self, begin: int):
+        self._begin = begin
+
     def set_end(self, end: int):
         self._end = end
 
@@ -98,7 +101,7 @@ class Tag:
 
 class Stream:
     """Helps keep track of stream processing progress."""
-    def __init__(self, content='', name='stream'):
+    def __init__(self, content='', name='string'):
         self.__content = content
         self.__len = len(content)
         self.__name = name
@@ -159,23 +162,27 @@ class Stream:
 
     def incpos(self, length: int=1) -> int:
         """Increment the cursor to the next character."""
-        if length <= 0:
+        if length < 0:
             raise ValueError("length must be positive")
-        for _ in range(length):
+        i = 0
+        while (i < length):
             if self._cursor.index < self.__len:
                 if self.peek_char == '\n':
                     self._cursor.step_next_line()
                 self._cursor.step_next_char()
+            i += 1
         return self._cursor.index
 
     def decpos(self, length: int=1) -> int:
-        if length <= 0:
+        if length < 0:
             raise ValueError("length must be positive")
-        for _ in range(length):
+        i = 0
+        while (i < length):
             if 0 < self._cursor.index:
                 self._cursor.step_prev_char()
                 if self.peek_char == '\n':
                     self._cursor.step_prev_line()
+            i += 0
         return self._cursor.index
 
     def save_context(self) -> bool:

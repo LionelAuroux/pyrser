@@ -17,6 +17,7 @@ class EBNF(parsing.Parser):
         Parse the DSL and provide a dictionnaries of all resulting rules.
         Call by the MetaGrammar class.
         """
+        # TODO:
         res = self.eval_rule('bnf_dsl')
         if not res:
             raise error.ParseError(
@@ -59,6 +60,7 @@ class EBNF(parsing.Parser):
                 parsing.Rule('Base.eof')
             ),
 
+            # TODO: add directive hooks / change ns_name by def_rule
             #
             # rule ::= ns_name : rn "::=" alternatives : alts
             #                             #add_rule(_, rn, alts) ';'
@@ -126,6 +128,7 @@ class EBNF(parsing.Parser):
             #     [repeat : rpt #add_rpt(_, mod, rpt) ]?
             #     [':' Base.id : cpt #add_capture(_, cpt) ]?
             #     | hook : h #add_hook(_, h)
+            # TODO: change sequence by sequences
             #     | directive : d sequence : s #add_directive(_, d, s)
             # ;
             #
@@ -219,36 +222,28 @@ class EBNF(parsing.Parser):
                 )
             ),
 
-            # TODO: add directive hooks
-            # ns_name ::= @ignore("null") [ Base.id ['.' Base.id]* ]: rid
-            #             #add_ruleclause_name(_, rid)
+            # ns_name ::= [@ignore("null") [ Base.id ['.' Base.id]* ]]: rid
             # ;
             #
-            'ns_name': parsing.Seq(
-                parsing.Capture(
-                    'rid',
-                    parsing.Scope(
-                        parsing.Call(parsing.Parser.push_ignore,
-                                     parsing.Parser.ignore_null),
-                        parsing.Call(parsing.Parser.pop_ignore),
-                        parsing.Seq(
-                            parsing.Rule('Base.id'),
-                            parsing.Rep0N(
-                                parsing.Seq(
-                                    parsing.Call(parsing.Parser.read_text,
-                                                 "."),
-                                    parsing.Alt(
-                                        parsing.Rule('Base.id'),
-                                        parsing.Error(
-                                            "Expected identifier after '.'"))
-                                )
+            'ns_name': parsing.Capture(
+                'rid',
+                parsing.Scope(
+                    parsing.Call(parsing.Parser.push_ignore,
+                                 parsing.Parser.ignore_null),
+                    parsing.Call(parsing.Parser.pop_ignore),
+                    parsing.Seq(
+                        parsing.Rule('Base.id'),
+                        parsing.Rep0N(
+                            parsing.Seq(
+                                parsing.Call(parsing.Parser.read_text, "."),
+                                parsing.Alt(
+                                    parsing.Rule('Base.id'),
+                                    parsing.Error(
+                                        "Expected identifier after '.'"))
                             )
                         )
                     )
-                ),
-                parsing.Hook('add_ruleclause_name',
-                             [("_", parsing.Node),
-                              ("rid", parsing.Node)])
+                )
             ),
 
             #
@@ -390,13 +385,14 @@ class EBNF(parsing.Parser):
 @meta.hook(EBNF, "EBNF.add_mod")
 def add_mod(self, seq, mod):
     """Create a tree.{Complement, LookAhead, Neg, Until}"""
-    if mod.value == '~':
+    modstr = self.textnode(mod)
+    if modstr == '~':
         seq.parser_tree = parsing.Complement(seq.parser_tree)
-    elif mod.value == '!!':
+    elif modstr == '!!':
         seq.parser_tree = parsing.LookAhead(seq.parser_tree)
-    elif mod.value == '!':
+    elif modstr == '!':
         seq.parser_tree = parsing.Neg(seq.parser_tree)
-    elif mod.value == '->':
+    elif modstr == '->':
         seq.parser_tree = parsing.Until(seq.parser_tree)
     return True
 
@@ -404,8 +400,7 @@ def add_mod(self, seq, mod):
 @meta.hook(EBNF, "EBNF.add_ruleclause_name")
 def add_ruleclause_name(self, ns_name, rid) -> bool:
     """Create a tree.Rule"""
-    ns_name.value = rid.value
-    ns_name.parser_tree = parsing.Rule(ns_name.value)
+    ns_name.parser_tree = parsing.Rule(self.textnode(rid))
     return True
 
 
@@ -419,7 +414,7 @@ def add_rules(self, bnf, r) -> bool:
 @meta.hook(EBNF, "EBNF.add_rule")
 def add_rule(self, rule, rn, alts) -> bool:
     """Add the rule name"""
-    rule.rulename = rn.value
+    rule.rulename = self.textnode(rn)
     rule.parser_tree = alts.parser_tree
     return True
 
@@ -465,7 +460,7 @@ def add_alt(self, alternatives, alt) -> bool:
 def add_char(self, sequence, c):
     """Add a read_char primitive"""
     sequence.parser_tree = parsing.Call(parsing.Parser.read_char,
-                                        c.value.strip("'"))
+                                        self.textnode(c).strip("'"))
     return True
 
 
@@ -473,7 +468,7 @@ def add_char(self, sequence, c):
 def add_text(self, sequence, txt):
     """Add a read_text primitive"""
     sequence.parser_tree = parsing.Call(parsing.Parser.read_text,
-                                        txt.value.strip('"'))
+                                        self.textnode(txt).strip('"'))
     return True
 
 
@@ -481,17 +476,18 @@ def add_text(self, sequence, txt):
 def add_range(self, sequence, begin, end):
     """Add a read_range primitive"""
     sequence.parser_tree = parsing.Call(parsing.Parser.read_range,
-                                        begin.value.strip("'"),
-                                        end.value.strip("'"))
+                                        self.textnode(begin).strip("'"),
+                                        self.textnode(end).strip("'"))
     return True
 
 
 @meta.hook(EBNF, "EBNF.add_rpt")
 def add_rpt(self, sequence, mod, pt):
     """Add a repeater to the previous sequence"""
-    if mod.value == '!!':
+    modstr = self.textnode(mod)
+    if modstr == '!!':
         error.throw("Cannot repeat a lookahead rule", self)
-    if mod.value == '!':
+    if modstr == '!':
         error.throw("Cannot repeat a negated rule", self)
     oldnode = sequence
     sequence.parser_tree = pt.functor(oldnode.parser_tree)
@@ -501,8 +497,8 @@ def add_rpt(self, sequence, mod, pt):
 @meta.hook(EBNF, "EBNF.add_capture")
 def add_capture(self, sequence, cpt):
     """Create a tree.Capture"""
-    # TODO: change cpt.value by fast tag resolution
-    sequence.parser_tree = parsing.Capture(cpt.value, sequence.parser_tree)
+    cpt_value = self.textnode(cpt)
+    sequence.parser_tree = parsing.Capture(cpt_value, sequence.parser_tree)
     return True
 
 
@@ -544,35 +540,35 @@ def add_hook(self, sequence, h):
 @meta.hook(EBNF, "EBNF.param_num")
 def param_num(self, param, n):
     """Parse a int in parameter list"""
-    param.pair = (int(n.value), int)
+    param.pair = (int(self.textnode(n)), int)
     return True
 
 
 @meta.hook(EBNF, "EBNF.param_str")
 def param_str(self, param, s):
     """Parse a str in parameter list"""
-    param.pair = (s.value.strip('"'), str)
+    param.pair = (self.textnode(s).strip('"'), str)
     return True
 
 
 @meta.hook(EBNF, "EBNF.param_char")
 def param_char(self, param, c):
     """Parse a char in parameter list"""
-    param.pair = (c.value.strip("'"), str)
+    param.pair = (self.textnode(c).strip("'"), str)
     return True
 
 
 @meta.hook(EBNF, "EBNF.param_id")
 def param_id(self, param, i):
     """Parse a node name in parameter list"""
-    param.pair = (i.value, parsing.Node)
+    param.pair = (self.textnode(i), parsing.Node)
     return True
 
 
 @meta.hook(EBNF, "EBNF.hook_name")
 def hook_name(self, hook, n):
     """Parse a hook name"""
-    hook.name = n.value
+    hook.name = self.textnode(n)
     hook.listparam = []
     return True
 

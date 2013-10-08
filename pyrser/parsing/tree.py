@@ -143,7 +143,7 @@ class CallTrue(Call):
 
 
 class Capture(ParserTree):
-    """Functor to handle capture variables."""
+    """Functor to handle capture nodes."""
 
     def __init__(self, tagname: str, pt: ParserTree):
         ParserTree.__init__(self)
@@ -154,20 +154,29 @@ class Capture(ParserTree):
 
     def __call__(self, parser: BasicParser) -> Node:
         if parser.begin_tag(self.tagname):
-            # create a node for the capture (visible during rule evaluation)
-            if self.tagname not in parser.rulenodes.maps[0]:
-                parser.rulenodes[self.tagname] = Node()
+            # by default, create a slot value for the result
+            return_node = Node()
+            # bind already existing nodes
+            if self.tagname in parser.rulenodes.maps:
+                return_node = parser.rulenodes[self.tagname]
+            else:
+                parser.rulenodes[self.tagname] = return_node
+            # subcontext
+            parser.push_rule_nodes()
+            parser.rulenodes['_'] = return_node
             res = self.pt(parser)
+            parser.pop_rule_nodes()
             if res and parser.end_tag(self.tagname):
-                text = parser.get_tag(self.tagname)
-                # wrap it in a Node instance
+                tag = parser.get_tag(self.tagname)
+                # no bindings, wrap it in a Node instance
                 if type(res) is bool:
                     res = Node()
-                #TODO(iopi): should be a future capture object for multistream
-                # capture
-                if not hasattr(res, 'value'):
-                    res.value = str(text)
-                parser.rulenodes[self.tagname].set(res)
+                # capture tag in cache
+                node_id = id(res)
+                parser.captured_tags[node_id] = [tag, None]
+                # update node
+                parser.rulenodes[self.tagname] = res
+                # forward nodes
                 return res
         return False
 
@@ -283,15 +292,11 @@ class Hook(ParserTree):
         valueparam = []
         for v, t in self.param:
             if t is Node:
-                import weakref
                 if v not in parser.rulenodes:
                     from pyrser.passes.to_yml import to_yml
                     print(to_yml(parser.rulenodes))
                     error.throw("Unknown capture variable : %s" % v, parser)
-                if type(parser.rulenodes[v]) is weakref.ProxyType:
-                    valueparam.append(parser.rulenodes[v])
-                else:
-                    valueparam.append(weakref.proxy(parser.rulenodes[v]))
+                valueparam.append(parser.rulenodes[v])
             elif type(v) is t:
                 valueparam.append(v)
             else:
@@ -385,7 +390,7 @@ class Directive(ParserTree):
         valueparam = []
         for v, t in self.param:
             if t is Node:
-                valueparam.append(weakref.proxy(parser.rulenodes[v]))
+                valueparam.append(parser.rulenodes[v])
             elif type(v) is t:
                 valueparam.append(v)
             else:

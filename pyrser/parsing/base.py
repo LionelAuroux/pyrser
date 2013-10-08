@@ -57,7 +57,8 @@ class BasicParser(metaclass=MetaBasicParser):
     def __init__(self, content: str='', stream_name: str="root"):
         self._ignores = [BasicParser.ignore_blanks]
         self.__streams = [Stream(content, stream_name)]
-        self.__tags = {}
+        self.__tags = dict()
+        self.captured_tags = dict()
         self.rulenodes = collections.ChainMap()
         self._lastIgnoreIndex = 0
         self._lastIgnore = False
@@ -88,6 +89,17 @@ class BasicParser(metaclass=MetaBasicParser):
         self.rulenodes = self.rulenodes.parents
         return True
 
+    def textnode(self, n: Node) -> str:
+        """Return the text value of the node"""
+        id_n = id(n)
+        if id_n in self.captured_tags:
+            # cache capture
+            cache = self.captured_tags[id_n]
+            if cache[1] is None:
+                cache[1] = str(cache[0])
+            return cache[1]
+        return ""
+
 ### STREAM
 
     def parsed_stream(self, sNewStream: str, sName="string"):
@@ -105,21 +117,16 @@ class BasicParser(metaclass=MetaBasicParser):
 
     def begin_tag(self, name: str) -> Node:
         """Save the current index under the given name."""
-        #self.__tags[name] = {'begin': self._stream.index}
         self.__tags[name] = Tag(self._stream, self._stream.index)
         return True
 
     def end_tag(self, name: str) -> Node:
         """Extract the string between saved and current index."""
-        #self.__tags[name]['end'] = self._stream.index
         self.__tags[name].set_end(self._stream.index)
         return True
 
     def get_tag(self, name: str) -> Tag:
         """Extract the string previously saved."""
-        #begin = self.__tags[name]['begin']
-        #end = self.__tags[name]['end']
-        #return self._stream[begin:end]
         return self.__tags[name]
 
 ####
@@ -166,17 +173,17 @@ class BasicParser(metaclass=MetaBasicParser):
 
     def eval_rule(self, name: str) -> Node:
         """Evaluate a rule by name."""
-        self.push_rule_nodes()
-        # create a slot value for the result
-        return_node = Node()
-        import weakref
-        self.rulenodes['_'] = weakref.proxy(return_node)
+        # context not created by parents (not captured)
+        if "_" not in self.rulenodes.maps[0]:
+            self.rulenodes['_'] = Node()
+        # TODO: other behavior for  empty rules?
         if name not in self.__class__._rules:
             error.throw("Unknown rule : %s" % name, self)
-        res = self.__class__._rules[name](self)
+        rule_to_eval = self.__class__._rules[name]
+        # TODO: add packrat cache here, same rule - same pos == same res
+        res = rule_to_eval(self)
         if res:
-            res = return_node
-        self.pop_rule_nodes()
+            res = self.rulenodes['_']
         return res
 
     def eval_hook(self, name: str, ctx: list) -> Node:
@@ -237,6 +244,7 @@ class BasicParser(metaclass=MetaBasicParser):
         """Consume all the stream. Same as EOF in BNF."""
         if self.read_eof():
             return True
+        # TODO: read ALL
         self._stream.save_context()
         while not self.read_eof():
             self._stream.incpos()
@@ -253,9 +261,7 @@ class BasicParser(metaclass=MetaBasicParser):
             return False
         self._stream.save_context()
         if self.peek_text(text):
-            nLength = len(text)
-            for _ in range(0, nLength):
-                self._stream.incpos()
+            self._stream.incpos(len(text))
             return self._stream.validate_context()
         return self._stream.restore_context()
 
@@ -404,7 +410,6 @@ def read_cstring(self) -> bool:
     idx = self._stream.index
     if self.read_char('\"') and self.read_until('\"', '\\'):
         txt = self._stream[idx:self._stream.index]
-        #res = Node(self._stream.validate_context())
         return self._stream.validate_context()
     return self._stream.restore_context()
 
@@ -420,6 +425,9 @@ def read_cchar(self) -> bool:
     idx = self._stream.index
     if self.read_char('\'') and self.read_until('\'', '\\'):
         txt = self._stream[idx:self._stream.index]
-        #res = Node(self._stream.validate_context())
         return self._stream.validate_context()
     return self._stream.restore_context()
+
+@meta.rule(Parser, "__scope__")
+def scope_nodes(self) -> bool:
+    return True

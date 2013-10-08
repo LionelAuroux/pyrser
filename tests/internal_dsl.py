@@ -374,9 +374,9 @@ class InternalDsl_Test(unittest.TestCase):
     def test_24_hookAndCapture(self):
         @meta.hook(parsing.Parser)
         def my_hook_multi(self, n1, n2, n3):
-            self.test.assertTrue(n1.value == "456")
-            self.test.assertTrue(n2.value == '"toto"')
-            self.test.assertTrue(n3.value == "blabla")
+            self.test.assertTrue(self.textnode(n1) == "456")
+            self.test.assertTrue(self.textnode(n2) == '"toto"')
+            self.test.assertTrue(self.textnode(n3) == "blabla")
             return True
 
         bnf = dsl.EBNF("""
@@ -451,7 +451,7 @@ class InternalDsl_Test(unittest.TestCase):
         def in_list(self, ls, ident):
             if not hasattr(ls, 'list'):
                 ls.list = []
-            ls.list.append(ident.value)
+            ls.list.append(self.textnode(ident))
             return True
 
         bnf = dsl.EBNF("""

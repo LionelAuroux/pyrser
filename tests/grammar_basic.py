@@ -6,8 +6,6 @@ from pyrser import parsing
 from pyrser import error
 from pyrser.hooks import copy
 from pyrser.directives import ignore
-
-import weakref
 from pyrser.passes import dump_tree
 
 
@@ -50,10 +48,30 @@ class CSV2(grammar.Grammar, CSV):
     """
 
 
+class Forward(grammar.Grammar):
+    entry = "forward"
+    grammar = """
+        forward ::=
+            __scope__:e
+            [
+                '(' tutu:e ')'
+                | toto:e
+            ]?
+            #follow(_, e)
+        ;
+
+        tutu ::= #create_tutu(_)
+        ;
+
+        toto ::= #create_toto(_)
+        ;
+    """
+
+
 class DummyCpp(grammar.Grammar):
     entry = "main"
     grammar = """
-        main ::= @ignore("C/C++") [id:i #copy(_, i)]+
+        main ::= @ignore("C/C++") [id:i #add(_, i)]+
         ;
     """
 
@@ -66,9 +84,9 @@ class GrammarBasic_Test(unittest.TestCase):
         @meta.hook(WordList)
         def add_to(self, mylist, word):
             if not hasattr(mylist, 'lst'):
-                mylist.lst = [word.value]
+                mylist.lst = [self.textnode(word)]
             else:
-                mylist.lst.append(word.value)
+                mylist.lst.append(self.textnode(word))
             return True
 
         ws = WordList("ab cd ef gh")
@@ -98,7 +116,7 @@ class GrammarBasic_Test(unittest.TestCase):
 
         @meta.hook(CSV)
         def add_item(self, item, i):
-            item.value = i.value
+            item.value = self.textnode(i)
             return True
 
         csv = CSV()
@@ -117,6 +135,16 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test CSV2
         """
+        @meta.hook(CSV2)
+        def add_col(self, line, c):
+            colval = ''
+            if hasattr(c, 'value'):
+                colval = c.value
+            if not hasattr(line, 'cols'):
+                line.cols = [colval]
+            else:
+                line.cols.append(colval)
+            return True
         csv2 = CSV2()
         res = csv2.parse("""
         3;;2;;1
@@ -289,6 +317,10 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test ignore directive for C/C++
         """
+        @meta.hook(DummyCpp)
+        def add(self, ast, i):
+            ast.last = self.textnode(i)
+            return True
         cxx = DummyCpp()
         res = cxx.parse("""
             a b c /* comment */
@@ -297,4 +329,31 @@ class GrammarBasic_Test(unittest.TestCase):
             g
         """)
         self.assertTrue(res, "failed to parse dummyCpp")
-        self.assertEqual(res.value, 'g', "failed to parse comments")
+        self.assertEqual(res.last, 'g', "failed to parse comments")
+
+    def test_16_forward_nodes(self):
+        """
+        Test node forwarding
+        """
+        @meta.hook(Forward)
+        def create_tutu(self, ast):
+            ast.tutu = "cool"
+            return True
+
+        @meta.hook(Forward)
+        def create_toto(self, ast):
+            ast.toto = "cool"
+            return True
+
+        @meta.hook(Forward)
+        def follow(self, ast, e):
+            ast.set(e)
+            return True
+
+        fwd = Forward()
+        res = fwd.parse("")
+        self.assertTrue(res, "failed to parse Forward")
+        self.assertTrue(hasattr(res, 'toto'), "failed to create toto")
+        res = fwd.parse("()")
+        self.assertTrue(res, "failed to parse Forward")
+        self.assertTrue(hasattr(res, 'tutu'), "failed to create tutu")
