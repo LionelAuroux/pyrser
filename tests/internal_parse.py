@@ -4,7 +4,6 @@ from unittest import mock
 from pyrser import parsing
 from pyrser import meta
 from pyrser import grammar
-from pyrser.passes import dump_tree
 
 
 class InternalParse_Test(unittest.TestCase):
@@ -234,7 +233,6 @@ class InternalParse_Test(unittest.TestCase):
                 )),
             parsing.Call(parsing.Parser.read_eof)
         )
-        parseTree.dump_tree()
         parseTree(parser)
         # Warning! skip_ignore is called between each parsing.Seq
         self.assertEqual(str(parser.get_tag("w1")), "_ad121dwdw ",
@@ -448,7 +446,6 @@ class InternalParse_Test(unittest.TestCase):
                         parsing.Neg(parsing.Call(
                             parsing.Parser.read_char,
                             '=')))
-        parseTree.dump_tree()
         res = parseTree(parser)
         self.assertEqual(res, False, "failed to get the correct final value")
         self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 0,
@@ -466,7 +463,6 @@ class InternalParse_Test(unittest.TestCase):
                             parsing.Parser.read_char,
                             '=')),
                         )
-        parseTree.dump_tree()
         res = parseTree(parser)
         self.assertEqual(res, True, "failed to get the correct final value")
         self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 1,
@@ -481,7 +477,6 @@ class InternalParse_Test(unittest.TestCase):
         parseTree = parsing.Seq(
             parsing.Call(parsing.Parser.read_char, '='),
             parsing.Complement(parsing.Call(parsing.Parser.read_char, '=')))
-        parseTree.dump_tree()
         res = parseTree(parser)
         self.assertEqual(res, False, "failed to get the correct final value")
         self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 0,
@@ -505,6 +500,5 @@ class InternalParse_Test(unittest.TestCase):
             ),
             parsing.Call(parsing.Parser.read_text, 'tutu'),
         )
-        parseTree.dump_tree()
         res = parseTree(parser)
         self.assertEqual(res, True, "failed to get the correct final value")

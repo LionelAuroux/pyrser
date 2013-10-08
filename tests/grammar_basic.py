@@ -4,9 +4,7 @@ from pyrser import grammar
 from pyrser import meta
 from pyrser import parsing
 from pyrser import error
-from pyrser.hooks import copy
 from pyrser.directives import ignore
-from pyrser.passes import dump_tree
 
 
 class WordList(grammar.Grammar):

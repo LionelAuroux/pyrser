@@ -5,7 +5,7 @@ Python API
     grammar
     hooks
     directives
-    tree
+    functors
     stream
     fmt
     meta

@@ -358,7 +358,8 @@ def read_eol(self) -> bool:
 @meta.rule(Parser, "Base.num")
 def read_integer(self) -> bool:
     """
-    Read following BNF rule else return False
+    Read following BNF rule else return False::
+
     readInteger ::= ['0'..'9']+ ;
     """
     if self.read_eof():
@@ -380,10 +381,10 @@ def read_integer(self) -> bool:
 @meta.rule(Parser, "Base.id")
 def read_identifier(self) -> bool:
     """
-    Read following BNF rule else return False
+    Read following BNF rule else return False::
+
     readIdentifier ::=
-        ['a'..'z'|'A'..'Z'|'_']['0'..'9'|'a'..'z'|'A'..'Z'|'_']*
-    ;
+        ['a'..'z'|'A'..'Z'|'_']['0'..'9'|'a'..'z'|'A'..'Z'|'_']*;
     """
     if self.read_eof():
         return False
@@ -403,7 +404,8 @@ def read_identifier(self) -> bool:
 @meta.rule(Parser, "Base.string")
 def read_cstring(self) -> bool:
     """
-    Read following BNF rule else return False
+    Read following BNF rule else return False::
+
     '"' -> ['/'| '"']
     """
     self._stream.save_context()
@@ -418,7 +420,8 @@ def read_cstring(self) -> bool:
 def read_cchar(self) -> bool:
     # TODO(iopi): octal digit, hex digit
     """
-    Read following BNF rule else return False
+    Read following BNF rule else return False::
+
     "'" -> [~"/" "'"]
     """
     self._stream.save_context()
@@ -430,4 +433,5 @@ def read_cchar(self) -> bool:
 
 @meta.rule(Parser, "__scope__")
 def scope_nodes(self) -> bool:
+    """Used for create scoped nodes"""
     return True

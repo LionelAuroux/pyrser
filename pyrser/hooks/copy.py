@@ -5,12 +5,10 @@ from pyrser.parsing.base import BasicParser
 @meta.hook(BasicParser, "copy")
 def copy_node(self, dst, src):
     """
-        Basically copy one node to another
-
+        Basically copy one node to another.
         usefull to transmit a node from a terminal
         rule as result of the current rule.
-
-        example:
+        example::
 
             R ::=
                 In : node #copy(_, node)

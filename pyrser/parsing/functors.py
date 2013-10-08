@@ -5,23 +5,23 @@ from pyrser.parsing.node import Node
 from pyrser.parsing.stream import Tag
 
 
-class ParserTree:
+class Functor:
     """Dummy Base class for all parse tree classes.
 
     common property:
-        pt if contain a ParserTree
-        ptlist if contain a list of ParserTree
+        pt if contain a Functor
+        ptlist if contain a list of Functor
     """
     pass
 
 
-class Seq(ParserTree):
+class Seq(Functor):
     """A B C bnf primitive as a functor."""
 
-    def __init__(self, *ptlist: ParserTree):
-        ParserTree.__init__(self)
+    def __init__(self, *ptlist: Functor):
+        Functor.__init__(self)
         if len(ptlist) == 0:
-            raise TypeError("Expected ParserTree")
+            raise TypeError("Expected Functor")
         self.ptlist = ptlist
 
     def __call__(self, parser: BasicParser) -> bool:
@@ -33,11 +33,11 @@ class Seq(ParserTree):
         return parser._stream.validate_context()
 
 
-class Scope(ParserTree):
+class Scope(Functor):
     """functor to wrap SCOPE/rule directive or just []."""
 
     def __init__(self, begin: Seq, end: Seq, pt: Seq):
-        ParserTree.__init__(self)
+        Functor.__init__(self)
         self.begin = begin
         self.end = end
         self.pt = pt
@@ -51,10 +51,10 @@ class Scope(ParserTree):
         return res
 
 
-class LookAhead(ParserTree):
+class LookAhead(Functor):
     """!!A bnf primitive as a functor."""
-    def __init__(self, pt: ParserTree):
-        ParserTree.__init__(self)
+    def __init__(self, pt: Functor):
+        Functor.__init__(self)
         self.pt = pt
 
     def __call__(self, parser: BasicParser) -> bool:
@@ -64,11 +64,11 @@ class LookAhead(ParserTree):
         return res
 
 
-class Neg(ParserTree):
+class Neg(Functor):
     """!A bnf primitive as a functor."""
 
-    def __init__(self, pt: ParserTree):
-        ParserTree.__init__(self)
+    def __init__(self, pt: Functor):
+        Functor.__init__(self)
         self.pt = pt
 
     def __call__(self, parser: BasicParser):
@@ -79,11 +79,11 @@ class Neg(ParserTree):
         return parser._stream.validate_context()
 
 
-class Complement(ParserTree):
+class Complement(Functor):
     """~A bnf primitive as a functor."""
 
-    def __init__(self, pt: ParserTree):
-        ParserTree.__init__(self)
+    def __init__(self, pt: Functor):
+        Functor.__init__(self)
         self.pt = pt
 
     def __call__(self, parser: BasicParser) -> bool:
@@ -101,11 +101,11 @@ class Complement(ParserTree):
         return False
 
 
-class Until(ParserTree):
+class Until(Functor):
     """->A bnf primitive as a functor."""
 
-    def __init__(self, pt: ParserTree):
-        ParserTree.__init__(self)
+    def __init__(self, pt: Functor):
+        Functor.__init__(self)
         self.pt = pt
 
     def __call__(self, parser: BasicParser) -> bool:
@@ -122,11 +122,11 @@ class Until(ParserTree):
         return False
 
 
-class Call(ParserTree):
+class Call(Functor):
     """Functor wrapping a BasicParser method call in a BNF clause."""
 
     def __init__(self, callObject, *params):
-        ParserTree.__init__(self)
+        Functor.__init__(self)
         self.callObject = callObject
         self.params = params
 
@@ -142,11 +142,11 @@ class CallTrue(Call):
         return True
 
 
-class Capture(ParserTree):
+class Capture(Functor):
     """Functor to handle capture nodes."""
 
-    def __init__(self, tagname: str, pt: ParserTree):
-        ParserTree.__init__(self)
+    def __init__(self, tagname: str, pt: Functor):
+        Functor.__init__(self)
         if not isinstance(tagname, str) or len(tagname) == 0:
             raise TypeError("Illegal tagname for capture")
         self.tagname = tagname
@@ -181,11 +181,11 @@ class Capture(ParserTree):
         return False
 
 
-class Alt(ParserTree):
+class Alt(Functor):
     """A | B bnf primitive as a functor."""
 
     def __init__(self, *ptlist: Seq):
-        ParserTree.__init__(self)
+        Functor.__init__(self)
         self.ptlist = ptlist
 
     def __call__(self, parser: BasicParser) -> Node:
@@ -200,10 +200,10 @@ class Alt(ParserTree):
         return False
 
 
-class RepOptional(ParserTree):
+class RepOptional(Functor):
     """[]? bnf primitive as a functor."""
     def __init__(self, pt: Seq):
-        ParserTree.__init__(self)
+        Functor.__init__(self)
         self.pt = pt
 
     def __call__(self, parser: BasicParser) -> bool:
@@ -214,11 +214,11 @@ class RepOptional(ParserTree):
         return True
 
 
-class Rep0N(ParserTree):
+class Rep0N(Functor):
     """[]* bnf primitive as a functor."""
 
     def __init__(self, pt: Seq):
-        ParserTree.__init__(self)
+        Functor.__init__(self)
         self.pt = pt
 
     def __call__(self, parser: BasicParser) -> bool:
@@ -230,11 +230,11 @@ class Rep0N(ParserTree):
         return True
 
 
-class Rep1N(ParserTree):
+class Rep1N(Functor):
     """[]+ bnf primitive as a functor."""
 
     def __init__(self, pt: Seq):
-        ParserTree.__init__(self)
+        Functor.__init__(self)
         self.pt = pt
 
     def __call__(self, parser: BasicParser) -> bool:
@@ -252,7 +252,7 @@ class Rep1N(ParserTree):
         return parser._stream.restore_context()
 
 
-class Error(ParserTree):
+class Error(Functor):
     """Raise an error."""
 
     def __init__(self, msg: str, **kwargs):
@@ -263,23 +263,23 @@ class Error(ParserTree):
         error.throw(self.msg, parser, **self.kw)
 
 
-class Rule(ParserTree):
+class Rule(Functor):
     """Call a rule by its name."""
 
     #TODO(iopi): Handle additionnal value
     def __init__(self, name: str):
-        ParserTree.__init__(self)
+        Functor.__init__(self)
         self.name = name
 
     def __call__(self, parser: BasicParser) -> Node:
         return parser.eval_rule(self.name)
 
 
-class Hook(ParserTree):
+class Hook(Functor):
     """Call a hook by his name."""
 
     def __init__(self, name: str, param: [(object, type)]):
-        ParserTree.__init__(self)
+        Functor.__init__(self)
         self.name = name
         # compose the list of value param, check type
         for v, t in param:
@@ -329,7 +329,7 @@ class DirectiveWrapper(metaclass=MetaDirectiveWrapper):
     """functor to wrap begin/end directive"""
 
     def __init__(self, ):
-        ParserTree.__init__(self)
+        Functor.__init__(self)
 
     def checkParam(self, params: list):
         if (not hasattr(self.__class__, 'begin') or
@@ -371,12 +371,12 @@ class DirectiveWrapper(metaclass=MetaDirectiveWrapper):
         pass
 
 
-class Directive(ParserTree):
+class Directive(Functor):
     """functor to wrap directive HOOKS"""
 
     def __init__(self, directive: DirectiveWrapper, param: [(object, type)],
-                 pt: ParserTree):
-        ParserTree.__init__(self)
+                 pt: Functor):
+        Functor.__init__(self)
         self.directive = directive
         self.pt = pt
         # compose the list of value param, check type
