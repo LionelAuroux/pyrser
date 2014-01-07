@@ -340,6 +340,7 @@ def read_one_char(self) -> bool:
 @meta.rule(BasicParser, "Base.eof")
 def read_eof(self) -> bool:
     """Returns true if reached end of the stream."""
+    # TODO: handle multi-stream, pop last stream and continue if not the last
     return self._stream.index == self._stream.eos_index
 
 

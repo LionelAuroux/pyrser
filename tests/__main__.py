@@ -8,8 +8,9 @@ parent_dir = path.join(path.dirname(__file__), os.pardir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from tests import grammar_basic
+from tests import grammar_basic, grammar_file
 from tests import internal_parse, internal_dsl, internal_fmt
+from tests import gen_dsl
 
 
 # Test cases in order
@@ -18,6 +19,9 @@ test_cases = (
     internal_dsl.InternalDsl_Test,
     internal_fmt.InternalFmt_Test,
     grammar_basic.GrammarBasic_Test,
+    grammar_file.GrammarFile_Test,
+    gen_dsl.GenDsl_Test,
+
 )
 
 
