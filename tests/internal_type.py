@@ -3,7 +3,11 @@ from pyrser.type_checking.signature import *
 from pyrser.type_checking.set import *
 
 class InternalType_Test(unittest.TestCase):
+
     def test_01_pp(self):
+        """
+        Test pretty Printing
+        """
         var = Signature('var1', 'int')
         f1 = Signature('fun1', 'int', '')
         f2 = Signature('fun2', 'int', 'int')
@@ -19,8 +23,17 @@ class InternalType_Test(unittest.TestCase):
     fun fun3 : (int, double) -> int
     var var1 : int
 """, "Bad pretty printing of type")
+        t1 = Set('t1', istype=True)
+        self.assertEqual(str(t1), "type t1", "Bad pretty printing of type")
+        t1.add(Signature('fun1', 'a', 'b'))
+        self.assertEqual(str(t1), """type t1 :
+    fun t1.fun1 : (b) -> a
+""", "Bad pretty printing of type")
 
     def test_02_setop(self):
+        """
+        Test Set common operation
+        """
         var = Signature('var1', 'int')
         tenv = RawSet(var)
         self.assertIn(Signature('var1', 'int'), tenv, "Bad __contains__ in type_checking.Set")
@@ -34,11 +47,11 @@ class InternalType_Test(unittest.TestCase):
         tenv |= {Signature('fun3', 'int', 'int')}
         self.assertIn(Signature('fun3', 'int', 'int'), tenv, "Bad __contains__ in type_checking.Set")
         # retrieves past signature
-        v = tenv.get(var.uniq_name())
+        v = tenv.get(var.internal_name())
         self.assertEqual(id(v), id(var), "Bad get in type_checking.Set")
         # intersection_update, only with Set
         tenv &= RawSet(Signature('var1', 'int'))
-        v = tenv.get(var.uniq_name())
+        v = tenv.get(var.internal_name())
         self.assertNotEqual(id(v), id(var), "Bad &= in type_checking.Set")
         # difference_update, only with Set
         tenv |= [Signature('fun2', 'int', 'int'), Signature('fun3', 'char', 'double', 'float')]
@@ -67,10 +80,48 @@ class InternalType_Test(unittest.TestCase):
         tenv1 = RawSet(Signature('tutu', 'toto', 'tata'), Signature('tutu', 'int', 'char'), Signature('gra', 'gru'))
         tenv2 = RawSet(Signature('blim', 'blam', 'tata'), Signature('f', 'double', 'char'), Signature('gra', 'gru'), Signature('v', 'd'))
         tenv = tenv1 ^ tenv2
-        print(str(tenv1))
-        print(str(tenv2))
-        print(str(tenv))
         self.assertEqual(len(tenv), 5, "Bad ^ in type_checking.Set")
         self.assertIn(Signature('tutu', 'toto', 'tata'), tenv, "Bad ^ in type_checking.Set")
         self.assertNotIn(Signature('gra', 'gru'), tenv, "Bad ^ in type_checking.Set")
 
+    def test_03_overload(self):
+        # test get by symbol name
+        tenv = RawSet(Signature('tutu', 'tata'), Signature('plop', 'plip'), Signature('tutu', 'lolo'))
+        tenv |= RawSet(Signature('plop', 'gnagna'), Signature('tutu', 'int', 'double'))
+        trest = tenv.get_by_symbol_name('tutu')
+        self.assertIn(Signature('tutu', 'tata'), trest, "get_by_symbol_name in type_checking.Set")
+        self.assertIn(Signature('tutu', 'lolo'), trest, "get_by_symbol_name in type_checking.Set")
+        self.assertIn(Signature('tutu', 'int', 'double'), trest, "get_by_symbol_name in type_checking.Set")
+        self.assertNotIn(Signature('plop', 'gnagna'), trest, "get_by_symbol_name in type_checking.Set")
+        # test get by return type
+        tenv = RawSet(Signature('tutu', 'int'), Signature('plop', 'plip'), Signature('tutu', 'int', ''))
+        tenv |= RawSet(Signature('plop', 'int'), Signature('tutu', 'int', 'double', 'int'))
+        trest = tenv.get_by_return_type('int')
+        self.assertIn(Signature('tutu', 'int'), trest, "Bad get_by_return_type in type_checking.Set")
+        self.assertIn(Signature('plop', 'int'), trest, "Bad get_by_return_type in type_checking.Set")
+        trest = tenv.get_by_return_type('int').get_by_symbol_name('tutu')
+        self.assertNotIn(Signature('plop', 'int'), trest, "Bad get_by_return_type in type_checking.Set")
+        # test get by params
+        f = RawSet(Signature('f', 'void', 'int'), Signature('f', 'int', 'int', 'double', 'char'), Signature('f', 'double', 'int', 'juju'))
+        f |= RawSet(Signature('f', 'double', 'char', 'double', 'double'))
+        p1 = RawSet(Signature('a', 'int'), Signature('a', 'double'))
+        p2 = RawSet(Signature('b', 'int'), Signature('b', 'double'))
+        p3 = RawSet(Signature('c', 'int'), Signature('c', 'double'), Signature('c', 'char'))
+        trest = f.get_by_params(p1, p2, p3)
+        self.assertIn(Signature('f', 'int', 'int', 'double', 'char'), trest, "Bad get_by_params in type_checking.Set")
+        self.assertEqual(len(trest), 1, "Bad get_by_params in type_checking.Set")
+
+    def test_04_symbolpatch(self):
+        """
+        Test of symbol mangling redefinition for custom language due to multi-inheritance order resolution of python MRO
+        """
+        class MySymbol(Symbol):
+            def show_name(sig: Symbol):
+                return "cool " + sig.name
+            def internal_name(sig: Symbol):
+                return "tjrs " + sig.name
+        class MySignature(MySymbol, Signature):
+            pass
+        s = MySignature('funky', 'bla', 'blu')
+        self.assertEqual(s.show_name(), 'cool funky', "Bad symbol patching in type_checking")
+        self.assertEqual(s.internal_name(), 'tjrs funky', "Bad symbol patching in type_checking")

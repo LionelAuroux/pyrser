@@ -48,7 +48,7 @@ class Symbol:
         return ".".join(self.get_scope_list())
 
     # to overload for new language
-    def uniq_name(self):
+    def internal_name(self):
         """
         Return the unique internal name
         """
