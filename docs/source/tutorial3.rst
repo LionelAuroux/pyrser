@@ -1,4 +1,4 @@
-Tutorial II: Handling Type Checking (part 2) Toy Language For Typing:
+Tutorial III: Handling Type Checking (part 2) Toy Language For Typing:
 =====================================================================
 
 To go further with type checking, we need a little toy language for implements different kind of typing strategy.

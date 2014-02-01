@@ -10,7 +10,7 @@ stmt ::=
 ;
 
 decl_var ::=
-   'var' name ':' type ';'
+   'var' name ':' type ['=' expr]? ';'
 ;
 
 decl_fun ::=
@@ -18,7 +18,7 @@ decl_fun ::=
 ;
 
 params ::=
-    '(' param [',' param]* ')' ':' type
+    '(' [param [',' param]*]? ')' ':' type
 ;
 
 param ::=
@@ -26,7 +26,7 @@ param ::=
 ;
 
 implem ::=
-    ';' // just a prototype
+    ';' /* just a prototype */
     | block
 ;
 
@@ -36,4 +36,241 @@ name ::= id
 type ::= id
 ;
 
-expr
+or_op ::= @ignore('null') ["|" !["|"|"="]]:op #new_raw(_, op);
+
+block ::=
+    '{' expr* '}'
+;
+
+expr ::= or_expression:_
+;
+
+or_expression ::=
+    xor_expression:_
+    [   
+        or_op:op
+        xor_expression:param
+        #new_binary(_, op, param)
+    ]*
+;
+
+xor_op ::= @ignore('null') ["^" !"="]:op #new_raw(_, op);
+xor_expression ::=
+    and_expression:_
+    [   
+        xor_op:op
+        and_expression:param
+        #new_binary(_, op, param)
+    ]*
+;
+
+and_op ::= @ignore('null') ["&" !["&"|"="]]:op #new_raw(_, op);
+and_expression ::=
+    equality_expression:_
+    [   
+        and_op:op
+        equality_expression:param
+        #new_binary(_, op, param)
+    ]*
+;
+
+eqneq_op ::= @ignore('null') ["==" | "!="]:op #new_raw(_, op);
+equality_expression ::=
+    relational_expression:_
+    [   
+        eqneq_op:op
+        relational_expression:param
+        #new_binary(_, op, param)
+    ]*
+;
+
+cmp_op ::= @ignore('null') ["<=" | ">=" | '<' !'<' | '>' !'>' ]:op #new_raw(_, op);
+relational_expression ::=
+    shift_expression:_
+    [   
+        cmp_op:op
+        shift_expression:param
+        #new_binary(_, op, param)
+    ]*
+;
+
+shift_op ::= @ignore('null') ["<<" !"=" | ">>" !"="]:op #new_raw(_, op);
+shift_expression ::=
+    additive_expression:_
+    [   
+        shift_op:op
+        additive_expression:param
+        #new_binary(_, op, param)
+    ]*
+;
+
+add_op ::= @ignore('null') ['+' !['+'|'='] | '-' !['-'|'='|'>']]:op #new_raw(_, op);
+additive_expression ::=
+    multiplicative_expression:_
+    [   
+        add_op:op
+        multiplicative_expression:param
+        #new_binary(_, op, param)
+    ]*
+;
+
+mul_op ::= @ignore('null') [['*'|'/'|'%']:op !'='] #new_raw(_, op);
+multiplicative_expression ::=
+    unary_expression:_
+    [   
+        mul_op:op
+        unary_expression:param
+        #new_binary(_, op, param)
+    ]*
+;
+
+unary_op ::= @ignore('null') 
+/*
+    ["++"
+    |"--"
+    |"&&"
+    | '&' !'='
+    | '*' !'='
+*/[
+     '~' !'='
+    | '!' !'='
+    | '+' !'='
+    | '-' !['>'|'=']
+    ]:op #new_raw(_, op)
+;
+unary_expression ::=
+    postfix_expression:_
+    |
+        __scope__:op
+        [   unary_op:op
+        |   Base.id:i
+            #is_unary(op, i)
+        ]
+    unary_expression:expr
+    #new_unary(_, op, expr)
+;
+
+postfix_expression ::=
+    primary_expression:_
+    [
+/*        '[' expression:expr ']' #new_array_call(_, _, expr) */
+         '(' func_arg_list?:args ')' #new_func_call(_, _, args)
+/*
+        | '.' identifier:i #new_dot(_, _, i)
+        | "->" identifier:i #new_arrow(_, _, i)
+        | ["++"|"--"]:op #new_raw(op, op) #new_post(_, op, _)
+*/
+    ]*
+;
+
+func_arg_list ::=
+    assignement_expression:a #new_arg(_, a)
+    [   ','
+        assignement_expression:a #new_arg(_, a)
+    ]*
+;
+
+primary_expression ::=
+    ['(' expression:expr ')' #new_paren(_, expr)
+    | literal
+    | identifier]:_
+;
+
+identifier ::=
+    @ignore('null') 
+    [
+        rootidentifier:id
+/*        #check_is_id(id) */
+        #new_id(_, id)
+    ]
+;
+
+rootidentifier ::= Base.id:_
+;
+
+dot ::= '.' !'.'
+;
+
+pow ::= 'p' | 'P'
+;
+
+exp ::= 
+    ['e'|'E'] ['+'|'-']? ['0'..'9']+
+;
+
+unsigned_suffix ::=
+    ['u'|'U']
+;
+
+long_suffix ::=
+    ['l'|'L']
+;
+
+float_suffix ::=
+    ['f'|'F']
+;
+
+complex_suffix ::=
+    ['i'|'I'|'j'|'J']
+;
+
+decimal_const ::=
+    ['0'..'9']+
+    unsigned_suffix?
+    long_suffix?
+    long_suffix?
+;
+
+hexadecimal_prefix ::= '0' ['x'|'X']
+;
+
+hexadecimal_digit ::= ['0'..'9'|'a'..'f'|'A'..'F']
+;
+
+hexadecimal_const_int ::=
+    hexadecimal_prefix [hexadecimal_digit]+
+    unsigned_suffix?
+    long_suffix?
+    long_suffix?
+;
+
+octal_digit ::= '0'..'7'
+;
+
+octal_const ::= 
+    '0' octal_digit+
+    [
+       dot octal_digit+
+       [pow ['+'|'-']? decimal_const]?
+    ]?
+;
+
+double_const ::=
+    [decimal_const dot ['0'..'9']*| dot ['0'..'9']+] exp?
+    long_suffix?
+    float_suffix?
+    complex_suffix?
+;
+
+encoding_prefix ::= "u8" | 'u' | 'U' | 'L'
+;
+
+string_const ::=
+    encoding_prefix? Base.string @ignore("C/C++") Base.string*
+;
+
+char_const ::=
+    encoding_prefix? Base.char
+;
+
+literal ::= @ignore('null')
+    [
+        hexadecimal_const_int
+        | octal_const
+        | double_const
+        | decimal_const
+        | string_const
+        | char_const
+    ]:val
+    #new_literal(_, val)
+;

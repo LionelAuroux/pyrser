@@ -84,3 +84,10 @@ class GrammarFile_Test(unittest.TestCase):
         res = json.parse('{"test":12,"puf":[1,2,3],"obj":{"flags":true}}',
                          "json")
         self.assertTrue(res.node['obj']['flags'])
+
+    def test_03_tl4t(self):
+        """
+        Test TL4T
+        """
+        import os
+        TL4T = grammar.from_file(os.getcwd() + "/tests/bnf/tl4t.bnf")
