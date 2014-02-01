@@ -14,7 +14,9 @@ Contents:
    
    quickstart
    changelog
-   tutorial
+   tutorial1
+   tutorial2
+   tutorial3
    dsl
    base
    API

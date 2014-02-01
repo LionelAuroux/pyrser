@@ -19,18 +19,7 @@ class   Set(Symbol):
         self._nfuns = 0
         self._hsig = {}
         if ls != None:
-            for s in ls:
-                if s.internal_name() not in self._hsig:
-                    self._hsig[s.internal_name()] = s
-                else:
-                    raise KeyError(s.internal_name() + ' redefine')
-                s.set_parent(self)
-                if hasattr(s, 'is_type') and s.is_type():
-                    self._ntypes += 1
-                if hasattr(s, 'is_var') and s.is_var():
-                    self._nvars += 1
-                if hasattr(s, 'is_fun') and s.is_fun():
-                    self._nfuns += 1
+            self.update(ls)
         self._istype = istype
 
     def to_fmt(self) -> fmt.indentable:
@@ -97,7 +86,10 @@ class   Set(Symbol):
         if hasattr(ls, 'values'):
             values = ls.values()
         for s in values:
-            self._hsig[s.internal_name()] = s
+            if s.internal_name() not in self._hsig:
+                self._hsig[s.internal_name()] = s
+            else:
+                raise KeyError(s.internal_name() + ' redefine')
             s.set_parent(self)
         self.__update_count()
         return self
@@ -254,10 +246,13 @@ class   Set(Symbol):
                 lst.append(s)
         return RawSet(*tuple(lst))
 
-    def get_by_params(self, *params) -> 'Set':
+    def get_by_params(self, *params) -> ('Set', 'Set'):
         """
         Retrieve a Set of all signature that match the parameter list.
-        Must be overload in some language to handle things like ellipsis (...)
+        Must be overload in some language to handle things like ellipsis (...).
+        Return a pair.
+            pair[0] the overloads for the functions
+            pair[1] the overloads for the parameters
         """
         lst = []
         # for each of our signature
@@ -275,13 +270,26 @@ class   Set(Symbol):
                 if mcnt == len(s.tparams) and mcnt == len(params):
                     # select this signature
                     lst.append(s)
-        return RawSet(*tuple(lst))
+        scopep = RawSet()
+        # for each selected signature
+        for s in lst:
+            # for each params in this signature
+            for i in range(len(s.tparams)):
+                # collect this params
+                scopep.update(params[i].get_by_return_type(s.tparams[i]))
+        return (RawSet(*tuple(lst)), scopep)
 
     def values(self) -> [Signature]:
         """
         Retrieve all values
         """
         return self._hsig.values()
+
+    def keys(self) -> [str]:
+        """
+        Retrieve all keys
+        """
+        return self._hsig.keys()
 
     def count_types(self) -> int:
         """
@@ -313,8 +321,21 @@ class   Set(Symbol):
                 n += 1
         return n
 
-    def is_type(self) -> bool:
+    def is_type(self, change=None) -> bool:
         """
-        If this scope define a new Type (language specific)
+        If this scope define a new Type (language specific).
+        You could change it!
         """
+        if change != None and type(change) is bool:
+            self._istype = change
         return self._istype
+
+    def set_name(self, name: str):
+        """
+        You could set the name after construction
+        """
+        self.name = name
+        lsig = self._hsig.values()
+        self._hsig = {}
+        for s in lsig:
+            self._hsig[s.internal_name()] = s

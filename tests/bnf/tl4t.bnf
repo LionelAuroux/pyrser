@@ -1,0 +1,39 @@
+/**
+    Toy Language 4 Typing
+**/
+
+source ::= @ignore("C/C++") __scope__:block stmt+ eof
+;
+
+stmt ::=
+    decl_var | decl_fun | expr
+;
+
+decl_var ::=
+   'var' name ':' type ';'
+;
+
+decl_fun ::=
+    'fun' name params implem
+;
+
+params ::=
+    '(' param [',' param]* ')' ':' type
+;
+
+param ::=
+    name ':' type
+;
+
+implem ::=
+    ';' // just a prototype
+    | block
+;
+
+name ::= id
+;
+
+type ::= id
+;
+
+expr

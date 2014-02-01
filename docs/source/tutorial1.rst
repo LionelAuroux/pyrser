@@ -202,13 +202,14 @@ By default ``is_num`` is an unknown hook. Let's declare it with the following sy
 
     @meta.hook(JSON)
     def is_num(self, arg):
-        print(arg.value)
+        print(self.textnode(arg))
         return True
 
 note: A hook is just a function with a special decorator:
 
-    * The function took at least one parameter ``self``. This is the parser instance.
-    * ``arg`` is the capturing node. With the attribute ``value``, we could fetch the captured text (parsed by ``[int frac? exp?]``).
+    * The function took at least one parameter ``self``. This is the parser instance (here your JSON instance).
+    * ``arg`` is the capturing node (an instance of ``pyrser.parsing.node.Node``).
+    We could fetch the captured text (parsed by ``[int frac? exp?]``) with a call to ``self.textnode`` on the ``arg``.
 
 note: A hook must return True if the parsing must continue. You could stop parsing by returning False (this return provoking a parse error).
 
@@ -233,17 +234,17 @@ So, we must patch our ``number`` rule and the ``is_num`` hook like this::
     ...
 
 ``_`` is received by the ``is_num`` function as parameter. You can't modify it directly.
-To return something with it you must create an arbitrary attribute (but the name ``value`` already used) to carry the output::
+To return something with it you must create an arbitrary attribute to carry the output::
 
     from pyrser import meta
 
     @meta.hook(JSON)
     def is_num(self, ast, arg):
         # node is arbitrary
-        ast.node = float(arg.value)
+        ast.node = float(self.textnode(arg))
         return True
 
-note: The ``float`` constructor interpret directly ``arg.value`` like ``1.0`` or ``-2e+2`` to create a float object.
+note: The ``float`` constructor interpret directly ``self.textnode(arg)`` like ``1.0`` or ``-2e+2`` to create a float object.
 
 We could proceed like this for all trivial values.
 
@@ -300,7 +301,7 @@ A complete grammar for a JSON parser looks like this::
         """Pyrser JSON parser"""
         entry = "json"
         grammar = """
-        
+
             json ::= object:_ eof
             ;
             
@@ -355,55 +356,57 @@ A complete grammar for a JSON parser looks like this::
             
             e ::= ['e'|'E'] ['+'|'-']?
             ;
+        
         """
 
-    @meta.hook(JSON)
-    def is_num(self, ast, n):
-        ast.node = float(n.value)
-        return True
+        @meta.hook(JSON)
+        def is_num(self, ast, n):
+            ast.node = float(self.textnode(n))
+            return True
 
-    @meta.hook(JSON)
-    def is_str(self, ast, s):
-        ast.node = s.value.strip('"')
-        return True
+        @meta.hook(JSON)
+        def is_str(self, ast, s):
+            ast.node = self.textnode(s).strip('"')
+            return True
 
-    @meta.hook(JSON)
-    def is_bool(self, ast, b):
-        if b.value == "true":
-            ast.node = True
-        if b.value == "false":
-            ast.node = False
-        return True
+        @meta.hook(JSON)
+        def is_bool(self, ast, b):
+            bval = self.textnode(b)
+            if bval == "true":
+                ast.node = True
+            if bval == "false":
+                ast.node = False
+            return True
 
-    @meta.hook(JSON)
-    def is_none(self, ast):
-        ast.node = None
-        return True
+        @meta.hook(JSON)
+        def is_none(self, ast):
+            ast.node = None
+            return True
 
-    @meta.hook(JSON)
-    def is_pair(self, ast, s, v):
-        ast.node = (s.value.strip('"'), v.node)
-        return True
+        @meta.hook(JSON)
+        def is_pair(self, ast, s, v):
+            ast.node = (self.textnode(s).strip('"'), v.node)
+            return True
 
-    @meta.hook(JSON)
-    def is_array(self, ast):
-        ast.node = []
-        return True
+        @meta.hook(JSON)
+        def is_array(self, ast):
+            ast.node = []
+            return True
 
-    @meta.hook(JSON)
-    def add_item(self, ast, item):
-        ast.node.append(item.node)
-        return True
+        @meta.hook(JSON)
+        def add_item(self, ast, item):
+            ast.node.append(item.node)
+            return True
 
-    @meta.hook(JSON)
-    def is_dict(self, ast):
-        ast.node = {}
-        return True
+        @meta.hook(JSON)
+        def is_dict(self, ast):
+            ast.node = {}
+            return True
 
-    @meta.hook(JSON)
-    def add_kv(self, ast, item):
-        ast.node[item.node[0]] = item.node[1]
-        return True
+        @meta.hook(JSON)
+        def add_kv(self, ast, item):
+            ast.node[item.node[0]] = item.node[1]
+            return True
 
 7- Parser in action
 -------------------
@@ -422,4 +425,10 @@ Instanciate it and use the method ``parse`` (or ``parse_file``) to parse a conte
         if res.node['puf'][1] == 2:
             print("OK")
 
+You could also put all your grammar into a BNF file (here ``json.bnf``) use the ``from_file`` function to create the JSON class::
 
+        import pyrser.grammar
+        import os
+        JSON = grammar.from_file(os.getcwd() + "/json.bnf")
+
+See :doc:`grammar` for more informations about way of creating grammar.

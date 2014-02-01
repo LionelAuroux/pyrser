@@ -6,8 +6,8 @@ BNF Syntax
 
 Pyrser use the following DSL to describe a grammar.
 
-``R ::= A ...;``:
-    Define a rule named R as a sequence of clauses A etc.
+``R ::= expr1 expr2 ... ;``:
+    Define a rule named R as a sequence of clauses defined by ``expr``.
 
 ``expr``:
     expr is one of the following statements.
@@ -17,9 +17,12 @@ Pyrser use the following DSL to describe a grammar.
 
 ``expr1 | expr2``:
     Try to match expr1. If it fails, match expr2 instead. Like python's ``or``.
+    
+``expr1 expr2 | expr3 expr4`` :
+    Try to match ``expr1`` and then ``expr2``. If it fails, match ``expr3`` and then ``expr4``!
 
 ``[ expr1 expr2 expr3 ... ]``:
-    Group some clauses.
+    Group some clauses. Allow to inverse priority.
 
 ``expr*``:
     Match expr zero or more times.
@@ -43,31 +46,31 @@ Pyrser use the following DSL to describe a grammar.
     Read until expr. Consumes N character until the next item in the input matches expr.
 
 ``A``:
-    Read just the clause A.
+    Call the rule ``A``.
 
 ``'a'``:
-    Read the character ``'a'`` in the input.
+    Read the character ``a`` in the input.
 
 ``"foo"``:
-    Read the text ``"foo"`` in the input.
+    Read the text ``foo`` in the input.
 
 ``'a'..'z'``:
-    Read the next character if its value is between ``'a'`` and ``'z'``.
+    Read the next character if its value is between ``a`` and ``z``.
 
 ``expr:node``:
-    Bind the result of the expr to the variable node.
+    Bind the result of the expr to the variable ``node``.
 
 ``#hook_without_parameter``:
     Call a hook without parameter.
 
 ``#hook(p1, "p2", 3)``:
-    Call a hook with ``p1`` as node, ``"p2"`` as str, ``3`` as int.
+    Call a hook with ``p1`` as ``pyrser.parsing.node.Node``, ``"p2"`` as ``str``, ``3`` as ``int``.
 
 ``@foo A``:
-    Apply the directive ``foo`` to the clause ``A``.
+    Apply the directive ``foo`` to the rule ``A``.
 
 ``@foo(p1, "p2", 3) A``:
-    Apply the directive ``foo`` to the clause ``A`` with parameter to the directive (as hooks).
+    Apply the directive ``foo`` to the rule ``A`` with parameter to the directive (as hooks).
 
 Python API: class EBNF
 ~~~~~~~~~~~~~~~~~~~~~~

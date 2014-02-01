@@ -32,7 +32,7 @@ setuptools.setup(
         'Topic :: Text Processing :: General',
     ],
     packages=['pyrser', 'pyrser.directives', 'pyrser.hooks', 'pyrser.parsing',
-              'pyrser.passes'],
+              'pyrser.passes', 'pyrser.type_checking']
 #    test_loader='unittest:TestLoader',
 #    test_suite='tests'
 )

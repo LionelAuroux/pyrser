@@ -47,7 +47,7 @@ def process_signature(app, what, name, obj, options, signature, return_annotatio
                     ptxt += '= ' + repr(param.default)
                 sigp.append(ptxt)
         signature = '(' + ", ".join(sigp) + ")"
-        if sigf.return_annotation is not sigf.empty:
+        if sigf.return_annotation is not sigf.empty and hasattr(sigf.return_annotation, '__name__'):
             return_annotation = sigf.return_annotation.__name__
     return (signature, return_annotation)
 
