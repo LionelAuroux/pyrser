@@ -137,7 +137,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
 generated_class = 0
 
 
-def from_string(bnf: str, *optional_inherit):
+def from_string(bnf: str, entry=None, *optional_inherit):
     """
     Create a Grammar from a string
     """
@@ -145,11 +145,11 @@ def from_string(bnf: str, *optional_inherit):
     class_name = "gen_class_" + str(generated_class)
     generated_class += 1
     inherit = [Grammar] + list(optional_inherit)
-    scope = {'grammar': bnf, 'entry': None}
+    scope = {'grammar': bnf, 'entry': entry}
     return type(class_name, tuple(inherit), scope)
 
 
-def from_file(fn: str, *optional_inherit):
+def from_file(fn: str, entry=None, *optional_inherit):
     """
     Create a Grammar from a file
     """
@@ -158,5 +158,5 @@ def from_file(fn: str, *optional_inherit):
         f = open(fn, 'r')
         bnf = f.read()
         f.close()
-        return from_string(bnf, *optional_inherit)
+        return from_string(bnf, entry, *optional_inherit)
     raise Exception("File not Found!")

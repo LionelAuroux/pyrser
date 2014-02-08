@@ -11,8 +11,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule ::= a
-            ;
+            the_rule = [ a ]
         """)
         res = bnf.get_rules()
         self.assertIn('the_rule', res)
@@ -24,8 +23,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule::=a b c
-            ;
+            the_rule=[a b c]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
@@ -50,8 +48,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule ::= a b c
-            ;
+            the_rule = [ a b c]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -68,8 +65,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule ::= a | b
-            ;
+            the_rule = [ a | b ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -84,8 +80,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule ::= a | b | c
-            ;
+            the_rule = [ a | b | c ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -102,8 +97,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule ::= 'a'
-            ;
+            the_rule = [ 'a' ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -116,8 +110,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule ::= "bonjour le monde"
-            ;
+            the_rule = [ "bonjour le monde" ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -130,8 +123,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule ::= 'a'..'z'
-            ;
+            the_rule = [ 'a'..'z' ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -145,8 +137,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule ::= 'a'..'z' "tutu" 'a' | a b | z
-            ;
+            the_rule = [ 'a'..'z' "tutu" 'a' | a b | z ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -180,8 +171,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule ::= a?
-            ;
+            the_rule = [ a? ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -193,8 +183,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule ::= [a]*
-            ;
+            the_rule = [ [a]* ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
@@ -206,8 +195,7 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule ::= [a "toto"]+
-            ;
+            the_rule = [ [a "toto"]+ ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -217,8 +205,7 @@ class InternalDsl_Test(unittest.TestCase):
 
     def test_13_complementedRepeatedRule(self):
         bnf = dsl.EBNF("""
-            the_rule ::= ~a+
-            ;
+            the_rule = [ ~a+ ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -228,8 +215,7 @@ class InternalDsl_Test(unittest.TestCase):
 
     def test_14_negatedRule(self):
         bnf = dsl.EBNF("""
-            the_rule ::= !a
-            ;
+            the_rule = [ !a ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -238,16 +224,14 @@ class InternalDsl_Test(unittest.TestCase):
 
     def test_15_negatedRepeatedRule(self):
         bnf = dsl.EBNF("""
-            the_rule ::= !a+
-            ;
+            the_rule = [ !a+ ]
         """)
         with self.assertRaises(error.ParseError):
             bnf.get_rules()
 
     def test_16_lookaheadRule(self):
         bnf = dsl.EBNF("""
-            the_rule ::= !!a
-            ;
+            the_rule = [ !!a ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -256,16 +240,14 @@ class InternalDsl_Test(unittest.TestCase):
 
     def test_17_negatedRepeatedRule(self):
         bnf = dsl.EBNF("""
-            the_rule ::= !!a+
-            ;
+            the_rule = [ !!a+ ]
         """)
         with self.assertRaises(error.ParseError):
             bnf.get_rules()
 
     def test_18_hookNoParam(self):
         bnf = dsl.EBNF("""
-            the_rule ::= #hook
-            ;
+            the_rule = [ #hook ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -280,8 +262,7 @@ class InternalDsl_Test(unittest.TestCase):
             return True
 
         bnf = dsl.EBNF("""
-            the_rule ::= #my_hook_txt("cool")
-            ;
+            the_rule = [ #my_hook_txt("cool") ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
@@ -298,8 +279,7 @@ class InternalDsl_Test(unittest.TestCase):
             self.test.assertEqual(txt, "\t", 'failed to receive "\t" in hook')
             return True
         bnf = dsl.EBNF("""
-            the_rule ::= #my_hook_char('\t')
-            ;
+            the_rule = [ #my_hook_char('\t') ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
@@ -319,8 +299,7 @@ class InternalDsl_Test(unittest.TestCase):
             return True
 
         bnf = dsl.EBNF("""
-            the_rule ::= #my_hook_num(123456)
-            ;
+            the_rule = [ #my_hook_num(123456) ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
@@ -338,8 +317,7 @@ class InternalDsl_Test(unittest.TestCase):
             return True
 
         bnf = dsl.EBNF("""
-            the_rule ::= #my_hook_id(_)
-            ;
+            the_rule = [ #my_hook_id(_) ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -359,8 +337,7 @@ class InternalDsl_Test(unittest.TestCase):
             return True
 
         bnf = dsl.EBNF("""
-            the_rule ::= #my_hook_params(_, 123456, "cool")
-            ;
+            the_rule = [ #my_hook_params(_, 123456, "cool") ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -374,25 +351,22 @@ class InternalDsl_Test(unittest.TestCase):
     def test_24_hookAndCapture(self):
         @meta.hook(parsing.Parser)
         def my_hook_multi(self, n1, n2, n3):
-            self.test.assertTrue(self.textnode(n1) == "456")
-            self.test.assertTrue(self.textnode(n2) == '"toto"')
-            self.test.assertTrue(self.textnode(n3) == "blabla")
+            self.test.assertTrue(self.value(n1) == "456")
+            self.test.assertTrue(self.value(n2) == '"toto"')
+            self.test.assertTrue(self.value(n3) == "blabla")
             return True
 
         bnf = dsl.EBNF("""
 
-            N ::= Base.num
-            ;
+            N = [ Base.num ]
 
-            S ::= Base.string
-            ;
+            S = [ Base.string ]
 
-            I ::= Base.id
-            ;
+            I = [ Base.id ]
 
-            the_rule ::= N:nth S:t I:i
+            the_rule = [ N:nth S:t I:i
                          #my_hook_multi(nth, t, i)
-            ;
+            ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
@@ -433,11 +407,9 @@ class InternalDsl_Test(unittest.TestCase):
 
         dsl.EBNF.set_directives({'toto.dummyDir': dummyDir})
         bnf = dsl.EBNF("""
-            the_rule ::= @toto.dummyDir(1, 2, 3) test
-            ;
+            the_rule = [ @toto.dummyDir(1, 2, 3) test ]
 
-            test ::= #my_hook Base.eof
-            ;
+            test = [ #my_hook Base.eof ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
@@ -451,16 +423,14 @@ class InternalDsl_Test(unittest.TestCase):
         def in_list(self, ls, ident):
             if not hasattr(ls, 'list'):
                 ls.list = []
-            ls.list.append(self.textnode(ident))
+            ls.list.append(self.value(ident))
             return True
 
         bnf = dsl.EBNF("""
 
-            I ::= id
-            ;
+            I = [ id ]
 
-            list ::= [I : i #in_list(_, i) ]+
-            ;
+            list = [ [I : i #in_list(_, i) ]+ ]
         """)
         res = bnf.get_rules()
         self.assertTrue('list' in res)
@@ -477,3 +447,95 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue(eval_res.list[3] == "d")
         self.assertTrue(eval_res.list[4] == "e")
         self.assertTrue(eval_res.list[5] == "f")
+
+    def test_26_set(self):
+        class dummyList(parsing.Node):
+            def __init__(self):
+                self._ls = []
+            def append(self, x):
+                self._ls.append(x)
+            def __getitem__(self, n):
+                return self._ls[n]
+        @meta.hook(parsing.Parser)
+        def in_list(self, ls, ident):
+            if type(ls) is parsing.Node:
+                ls.set(dummyList())
+            ls.append(self.value(ident))
+            return True
+
+        bnf = dsl.EBNF("""
+
+            I = [ id ]
+
+            list = [ [I : i #in_list(_, i) ]+ ]
+        """)
+        res = bnf.get_rules()
+        self.assertTrue('list' in res)
+        self.assertTrue('I' in res)
+        dummyData = parsing.Parser("""
+            a     b c   d        e   f
+        """)
+        dummyData.set_rules(res)
+        dummyData.test = self
+        eval_res = dummyData.eval_rule('list')
+        self.assertTrue(eval_res)
+        self.assertTrue(eval_res[0] == "a")
+        self.assertTrue(eval_res[1] == "b")
+        self.assertTrue(eval_res[2] == "c")
+        self.assertTrue(eval_res[3] == "d")
+        self.assertTrue(eval_res[4] == "e")
+        self.assertTrue(eval_res[5] == "f")
+
+    def test_27_nodescope(self):
+        @meta.hook(parsing.Parser)
+        def put(self, ast):
+            # A.put visible in subrules
+            ast.put = True
+            return True
+        @meta.hook(parsing.Parser)
+        def check1(self):
+            self.test.assertTrue('A' in self.rulenodes)
+            # _ is from rule1, not main
+            self.test.assertFalse(hasattr(self.rulenodes['_'], 'put'))
+            # return of rule1 with .toto == True
+            self.rulenodes['_'].toto = True
+            return True
+        @meta.hook(parsing.Parser)
+        def check2(self):
+            self.test.assertTrue('A' in self.rulenodes)
+            self.test.assertTrue('B' in self.rulenodes)
+            return False
+        @meta.hook(parsing.Parser)
+        def check3(self):
+            self.test.assertTrue('A' in self.rulenodes)
+            # B no more living (alternative)
+            self.test.assertFalse('B' in self.rulenodes)
+            return True
+        @meta.hook(parsing.Parser)
+        def toto(self):
+            self.test.assertTrue(hasattr(self.rulenodes['r'], 'toto'))
+            self.test.assertTrue(hasattr(self.rulenodes['r'], 'bla'))
+            return True
+        @meta.hook(parsing.Parser)
+        def check4(self):
+            self.rulenodes['_'].bla = True
+            return True
+        bnf = dsl.EBNF("""
+            main =
+            [ __scope__:A #put(_)
+                rule1:r #toto eof
+            ]
+
+            rule1 =
+            [
+                #check1 __scope__:B #check2
+                | #check3 #check4
+            ]
+        """)
+        res = bnf.get_rules()
+        self.assertTrue('main' in res)
+        self.assertTrue('rule1' in res)
+        dummyData = parsing.Parser("")
+        dummyData.set_rules(res)
+        dummyData.test = self
+        eval_res = dummyData.eval_rule('main')

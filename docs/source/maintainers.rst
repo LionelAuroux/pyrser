@@ -2,6 +2,17 @@
 Maintainers GUIDE
 *****************
 
+Tests suite
+===========
+Run all tests::
+
+    $>python3 tests
+
+Run a specific test::
+
+    $>python3 -m unittest tests/internal_dsl.py
+
+
 Setup your environment
 ======================
 Install setuptools and sphinx::

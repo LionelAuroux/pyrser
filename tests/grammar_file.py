@@ -1,18 +1,19 @@
 import unittest
 from pyrser import grammar, meta
+from pyrser.hooks.echo import *
+from tests.grammar.tl4t import *
 
 
 class GrammarFile_Test(unittest.TestCase):
     def test_01_dynparse(self):
         txtbnf = grammar.from_string("""
-            plop ::= id:i #test_hook(_, i)
-            ;
+            plop =[ id:i #test_hook(_, i)]
         """)
 
         @meta.hook(txtbnf)
         def test_hook(self, l, i):
-            self.test.assertEqual(self.textnode(i), "cool")
-            l.node = self.textnode(i)
+            self.test.assertEqual(self.value(i), "cool")
+            l.node = self.value(i)
             return True
         itxt = txtbnf()
         itxt.test = self
@@ -24,22 +25,22 @@ class GrammarFile_Test(unittest.TestCase):
         Test JSON
         """
         import os
-        JSON = grammar.from_file(os.getcwd() + "/tests/bnf/json.bnf")
+        JSON = grammar.from_file(os.getcwd() + "/tests/bnf/json.bnf", 'json')
 
         # add hook to the dynamically created base class
         @meta.hook(JSON)
         def is_num(self, ast, n):
-            ast.node = float(self.textnode(n))
+            ast.node = float(self.value(n))
             return True
 
         @meta.hook(JSON)
         def is_str(self, ast, s):
-            ast.node = self.textnode(s).strip('"')
+            ast.node = self.value(s).strip('"')
             return True
 
         @meta.hook(JSON)
         def is_bool(self, ast, b):
-            bval = self.textnode(b)
+            bval = self.value(b)
             if bval == "true":
                 ast.node = True
             if bval == "false":
@@ -53,7 +54,7 @@ class GrammarFile_Test(unittest.TestCase):
 
         @meta.hook(JSON)
         def is_pair(self, ast, s, v):
-            ast.node = (self.textnode(s).strip('"'), v.node)
+            ast.node = (self.value(s).strip('"'), v.node)
             return True
 
         @meta.hook(JSON)
@@ -77,17 +78,53 @@ class GrammarFile_Test(unittest.TestCase):
             return True
 
         json = JSON()
-        res = json.parse('{"test":12}', "json")
+        res = json.parse('{"test":12}')
         self.assertEqual(res.node['test'], 12)
-        res = json.parse('{"test":12,"puf":[1,2,3]}', "json")
+        res = json.parse('{"test":12,"puf":[1,2,3]}')
         self.assertEqual(res.node['puf'][1], 2)
-        res = json.parse('{"test":12,"puf":[1,2,3],"obj":{"flags":true}}',
-                         "json")
+        res = json.parse('{"test":12,"puf":[1,2,3],"obj":{"flags":true}}')
         self.assertTrue(res.node['obj']['flags'])
 
-    def test_03_tl4t(self):
+    def test_03_tl4t_parse(self):
         """
         Test TL4T
         """
-        import os
-        TL4T = grammar.from_file(os.getcwd() + "/tests/bnf/tl4t.bnf")
+        test = TL4T()
+        res = test.parse("""
+            var a : int;
+        """)
+        self.assertTrue(res)
+        self.assertTrue(isinstance(res.node[0], DeclVar))
+        res = test.parse("""
+            fun a() : int;
+        """)
+        self.assertTrue(res)
+        self.assertTrue(isinstance(res.node[0], DeclFun))
+        self.assertTrue(res.node[0].t == 'int')
+        res = test.parse("""
+            fun a(x : str) : int;
+        """)
+        self.assertTrue(res)
+        self.assertTrue(isinstance(res.node[0], DeclFun))
+        self.assertTrue(isinstance(res.node[0].p[0], Param))
+        self.assertTrue(res.node[0].p[0].name, "x")
+        self.assertTrue(res.node[0].p[0].t, "int")
+        res = test.parse("""
+            fun a(x : str) : int
+            {
+                var z : toto;
+            }
+        """)
+        self.assertTrue(res)
+        self.assertTrue(isinstance(res.node[0], DeclFun))
+        self.assertTrue(isinstance(res.node[0].p[0], Param))
+        self.assertTrue(res.node[0].p[0].name, "x")
+        self.assertTrue(res.node[0].p[0].t, "int")
+        self.assertTrue(isinstance(res.node[0].block[0], DeclVar))
+        self.assertTrue(res.node[0].block[0].name, "z")
+        self.assertTrue(res.node[0].block[0].t, "toto")
+        res = test.parse("""
+            a = 42;
+        """)
+        self.assertTrue(res)
+        self.assertTrue(isinstance(res.node[0], Expr))

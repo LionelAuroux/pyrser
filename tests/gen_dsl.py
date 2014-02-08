@@ -10,8 +10,7 @@ class GenDsl_Test(unittest.TestCase):
         """
         #class Empty(grammar.Grammar):
         #    entry = "test"
-        #    grammar = """test ::=
-        #                ;
+        #    grammar = """test = []
         #        """
         #ps = Empty()
         #res = ps.parse()

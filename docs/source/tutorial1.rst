@@ -10,7 +10,7 @@ To describe a file format you just need to write a class that inherits from ``py
 
     from pyrser import grammar
 
-    class   JSON(grammar.Grammar):
+    class JSON(grammar.Grammar):
         """Our future JSON parser"""
         pass
 
@@ -35,7 +35,7 @@ That BNF could be literaly translate as::
 
     from pyrser import grammar
 
-    class   JSON(grammar.Grammar):
+    class JSON(grammar.Grammar):
         """Our JSON parser"""
         entry = "object"
         grammar = """
@@ -80,7 +80,7 @@ With these advices, we could translate all the BNF::
     from pyrser import grammar
     from pyrser.directives import ignore
 
-    class   JSON(grammar.Grammar):
+    class JSON(grammar.Grammar):
         """Our JSON parser"""
         entry = "json"
         grammar = """
@@ -297,7 +297,7 @@ A complete grammar for a JSON parser looks like this::
     from pyrser import grammar, meta
     from pyrser.directives import ignore
 
-    class   JSON(grammar.Grammar):
+    class JSON(grammar.Grammar):
         """Pyrser JSON parser"""
         entry = "json"
         grammar = """

@@ -6,71 +6,21 @@ from pyrser import parsing
 from pyrser import error
 from pyrser.directives import ignore
 
+from tests.grammar.csv import *
 
 class WordList(grammar.Grammar):
     grammar = """
-        wordlist ::= [word : w #add_to(_, w)]+ eof
-        ;
+        wordlist =[ [word : w #add_to(_, w)]+ eof ]
 
-        word ::= @ignore("null") ['a'..'z'|'A'..'Z']+
-        ;
+        word =[ @ignore("null") ['a'..'z'|'A'..'Z']+ ]
     """
     entry = "wordlist"
-
-
-class CSV(grammar.Grammar):
-    entry = "csv"
-    grammar = """
-        csv ::= [@ignore("null") line : l #add_line(_, l)]+ eof
-        ;
-
-        line ::= item : c #add_col(_, c)
-            [';' item : c #add_col(_, c)]*
-            eol
-        ;
-
-        item ::= [id | num] : i #add_item(_, i)
-        ;
-    """
-
-
-class CSV2(grammar.Grammar, CSV):
-    entry = "csv2"
-    # copy the result of CSV.csv as result of csv2
-    grammar = """
-        csv2 ::= CSV.csv:_
-        ;
-
-        item ::= [CSV.item]?:_
-        ;
-    """
-
-
-class Forward(grammar.Grammar):
-    entry = "forward"
-    grammar = """
-        forward ::=
-            __scope__:e
-            [
-                '(' tutu:e ')'
-                | toto:e
-            ]?
-            #follow(_, e)
-        ;
-
-        tutu ::= #create_tutu(_)
-        ;
-
-        toto ::= #create_toto(_)
-        ;
-    """
 
 
 class DummyCpp(grammar.Grammar):
     entry = "main"
     grammar = """
-        main ::= @ignore("C/C++") [id:i #add(_, i)]+
-        ;
+        main =[ @ignore("C/C++") [id:i #add(_, i)]+ ]
     """
 
 
@@ -82,9 +32,9 @@ class GrammarBasic_Test(unittest.TestCase):
         @meta.hook(WordList)
         def add_to(self, mylist, word):
             if not hasattr(mylist, 'lst'):
-                mylist.lst = [self.textnode(word)]
+                mylist.lst = [self.value(word)]
             else:
-                mylist.lst.append(self.textnode(word))
+                mylist.lst.append(self.value(word))
             return True
 
         ws = WordList("ab cd ef gh")
@@ -114,7 +64,7 @@ class GrammarBasic_Test(unittest.TestCase):
 
         @meta.hook(CSV)
         def add_item(self, item, i):
-            item.value = self.textnode(i)
+            item.value = self.value(i)
             return True
 
         csv = CSV()
@@ -180,7 +130,7 @@ class GrammarBasic_Test(unittest.TestCase):
                 grammar = """
                     not_finished_bnf"""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.raw_msg, "Expected '::='",
+        self.assertEqual(pe.exception.raw_msg, "Expected '='",
                          "failed to get the correct message")
         self.assertEqual(pe.exception.error_position.col_offset, 37,
                          "failed to get the correct position")
@@ -192,9 +142,9 @@ class GrammarBasic_Test(unittest.TestCase):
         with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
-                    not_finished_bnf ::= clause"""
+                    not_finished_bnf = [ clause"""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.raw_msg, "Expected ';'",
+        self.assertEqual(pe.exception.raw_msg, "Expected ']'",
                          "failed to get the correct message")
         self.assertEqual(pe.exception.error_position.col_offset, 48,
                          "failed to get the correct position")
@@ -206,11 +156,11 @@ class GrammarBasic_Test(unittest.TestCase):
         with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
-                    not_finished_bnf ::= #hook(12"""
+                    not_finished_bnf =[ #hook(12"""
                 entry = "not_finished_bnf"
         self.assertEqual(pe.exception.raw_msg, "Expected ')'",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 50,
+        self.assertEqual(pe.exception.error_position.col_offset, 49,
                          "failed to get the correct position")
 
     def test_08_parse_error_dsl(self):
@@ -220,7 +170,7 @@ class GrammarBasic_Test(unittest.TestCase):
         with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
-                    not_finished_bnf ::= @dir(12"""
+                    not_finished_bnf = [ @dir(12"""
                 entry = "not_finished_bnf"
         self.assertEqual(pe.exception.raw_msg, "Expected ')'",
                          "failed to get the correct message")
@@ -234,11 +184,11 @@ class GrammarBasic_Test(unittest.TestCase):
         with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
-                    not_finished_bnf ::= #hook(12,"""
+                    not_finished_bnf =[ #hook(12,"""
                 entry = "not_finished_bnf"
         self.assertEqual(pe.exception.raw_msg, "Expected parameter",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 51,
+        self.assertEqual(pe.exception.error_position.col_offset, 50,
                          "failed to get the correct position")
 
     def test_10_parse_error_dsl(self):
@@ -248,11 +198,11 @@ class GrammarBasic_Test(unittest.TestCase):
         with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
-                    not_finished_bnf ::= #hook("""
+                    not_finished_bnf =[ #hook("""
                 entry = "not_finished_bnf"
         self.assertEqual(pe.exception.raw_msg, "Expected parameter",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 48,
+        self.assertEqual(pe.exception.error_position.col_offset, 47,
                          "failed to get the correct position")
 
     def test_11_parse_error_dsl(self):
@@ -262,11 +212,11 @@ class GrammarBasic_Test(unittest.TestCase):
         with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
-                    not_finished_bnf ::= @dir(12,"""
+                    not_finished_bnf =[ @dir(12,"""
                 entry = "not_finished_bnf"
         self.assertEqual(pe.exception.raw_msg, "Expected parameter",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 50,
+        self.assertEqual(pe.exception.error_position.col_offset, 49,
                          "failed to get the correct position")
 
     def test_12_parse_error_dsl(self):
@@ -276,11 +226,11 @@ class GrammarBasic_Test(unittest.TestCase):
         with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
-                    not_finished_bnf ::= @dir("""
+                    not_finished_bnf =[ @dir("""
                 entry = "not_finished_bnf"
         self.assertEqual(pe.exception.raw_msg, "Expected parameter",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 47,
+        self.assertEqual(pe.exception.error_position.col_offset, 46,
                          "failed to get the correct position")
 
     def test_13_parse_error_dsl(self):
@@ -290,11 +240,11 @@ class GrammarBasic_Test(unittest.TestCase):
         with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
-                    not_finished_bnf ::= [a"""
+                    not_finished_bnf =[ [a"""
                 entry = "not_finished_bnf"
         self.assertEqual(pe.exception.raw_msg, "Expected ']'",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 44,
+        self.assertEqual(pe.exception.error_position.col_offset, 43,
                          "failed to get the correct position")
 
     def test_14_parse_error_dsl(self):
@@ -304,11 +254,11 @@ class GrammarBasic_Test(unittest.TestCase):
         with self.assertRaises(error.ParseError) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
-                    not_finished_bnf ::= ["""
+                    not_finished_bnf =[ ["""
                 entry = "not_finished_bnf"
         self.assertEqual(pe.exception.raw_msg, "Expected sequences",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 43,
+        self.assertEqual(pe.exception.error_position.col_offset, 42,
                          "failed to get the correct position")
 
     def test_15_ignore_cpp(self):
@@ -317,7 +267,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         @meta.hook(DummyCpp)
         def add(self, ast, i):
-            ast.last = self.textnode(i)
+            ast.last = self.value(i)
             return True
         cxx = DummyCpp()
         res = cxx.parse("""
@@ -328,30 +278,3 @@ class GrammarBasic_Test(unittest.TestCase):
         """)
         self.assertTrue(res, "failed to parse dummyCpp")
         self.assertEqual(res.last, 'g', "failed to parse comments")
-
-    def test_16_forward_nodes(self):
-        """
-        Test node forwarding
-        """
-        @meta.hook(Forward)
-        def create_tutu(self, ast):
-            ast.tutu = "cool"
-            return True
-
-        @meta.hook(Forward)
-        def create_toto(self, ast):
-            ast.toto = "cool"
-            return True
-
-        @meta.hook(Forward)
-        def follow(self, ast, e):
-            ast.set(e)
-            return True
-
-        fwd = Forward()
-        res = fwd.parse("")
-        self.assertTrue(res, "failed to parse Forward")
-        self.assertTrue(hasattr(res, 'toto'), "failed to create toto")
-        res = fwd.parse("()")
-        self.assertTrue(res, "failed to parse Forward")
-        self.assertTrue(hasattr(res, 'tutu'), "failed to create tutu")

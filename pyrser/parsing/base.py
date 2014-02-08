@@ -87,9 +87,10 @@ class BasicParser(metaclass=MetaBasicParser):
     def pop_rule_nodes(self) -> bool:
         """Pop context variable that store rule nodes"""
         self.rulenodes = self.rulenodes.parents
+        # TODO: clean cache
         return True
 
-    def textnode(self, n: Node) -> str:
+    def value(self, n: Node) -> str:
         """Return the text value of the node"""
         id_n = id(n)
         if id_n in self.captured_tags:
@@ -173,7 +174,7 @@ class BasicParser(metaclass=MetaBasicParser):
 
     def eval_rule(self, name: str) -> Node:
         """Evaluate a rule by name."""
-        # context not created by parents (not captured)
+        # context not created by parents (not captured or called directly)
         if "_" not in self.rulenodes.maps[0]:
             self.rulenodes['_'] = Node()
         # TODO: other behavior for  empty rules?
@@ -327,6 +328,20 @@ class Parser(BasicParser):
 
 ### BASE RULES
 
+@meta.hook(BasicParser)
+def bind(self, dst: str, src: Node) -> bool:
+    """Allow to alias a node to another name. Useful to bind a node to _ as return of Rule
+    
+        R = [
+            __scope__:L [item:I #add_item(L, I]* #bind('_', L)
+        ]
+    """
+    for m in self.rulenodes.maps:
+        for k, v in m.items():
+            if k == dst:
+                m[k] = src
+                return True
+    raise Exception('%s not found' % dst)
 
 @meta.rule(BasicParser, "Base.read_char")
 def read_one_char(self) -> bool:

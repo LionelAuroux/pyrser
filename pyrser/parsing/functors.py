@@ -156,14 +156,9 @@ class Capture(Functor):
         if parser.begin_tag(self.tagname):
             # by default, create a slot value for the result
             return_node = Node()
-            # bind already existing nodes
-            if self.tagname in parser.rulenodes.maps:
-                return_node = parser.rulenodes[self.tagname]
-            else:
-                parser.rulenodes[self.tagname] = return_node
+            parser.rulenodes[self.tagname] = return_node
             # subcontext
             parser.push_rule_nodes()
-            parser.rulenodes['_'] = return_node
             res = self.pt(parser)
             parser.pop_rule_nodes()
             if res and parser.end_tag(self.tagname):
@@ -175,6 +170,7 @@ class Capture(Functor):
                 node_id = id(res)
                 parser.captured_tags[node_id] = [tag, None]
                 # update node
+                #print("CAPT REPR %s" % repr(res))
                 parser.rulenodes[self.tagname] = res
                 # forward nodes
                 return res
@@ -189,14 +185,24 @@ class Alt(Functor):
         self.ptlist = ptlist
 
     def __call__(self, parser: BasicParser) -> Node:
+        # save result of current rule
+        parser.push_rule_nodes()#
+        #print("ALT %s" % repr(parser.rulenodes))
         for pt in self.ptlist:
             parser._stream.save_context()
             parser.skip_ignore()
+            parser.push_rule_nodes()
             res = pt(parser)
             if res:
+                if '_' in parser.rulenodes.maps: print("FOUND _")
+                parser.pop_rule_nodes()
+                if '_' in parser.rulenodes.maps: print("FOUND _")
+                parser.pop_rule_nodes()
                 parser._stream.validate_context()
                 return res
+            parser.pop_rule_nodes()
             parser._stream.restore_context()
+        parser.pop_rule_nodes()
         return False
 
 
@@ -272,7 +278,10 @@ class Rule(Functor):
         self.name = name
 
     def __call__(self, parser: BasicParser) -> Node:
-        return parser.eval_rule(self.name)
+        parser.push_rule_nodes()
+        res = parser.eval_rule(self.name)
+        parser.pop_rule_nodes()
+        return res
 
 
 class Hook(Functor):
@@ -293,8 +302,6 @@ class Hook(Functor):
         for v, t in self.param:
             if t is Node:
                 if v not in parser.rulenodes:
-                    from pyrser.passes.to_yml import to_yml
-                    print(to_yml(parser.rulenodes))
                     error.throw("Unknown capture variable : %s" % v, parser)
                 valueparam.append(parser.rulenodes[v])
             elif type(v) is t:

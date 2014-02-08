@@ -2,268 +2,298 @@
     Toy Language 4 Typing
 **/
 
-source ::= @ignore("C/C++") __scope__:block stmt+ eof
-;
+source =
+[
+    @ignore("C/C++") __scope__:block [stmt:s #new_stmt(block, s)]+ eof
+    #copy(_, block)
+]
 
-stmt ::=
-    decl_var | decl_fun | expr
-;
+stmt =
+[
+    [decl_var | decl_fun | expr]:s #bind('_', s)
+]
 
-decl_var ::=
-   'var' name ':' type ['=' expr]? ';'
-;
+decl_var =
+[
+    __scope__:e
+   "var" name:n ':' type:t [';' | '=' expr:e ]? #new_declvar(_, n, t, e)
+]
 
-decl_fun ::=
-    'fun' name params implem
-;
+decl_fun =
+[
+    "fun" name:n params:p ':' type:t implem:b #new_declfun(_, n, t, p, b)
+]
 
-params ::=
-    '(' [param [',' param]*]? ')' ':' type
-;
+params =
+[
+    '(' [param:p #add_param(_, p) [',' param:p #add_param(_, p) ]*]? ')'
+]
 
-param ::=
-    name ':' type
-;
+param =
+[
+    name:n ':' type:t #new_param(_, n, t)
+]
 
-implem ::=
+implem =
+[
     ';' /* just a prototype */
-    | block
-;
+    | block:b #bind('_', b)
+]
 
-name ::= id
-;
+name = [ id ]
 
-type ::= id
-;
+type = [ id ]
 
-or_op ::= @ignore('null') ["|" !["|"|"="]]:op #new_raw(_, op);
+block =
+[
+    __scope__:block
+    '{' [stmt:s #new_stmt(block, s) ]* '}'
+    #copy(_, block)
+]
 
-block ::=
-    '{' expr* '}'
-;
+expr = [ assignement_expression:a ';' #bind('_', a) ]
 
-expr ::= or_expression:_
-;
+assign_op = [ @ignore('null') ['=' !'='| "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|="]:op #new_raw(_, op) ]
+assignement_expression =
+[
+    or_expression:e
+    [
+        assign_op:op
+        assignement_expression:param
+        #new_binary(e, op, param)
+    ]*
+    #bind('_', e)
+]
 
-or_expression ::=
-    xor_expression:_
+or_op = [ @ignore('null') ["|" !["|"|"="]]:op #new_raw(_, op) ]
+or_expression =
+[
+    xor_expression:e
     [   
         or_op:op
         xor_expression:param
-        #new_binary(_, op, param)
+        #new_binary(e, op, param)
     ]*
-;
+    #bind('_', e)
+]
 
-xor_op ::= @ignore('null') ["^" !"="]:op #new_raw(_, op);
-xor_expression ::=
-    and_expression:_
+xor_op = [ @ignore('null') ["^" !"="]:op #new_raw(_, op) ]
+xor_expression =
+[
+    and_expression:e
     [   
         xor_op:op
         and_expression:param
-        #new_binary(_, op, param)
+        #new_binary(e, op, param)
     ]*
-;
+    #bind('_', e)
+]
 
-and_op ::= @ignore('null') ["&" !["&"|"="]]:op #new_raw(_, op);
-and_expression ::=
-    equality_expression:_
+and_op = [ @ignore('null') ["&" !["&"|"="]]:op #new_raw(_, op) ]
+and_expression =
+[
+    equality_expression:e
     [   
         and_op:op
         equality_expression:param
-        #new_binary(_, op, param)
+        #new_binary(e, op, param)
     ]*
-;
+    #bind('_', e)
+]
 
-eqneq_op ::= @ignore('null') ["==" | "!="]:op #new_raw(_, op);
-equality_expression ::=
-    relational_expression:_
+eqneq_op = [ @ignore('null') ["==" | "!="]:op #new_raw(_, op) ]
+equality_expression =
+[
+    relational_expression:e
     [   
         eqneq_op:op
         relational_expression:param
-        #new_binary(_, op, param)
+        #new_binary(e, op, param)
     ]*
-;
+    #bind('_', e)
+]
 
-cmp_op ::= @ignore('null') ["<=" | ">=" | '<' !'<' | '>' !'>' ]:op #new_raw(_, op);
-relational_expression ::=
-    shift_expression:_
+cmp_op = [ @ignore('null') ["<=" | ">=" | '<' !'<' | '>' !'>' ]:op #new_raw(_, op) ]
+relational_expression =
+[
+    shift_expression:e
     [   
         cmp_op:op
         shift_expression:param
-        #new_binary(_, op, param)
+        #new_binary(e, op, param)
     ]*
-;
+    #bind('_', e)
+]
 
-shift_op ::= @ignore('null') ["<<" !"=" | ">>" !"="]:op #new_raw(_, op);
-shift_expression ::=
-    additive_expression:_
+shift_op = [ @ignore('null') ["<<" !"=" | ">>" !"="]:op #new_raw(_, op) ]
+shift_expression =
+[
+    additive_expression:e
     [   
         shift_op:op
         additive_expression:param
-        #new_binary(_, op, param)
+        #new_binary(e, op, param)
     ]*
-;
+    #bind('_', e)
+]
 
-add_op ::= @ignore('null') ['+' !['+'|'='] | '-' !['-'|'='|'>']]:op #new_raw(_, op);
-additive_expression ::=
-    multiplicative_expression:_
+add_op = [ @ignore('null') ['+' !['+'|'='] | '-' !['-'|'='|'>']]:op #new_raw(_, op) ]
+additive_expression =
+[
+    multiplicative_expression:e
     [   
         add_op:op
         multiplicative_expression:param
-        #new_binary(_, op, param)
+        #new_binary(e, op, param)
     ]*
-;
+    #bind('_', e)
+]
 
-mul_op ::= @ignore('null') [['*'|'/'|'%']:op !'='] #new_raw(_, op);
-multiplicative_expression ::=
-    unary_expression:_
+mul_op = [ @ignore('null') [['*'|'/'|'%']:op !'='] #new_raw(_, op) ]
+multiplicative_expression =
+[
+    unary_expression:e
     [   
         mul_op:op
         unary_expression:param
-        #new_binary(_, op, param)
+        #new_binary(e, op, param)
     ]*
-;
+    #bind('_', e)
+]
 
-unary_op ::= @ignore('null') 
+unary_op =
+[
+    @ignore('null') 
 /*
-    ["++"
+    "++"
     |"--"
     |"&&"
     | '&' !'='
     | '*' !'='
-*/[
+*/  
+    [
      '~' !'='
     | '!' !'='
     | '+' !'='
     | '-' !['>'|'=']
     ]:op #new_raw(_, op)
-;
-unary_expression ::=
-    postfix_expression:_
+]
+unary_expression =
+[
+    postfix_expression:e #bind('_', e)
     |
         __scope__:op
         [   unary_op:op
         |   Base.id:i
             #is_unary(op, i)
         ]
-    unary_expression:expr
-    #new_unary(_, op, expr)
-;
+        unary_expression:expr
+        #new_unary(_, op, expr)
+]
 
-postfix_expression ::=
-    primary_expression:_
+postfix_expression =
+[
+    primary_expression:e
     [
-/*        '[' expression:expr ']' #new_array_call(_, _, expr) */
-         '(' func_arg_list?:args ')' #new_func_call(_, _, args)
+/*        '[' expression:expr ']' #new_array_call(e, e, expr) */
+         '(' func_arg_list?:args ')' #new_func_call(e, e, args)
 /*
-        | '.' identifier:i #new_dot(_, _, i)
-        | "->" identifier:i #new_arrow(_, _, i)
-        | ["++"|"--"]:op #new_raw(op, op) #new_post(_, op, _)
+        | '.' identifier:i #new_dot(e, e, i)
+        | "->" identifier:i #new_arrow(e, e, i)
+        | ["++"|"--"]:op #new_raw(op, op) #new_post(e, op, e)
 */
     ]*
-;
+    #bind('_', e)
+]
 
-func_arg_list ::=
+func_arg_list =
+[
     assignement_expression:a #new_arg(_, a)
     [   ','
         assignement_expression:a #new_arg(_, a)
     ]*
-;
+]
 
-primary_expression ::=
-    ['(' expression:expr ')' #new_paren(_, expr)
-    | literal
-    | identifier]:_
-;
+primary_expression =
+[
+    '(' expression:expr ')' #new_paren(_, expr)
+    |[ literal | identifier]:l #bind('_', l)
+]
 
-identifier ::=
+identifier =
+[
     @ignore('null') 
     [
         rootidentifier:id
 /*        #check_is_id(id) */
         #new_id(_, id)
     ]
-;
+]
 
-rootidentifier ::= Base.id:_
-;
+rootidentifier = [ Base.id:i #bind('_', i) ]
 
-dot ::= '.' !'.'
-;
+dot = [ '.' !'.' ]
 
-pow ::= 'p' | 'P'
-;
+pow = [ 'p' | 'P' ]
 
-exp ::= 
-    ['e'|'E'] ['+'|'-']? ['0'..'9']+
-;
+exp = [ ['e'|'E'] ['+'|'-']? ['0'..'9']+ ]
 
-unsigned_suffix ::=
-    ['u'|'U']
-;
+unsigned_suffix = [ 'u' | 'U' ]
 
-long_suffix ::=
-    ['l'|'L']
-;
+long_suffix = [ 'l' | 'L' ]
 
-float_suffix ::=
-    ['f'|'F']
-;
+float_suffix = [ 'f' | 'F' ]
 
-complex_suffix ::=
-    ['i'|'I'|'j'|'J']
-;
+complex_suffix = [ 'i' | 'I' | 'j' | 'J' ]
 
-decimal_const ::=
+decimal_const =
+[
     ['0'..'9']+
     unsigned_suffix?
     long_suffix?
     long_suffix?
-;
+]
 
-hexadecimal_prefix ::= '0' ['x'|'X']
-;
+hexadecimal_prefix = [ '0' ['x'|'X'] ]
 
-hexadecimal_digit ::= ['0'..'9'|'a'..'f'|'A'..'F']
-;
+hexadecimal_digit = [ '0'..'9' | 'a'..'f' | 'A'..'F' ]
 
-hexadecimal_const_int ::=
+hexadecimal_const_int =
+[
     hexadecimal_prefix [hexadecimal_digit]+
     unsigned_suffix?
     long_suffix?
     long_suffix?
-;
+]
 
-octal_digit ::= '0'..'7'
-;
+octal_digit = [ '0'..'7' ]
 
-octal_const ::= 
+octal_const = 
+[
     '0' octal_digit+
     [
        dot octal_digit+
        [pow ['+'|'-']? decimal_const]?
     ]?
-;
+]
 
-double_const ::=
+double_const =
+[
     [decimal_const dot ['0'..'9']*| dot ['0'..'9']+] exp?
     long_suffix?
     float_suffix?
     complex_suffix?
-;
+]
 
-encoding_prefix ::= "u8" | 'u' | 'U' | 'L'
-;
+encoding_prefix = [ "u8" | 'u' | 'U' | 'L' ]
 
-string_const ::=
-    encoding_prefix? Base.string @ignore("C/C++") Base.string*
-;
+string_const = [ encoding_prefix? Base.string @ignore("C/C++") Base.string* ]
 
-char_const ::=
-    encoding_prefix? Base.char
-;
+char_const = [ encoding_prefix? Base.char ]
 
-literal ::= @ignore('null')
+literal =
+[
+    @ignore('null')
     [
         hexadecimal_const_int
         | octal_const
@@ -273,4 +303,4 @@ literal ::= @ignore('null')
         | char_const
     ]:val
     #new_literal(_, val)
-;
+]
