@@ -4,13 +4,16 @@
 
 source =
 [
-    @ignore("C/C++") __scope__:block [stmt:s #new_stmt(block, s)]+ eof
-    #copy(_, block)
+    @ignore("C/C++")
+    __scope__:block
+    [stmt:s #new_stmt(block, s)]+
+    eof
+    #bind('_', block)
 ]
 
 stmt =
 [
-    [decl_var | decl_fun | expr]:s #bind('_', s)
+    [decl_var | decl_fun | expr]:>_
 ]
 
 decl_var =
@@ -37,7 +40,7 @@ param =
 implem =
 [
     ';' /* just a prototype */
-    | block:b #bind('_', b)
+    | block:>_
 ]
 
 name = [ id ]
@@ -48,117 +51,108 @@ block =
 [
     __scope__:block
     '{' [stmt:s #new_stmt(block, s) ]* '}'
-    #copy(_, block)
+    #bind('_', block)
 ]
 
-expr = [ assignement_expression:a ';' #bind('_', a) ]
+expr = [ assignement_expression:>_ ';' ]
 
 assign_op = [ @ignore('null') ['=' !'='| "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|="]:op #new_raw(_, op) ]
 assignement_expression =
 [
-    or_expression:e
+    or_expression:>_
     [
         assign_op:op
         assignement_expression:param
-        #new_binary(e, op, param)
+        #new_binary(_, op, param)
     ]*
-    #bind('_', e)
 ]
 
 or_op = [ @ignore('null') ["|" !["|"|"="]]:op #new_raw(_, op) ]
 or_expression =
 [
-    xor_expression:e
+    xor_expression:>_
     [   
         or_op:op
         xor_expression:param
-        #new_binary(e, op, param)
+        #new_binary(_, op, param)
     ]*
-    #bind('_', e)
 ]
 
 xor_op = [ @ignore('null') ["^" !"="]:op #new_raw(_, op) ]
 xor_expression =
 [
-    and_expression:e
+    and_expression:>_
     [   
         xor_op:op
         and_expression:param
-        #new_binary(e, op, param)
+        #new_binary(_, op, param)
     ]*
-    #bind('_', e)
 ]
 
 and_op = [ @ignore('null') ["&" !["&"|"="]]:op #new_raw(_, op) ]
 and_expression =
 [
-    equality_expression:e
+    equality_expression:>_
     [   
         and_op:op
         equality_expression:param
-        #new_binary(e, op, param)
+        #new_binary(_, op, param)
     ]*
-    #bind('_', e)
 ]
 
 eqneq_op = [ @ignore('null') ["==" | "!="]:op #new_raw(_, op) ]
 equality_expression =
 [
-    relational_expression:e
+    relational_expression:>_
     [   
         eqneq_op:op
         relational_expression:param
-        #new_binary(e, op, param)
+        #new_binary(_, op, param)
     ]*
-    #bind('_', e)
 ]
 
 cmp_op = [ @ignore('null') ["<=" | ">=" | '<' !'<' | '>' !'>' ]:op #new_raw(_, op) ]
 relational_expression =
 [
-    shift_expression:e
+    shift_expression:>_
     [   
         cmp_op:op
         shift_expression:param
-        #new_binary(e, op, param)
+        #new_binary(_, op, param)
     ]*
-    #bind('_', e)
 ]
 
 shift_op = [ @ignore('null') ["<<" !"=" | ">>" !"="]:op #new_raw(_, op) ]
 shift_expression =
 [
-    additive_expression:e
+    additive_expression:>_
     [   
         shift_op:op
         additive_expression:param
-        #new_binary(e, op, param)
+        #new_binary(_, op, param)
     ]*
-    #bind('_', e)
 ]
 
 add_op = [ @ignore('null') ['+' !['+'|'='] | '-' !['-'|'='|'>']]:op #new_raw(_, op) ]
 additive_expression =
 [
-    multiplicative_expression:e
+    multiplicative_expression:>_
     [   
         add_op:op
         multiplicative_expression:param
-        #new_binary(e, op, param)
+        #new_binary(_, op, param)
     ]*
-    #bind('_', e)
 ]
 
 mul_op = [ @ignore('null') [['*'|'/'|'%']:op !'='] #new_raw(_, op) ]
 multiplicative_expression =
 [
-    unary_expression:e
+    unary_expression:>_
     [   
         mul_op:op
         unary_expression:param
-        #new_binary(e, op, param)
+        #new_binary(_, op, param)
     ]*
-    #bind('_', e)
 ]
 
 unary_op =
@@ -180,7 +174,7 @@ unary_op =
 ]
 unary_expression =
 [
-    postfix_expression:e #bind('_', e)
+    postfix_expression:>_
     |
         __scope__:op
         [   unary_op:op
@@ -193,17 +187,16 @@ unary_expression =
 
 postfix_expression =
 [
-    primary_expression:e
+    primary_expression:>_
     [
 /*        '[' expression:expr ']' #new_array_call(e, e, expr) */
-         '(' func_arg_list?:args ')' #new_func_call(e, e, args)
+         '(' func_arg_list?:args ')' #new_func_call(_, _, args)
 /*
-        | '.' identifier:i #new_dot(e, e, i)
-        | "->" identifier:i #new_arrow(e, e, i)
-        | ["++"|"--"]:op #new_raw(op, op) #new_post(e, op, e)
+        | '.' identifier:i #new_dot(_, _, i)
+        | "->" identifier:i #new_arrow(_, _, i)
+        | ["++"|"--"]:op #new_raw(op, op) #new_post(_, op, _)
 */
     ]*
-    #bind('_', e)
 ]
 
 func_arg_list =
@@ -217,7 +210,7 @@ func_arg_list =
 primary_expression =
 [
     '(' expression:expr ')' #new_paren(_, expr)
-    |[ literal | identifier]:l #bind('_', l)
+    |[ literal | identifier]:>_
 ]
 
 identifier =
@@ -230,7 +223,7 @@ identifier =
     ]
 ]
 
-rootidentifier = [ Base.id:i #bind('_', i) ]
+rootidentifier = [ Base.id:>_ ]
 
 dot = [ '.' !'.' ]
 

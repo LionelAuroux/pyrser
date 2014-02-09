@@ -177,6 +177,24 @@ class Capture(Functor):
         return False
 
 
+class Bind(Functor):
+    """Functor to handle the binding of a resulting nodes to an existing name."""
+
+    def __init__(self, tagname: str, pt: Functor):
+        Functor.__init__(self)
+        if not isinstance(tagname, str) or len(tagname) == 0:
+            raise TypeError("Illegal tagname for capture")
+        self.tagname = tagname
+        self.pt = pt
+
+    def __call__(self, parser: BasicParser) -> Node:
+        res = self.pt(parser)
+        if res:
+            parser.bind(self.tagname, res)
+            return res
+        return False
+
+
 class Alt(Functor):
     """A | B bnf primitive as a functor."""
 

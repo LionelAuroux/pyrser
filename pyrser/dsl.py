@@ -126,9 +126,11 @@ class EBNF(parsing.Parser):
             #         #add_subsequence(_, subsequence)
             #     ] #add_mod(_, mod)
             #     [repeat : rpt #add_rpt(_, mod, rpt) ]?
-            #     [':' Base.id : cpt #add_capture(_, cpt) ]?
+            #     [
+            #       ":>" Base.id : bind #add_bind(_, bind) 
+            #       | ':' Base.id : cpt #add_capture(_, cpt) 
+            #     ]?
             #     | hook : h #add_hook(_, h)
-            # TODO: change sequence by sequences
             #     | directive : d sequence : s #add_directive(_, d, s)
             # ]
             #
@@ -199,13 +201,22 @@ class EBNF(parsing.Parser):
                         )
                     ),
                     parsing.RepOptional(
-                        parsing.Seq(
-                            parsing.Call(parsing.Parser.read_text, ":"),
-                            parsing.Capture('cpt', parsing.Rule('Base.id')),
-                            parsing.Hook('add_capture',
-                                         [('_', parsing.Node),
-                                          ('cpt', parsing.Node)])
-                        )
+                        parsing.Alt(
+                            parsing.Seq(
+                                parsing.Call(parsing.Parser.read_text, ":>"),
+                                parsing.Capture('bind', parsing.Rule('Base.id')),
+                                parsing.Hook('add_bind',
+                                             [('_', parsing.Node),
+                                              ('bind', parsing.Node)])
+                            ),
+                            parsing.Seq(
+                                parsing.Call(parsing.Parser.read_text, ":"),
+                                parsing.Capture('cpt', parsing.Rule('Base.id')),
+                                parsing.Hook('add_capture',
+                                             [('_', parsing.Node),
+                                              ('cpt', parsing.Node)])
+                            )
+                            )
                     )
                 ),
                 parsing.Seq(
@@ -498,6 +509,14 @@ def add_capture(self, sequence, cpt):
     """Create a tree.Capture"""
     cpt_value = self.value(cpt)
     sequence.parser_tree = parsing.Capture(cpt_value, sequence.parser_tree)
+    return True
+
+
+@meta.hook(EBNF, "EBNF.add_bind")
+def add_bind(self, sequence, cpt):
+    """Create a tree.Bind"""
+    cpt_value = self.value(cpt)
+    sequence.parser_tree = parsing.Bind(cpt_value, sequence.parser_tree)
     return True
 
 

@@ -39,17 +39,17 @@ That BNF could be literaly translate as::
         """Our JSON parser"""
         entry = "object"
         grammar = """
-            object ::= 
+            object = [
                 '{' '}'
                 | '{' members '}'
-            ;
+            ]
         """
 
 But Pyrser BNF syntax provides the repeater ``?`` that allows you to describe ``object`` in a more concise way.
 ::
 
     grammar = """ 
-        object ::= '{' members? '}'
+        object = [ '{' members? '}' ]
         ;
     """
 
@@ -84,20 +84,16 @@ With these advices, we could translate all the BNF::
         """Our JSON parser"""
         entry = "json"
         grammar = """
-            json ::= object eof
-            ;
+            json = [ object eof ]
 
-            object ::= 
-                '{' members? '}'
-            ;
+            object = [ '{' members? '}' ]
 
-            members ::= pair [',' pair]*
-            ;
+            members = [ pair [',' pair]* ]
 
-            pair ::= string ':' value
-            ;
+            pair = [ string ':' value ]
 
-            value ::= 
+            value = 
+            [
                 string
                 | number
                 | object
@@ -105,45 +101,34 @@ With these advices, we could translate all the BNF::
                 | "true"
                 | "false"
                 | "null"
-            ;
+            ]
 
-            array ::=
-                '[' elements? ']'
-            ;
+            array = [ '[' elements? ']' ]
 
-            elements ::=  value [',' value]*
-            ;
+            elements = [ value [',' value]* ]
 
-            number ::= @ignore("null") [int frac? exp?]
-            ;
+            number = [ @ignore("null") [int frac? exp?] ]
 
-            int ::= '-'? 
+            int = [ '-'? 
                 [
                     digit1_9s
                     | digit
                 ]
-            ;
+            ]
 
-            frac ::= '.' digits
-            ;
+            frac = [ '.' digits ]
 
-            exp ::= e digits
-            ;
+            exp = [ e digits ]
 
-            digit ::= '0'..'9'
-            ;
+            digit = [ '0'..'9' ]
 
-            digit1_9 ::= '1'..'9'
-            ;
+            digit1_9 = [ '1'..'9' ]
 
-            digits ::= digit+
-            ;
+            digits = [ digit+ ]
 
-            digit1_9s ::= digit1_9 digits
-            ;
+            digit1_9s = [ digit1_9 digits ]
 
-            e ::= ['e'|'E'] ['+'|'-']?
-            ;
+            e = [ ['e'|'E'] ['+'|'-']? ]
         """
 
 
@@ -156,8 +141,8 @@ note 2: We don't provide the ``string`` and ``eof`` rules because these rules ar
 
 See :doc:`base` for more informations about what is provided by default.
 
-5- Constructing an AST
-----------------------
+5- Building an AST
+------------------
 
 The aim of parsing is to translate a textual representation of information into data structures representation.
 Here we need to translate JSON into python objects.
@@ -178,10 +163,11 @@ To capture the result of a rule just ``suffix`` it by ':' and names it::
 
     """
     ...
-        number ::= @ignore("null") [int frac? exp?]:n
-        ;
+        number = [ @ignore("null") [int frac? exp?]:n ]
     ...
     """
+
+This will create a new node named ``n``.
 
 hooks
 ~~~~~
@@ -191,8 +177,7 @@ Just call a hook after reading string::
 
     """
     ...
-        number ::= @ignore("null") [int frac? exp?]:n #is_num(n)
-        ;
+        number = [ @ignore("null") [int frac? exp?]:n #is_num(n) ]
     ...
     """
 
@@ -202,14 +187,15 @@ By default ``is_num`` is an unknown hook. Let's declare it with the following sy
 
     @meta.hook(JSON)
     def is_num(self, arg):
-        print(self.textnode(arg))
+        print(self.value(arg))
         return True
 
 note: A hook is just a function with a special decorator:
 
     * The function took at least one parameter ``self``. This is the parser instance (here your JSON instance).
     * ``arg`` is the capturing node (an instance of ``pyrser.parsing.node.Node``).
-    We could fetch the captured text (parsed by ``[int frac? exp?]``) with a call to ``self.textnode`` on the ``arg``.
+
+We could fetch the captured text (parsed by ``[int frac? exp?]``) with a call to ``self.value`` on the ``arg``.
 
 note: A hook must return True if the parsing must continue. You could stop parsing by returning False (this return provoking a parse error).
 
@@ -227,8 +213,7 @@ So, we must patch our ``number`` rule and the ``is_num`` hook like this::
     ...
     """
         ...
-            number ::= @ignore("null") [int frac? exp?]:n #is_num(_, n)
-        ;
+            number = [ @ignore("null") [int frac? exp?]:n #is_num(_, n) ]
         ...
     """
     ...
@@ -241,39 +226,46 @@ To return something with it you must create an arbitrary attribute to carry the 
     @meta.hook(JSON)
     def is_num(self, ast, arg):
         # node is arbitrary
-        ast.node = float(self.textnode(arg))
+        ast.node = float(self.value(arg))
         return True
 
-note: The ``float`` constructor interpret directly ``self.textnode(arg)`` like ``1.0`` or ``-2e+2`` to create a float object.
+note: The ``float`` constructor interpret directly ``self.value(arg)`` like ``1.0`` or ``-2e+2`` to create a float object.
 
 We could proceed like this for all trivial values.
+
+Sometime, we only want to transfert the result of a subrule as the result of the current rule. For this, just use the ``bind`` operator ``:>`` that connect the output to an existing node::
+
+    ...
+    """
+        ...
+            value =
+            [
+                [number | object | array]:>_
+                ...
+            ]
+        ...
+    """
+    ...
 
 handling arrays
 ~~~~~~~~~~~~~~~
 
 Let's focus on a more complex case, the ``array`` rule::
 
-            array ::=
-                '[' elements? ']'
-            ;
+            array = [ '[' elements? ']' ]
 
-            elements ::=  value [',' value]*
-            ;
+            elements = [ value [',' value]* ]
 
 These kind of rules are not really optimized for a LL(k) parser. It's better to have in the same rule
 the resulting node (``array``) and the list of items (list of ``value``). We could merge this two rules into
 one::
 
-        array ::=
-            '[' [value [',' value] *]? ']'
-        ;
+        array = [ '[' [value [',' value] *]? ']' ]
 
 In this form, it's easier to identify where to put a hook to create a python array, and where to put a hook
 to add item into this array::
 
-        array ::=
-            '[' #is_array(_) [value:v #add_item(_, v) [',' value:v #add_item(_, v) ] *]? ']'
-        ;
+        array = [ '[' #is_array(_) [value:v #add_item(_, v) [',' value:v #add_item(_, v) ] *]? ']' ]
 
 With the following hooks::
 
@@ -301,62 +293,58 @@ A complete grammar for a JSON parser looks like this::
         """Pyrser JSON parser"""
         entry = "json"
         grammar = """
-
-            json ::= object:_ eof
-            ;
+        json =[ object:>_ eof ]
+        
+        object =
+        [
+            '{' #is_dict(_) [pair:p #add_kv(_, p) [',' pair:p #add_kv(_, p) ]*]? '}'
+        ]
+        
+        pair = [ string:s ':' value:v #is_pair(_, s, v) ]
+        
+        value =
+        [
             
-            object ::= 
-                '{' #is_dict(_) [pair:p #add_kv(_, p) [',' pair:p #add_kv(_, p) ]*]? '}'
-            ;
-            
-            pair ::= string:s ':' value:v #is_pair(_, s, v)
-            ;
-            
-            value ::= 
+            [number | object | array]:>_
+            | [
                 string:s #is_str(_, s)
-                | number:_
-                | object:_
-                | array:_
                 | "true":t #is_bool(_, t)
                 | "false":f #is_bool(_, f)
                 | "null" #is_none(_)
-            ;
-            
-            array ::=
-                '[' #is_array(_) [value:v #add_item(_, v) [',' value:v #add_item(_, v)] *]? ']'
-            ;
-            
-            number ::= @ignore("null") [int frac? exp?]:n #is_num(_, n)
-            ;
-            
-            int ::= '-'? 
-                [
-                    digit1_9s
-                    | digit
-                ]
-            ;
-            
-            frac ::= '.' digits
-            ;
-            
-            exp ::= e digits
-            ;
-            
-            digit ::= '0'..'9'
-            ;
-            
-            digit1_9 ::= '1'..'9'
-            ;
-            
-            digits ::= digit+
-            ;
-            
-            digit1_9s ::= digit1_9 digits
-            ;
-            
-            e ::= ['e'|'E'] ['+'|'-']?
-            ;
+            ]
         
+        ]
+        
+        array =
+        [
+            '[' #is_array(_) [value:v #add_item(_, v) [',' value:v #add_item(_, v)] *]? ']'
+        ]
+        
+        number = [ @ignore("null") [int frac? exp?]:n #is_num(_, n) ]
+        
+        int =
+        [
+            '-'? 
+            [
+                digit1_9s
+                | digit
+            ]
+        ]
+        
+        frac = [ '.' digits ]
+        
+        exp = [ e digits ]
+        
+        digit = [ '0'..'9' ]
+        
+        digit1_9 = [ '1'..'9' ]
+        
+        digits = [ digit+ ]
+        
+        digit1_9s = [ digit1_9 digits]
+        
+        e = [ ['e'|'E'] ['+'|'-']? ]
+                
         """
 
         @meta.hook(JSON)
@@ -428,7 +416,6 @@ Instanciate it and use the method ``parse`` (or ``parse_file``) to parse a conte
 You could also put all your grammar into a BNF file (here ``json.bnf``) use the ``from_file`` function to create the JSON class::
 
         import pyrser.grammar
-        import os
-        JSON = grammar.from_file(os.getcwd() + "/json.bnf")
+        JSON = grammar.from_file("json.bnf")
 
 See :doc:`grammar` for more informations about way of creating grammar.

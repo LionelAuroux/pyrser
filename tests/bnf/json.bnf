@@ -1,6 +1,6 @@
 // A JSON parser
 
-json =[ object:o eof #bind('_', o) ]
+json =[ object:>_ eof ]
 
 object =
 [
@@ -13,8 +13,7 @@ value =
 [
     
     [
-       [number | object | array]:direct
-        #bind('_', direct) 
+       [number | object | array]:>_
     ]
     | [
         string:s #is_str(_, s)

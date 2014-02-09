@@ -6,8 +6,8 @@ BNF Syntax
 
 Pyrser use the following DSL to describe a grammar.
 
-``R ::= expr1 expr2 ... ;``:
-    Define a rule named R as a sequence of clauses defined by ``expr``.
+``R = [ expr1 expr2 ... ]``:
+    Define a rule named R as a sequence of clauses defined by ``expr``. ``[]`` are mandatory at this level.
 
 ``expr``:
     expr is one of the following statements.
@@ -58,7 +58,13 @@ Pyrser use the following DSL to describe a grammar.
     Read the next character if its value is between ``a`` and ``z``.
 
 ``expr:node``:
-    Bind the result of the expr to the variable ``node``.
+    Fetch the result of expr, create the variable ``node`` and bind the result to it.
+
+``__scope__:node``:
+    Create the variable ``node``. This variable is attach to the scope of the rule.
+
+``expr:>node``:
+    Bind the result of the expr to the existing variable ``node``.
 
 ``#hook_without_parameter``:
     Call a hook without parameter.

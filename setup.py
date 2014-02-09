@@ -2,8 +2,8 @@
 
 import setuptools
 
-version = '0.2'
-release = '0.2.1'
+version = '0.0'
+release = '0.0.2'
 
 setuptools.setup(
     name='pyrser',
