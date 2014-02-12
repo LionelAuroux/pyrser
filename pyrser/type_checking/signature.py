@@ -2,10 +2,12 @@
 import weakref
 from pyrser import fmt
 
+
 class Symbol:
     """
     Symbol are semantic name used in a language.
-    Could be map to binary symbol but conceptually are more related to language symbol table
+    Could be map to binary symbol but conceptually are more related
+    to language symbol table.
     """
 
     def __init__(self, name, parent=None):
@@ -13,13 +15,13 @@ class Symbol:
         self.set_parent(parent)
 
     def set_parent(self, parent):
-        if parent != None:
+        if parent is not None:
             self.parent = weakref.ref(parent)
         else:
             self.parent = None
 
     def get_parent(self):
-        if self.parent != None:
+        if self.parent is not None:
             return self.parent()
         return None
 
@@ -30,13 +32,13 @@ class Symbol:
         # by default only return scoped name
         lstparent = [self]
         p = self.get_parent()
-        while p != None:
+        while p is not None:
             lstparent.append(p)
             p = p.get_parent()
         # allow global scope to have an None string instance
         lscope = []
         for scope in reversed(lstparent):
-            if scope.name != None:
+            if scope.name is not None:
                 lscope.append(scope.name)
         return lscope
 
@@ -58,6 +60,7 @@ class Symbol:
         if hasattr(self, 'tret'):
             unq += "_" + self.tret
         return unq
+
 
 class Signature(Symbol):
     """

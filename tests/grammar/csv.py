@@ -1,6 +1,7 @@
 # little grammar for test
 from pyrser import grammar
 
+
 class CSV(grammar.Grammar):
     entry = "csv"
     grammar = """
@@ -21,8 +22,7 @@ class CSV2(grammar.Grammar, CSV):
     entry = "csv2"
     # copy the result of CSV.csv as result of csv2
     grammar = """
-        csv2 = [ CSV.csv:_ ]
+        csv2 = [ CSV.csv:>_ ]
 
-        item = [ [CSV.item]?:_ ]
+        item = [ [CSV.item]?:>_ ]
     """
-

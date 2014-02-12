@@ -57,9 +57,8 @@ class BasicParser(metaclass=MetaBasicParser):
     def __init__(self, content: str='', stream_name: str="root"):
         self._ignores = [BasicParser.ignore_blanks]
         self.__streams = [Stream(content, stream_name)]
-        self.__tags = dict()
-        self.captured_tags = dict()
-        self.rulenodes = collections.ChainMap()
+        self.rule_nodes = None
+        self.push_rule_nodes()
         self._lastIgnoreIndex = 0
         self._lastIgnore = False
 
@@ -81,25 +80,39 @@ class BasicParser(metaclass=MetaBasicParser):
 
     def push_rule_nodes(self) -> bool:
         """Push context variable to store rule nodes."""
-        self.rulenodes = self.rulenodes.new_child()
+        if self.rule_nodes is None:
+            self.rule_nodes = collections.ChainMap()
+            self.tag_cache = collections.ChainMap()
+            self.id_cache = collections.ChainMap()
+        else:
+            self.rule_nodes = self.rule_nodes.new_child()
+            self.tag_cache = self.tag_cache.new_child()
+            self.id_cache = self.id_cache.new_child()
         return True
 
     def pop_rule_nodes(self) -> bool:
         """Pop context variable that store rule nodes"""
-        self.rulenodes = self.rulenodes.parents
-        # TODO: clean cache
+        self.rule_nodes = self.rule_nodes.parents
+        self.tag_cache = self.tag_cache.parents
+        self.id_cache = self.id_cache.parents
         return True
 
     def value(self, n: Node) -> str:
         """Return the text value of the node"""
         id_n = id(n)
-        if id_n in self.captured_tags:
-            # cache capture
-            cache = self.captured_tags[id_n]
-            if cache[1] is None:
-                cache[1] = str(cache[0])
-            return cache[1]
-        return ""
+        idcache = self.id_cache
+        if id_n not in idcache:
+            return ""
+        name = idcache[id_n]
+        tag_cache = self.tag_cache
+        if name not in tag_cache:
+            raise Exception("Incoherent tag cache")
+        tag = tag_cache[name]
+        k = "%d:%d" % (tag._begin, tag._end)
+        valcache = self.__streams[-1].value_cache
+        if k not in valcache:
+            valcache[k] = str(tag)
+        return valcache[k]
 
 ### STREAM
 
@@ -118,17 +131,21 @@ class BasicParser(metaclass=MetaBasicParser):
 
     def begin_tag(self, name: str) -> Node:
         """Save the current index under the given name."""
-        self.__tags[name] = Tag(self._stream, self._stream.index)
+        # Check if we could attach tag cache to current rule_nodes scope
+        self.tag_cache[name] = Tag(self._stream, self._stream.index)
         return True
 
     def end_tag(self, name: str) -> Node:
         """Extract the string between saved and current index."""
-        self.__tags[name].set_end(self._stream.index)
+        self.tag_cache[name].set_end(self._stream.index)
         return True
 
     def get_tag(self, name: str) -> Tag:
         """Extract the string previously saved."""
-        return self.__tags[name]
+        return self.tag_cache[name]
+
+    def tag_node(self, name: str, node: Node):
+        self.id_cache[id(node)] = name
 
 ####
 
@@ -175,8 +192,7 @@ class BasicParser(metaclass=MetaBasicParser):
     def eval_rule(self, name: str) -> Node:
         """Evaluate a rule by name."""
         # context not created by parents (not captured or called directly)
-        if "_" not in self.rulenodes.maps[0]:
-            self.rulenodes['_'] = Node()
+        self.rule_nodes['_'] = Node()
         # TODO: other behavior for  empty rules?
         if name not in self.__class__._rules:
             error.throw("Unknown rule : %s" % name, self)
@@ -184,7 +200,7 @@ class BasicParser(metaclass=MetaBasicParser):
         # TODO: add packrat cache here, same rule - same pos == same res
         res = rule_to_eval(self)
         if res:
-            res = self.rulenodes['_']
+            res = self.rule_nodes['_']
         return res
 
     def eval_hook(self, name: str, ctx: list) -> Node:
@@ -328,20 +344,25 @@ class Parser(BasicParser):
 
 ### BASE RULES
 
+
 @meta.hook(BasicParser)
 def bind(self, dst: str, src: Node) -> bool:
-    """Allow to alias a node to another name. Useful to bind a node to _ as return of Rule
-    
+    """Allow to alias a node to another name.
+    Useful to bind a node to _ as return of Rule
+
         R = [
             __scope__:L [item:I #add_item(L, I]* #bind('_', L)
         ]
+
+    It's also the default behaviour of ':>'
     """
-    for m in self.rulenodes.maps:
+    for m in self.rule_nodes.maps:
         for k, v in m.items():
             if k == dst:
                 m[k] = src
                 return True
     raise Exception('%s not found' % dst)
+
 
 @meta.rule(BasicParser, "Base.read_char")
 def read_one_char(self) -> bool:
@@ -446,6 +467,7 @@ def read_cchar(self) -> bool:
         txt = self._stream[idx:self._stream.index]
         return self._stream.validate_context()
     return self._stream.restore_context()
+
 
 @meta.rule(Parser, "__scope__")
 def scope_nodes(self) -> bool:

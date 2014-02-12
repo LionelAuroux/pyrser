@@ -82,8 +82,8 @@ class EBNF(parsing.Parser):
 
             #
             # alternatives =
-            # [ 
-            #       sequences : alt #add_alt(_, alt) 
+            # [
+            #       sequences : alt #add_alt(_, alt)
             #       ['|' sequences : alt #add_alt(_, alt) ]*
             # ]
             #
@@ -127,8 +127,8 @@ class EBNF(parsing.Parser):
             #     ] #add_mod(_, mod)
             #     [repeat : rpt #add_rpt(_, mod, rpt) ]?
             #     [
-            #       ":>" Base.id : bind #add_bind(_, bind) 
-            #       | ':' Base.id : cpt #add_capture(_, cpt) 
+            #       ":>" Base.id : bind #add_bind(_, bind)
+            #       | ':' Base.id : cpt #add_capture(_, cpt)
             #     ]?
             #     | hook : h #add_hook(_, h)
             #     | directive : d sequence : s #add_directive(_, d, s)
@@ -177,7 +177,8 @@ class EBNF(parsing.Parser):
                         ),
                         parsing.Seq(
                             parsing.Call(parsing.Parser.read_char, "["),
-                            parsing.Capture('subsequence',
+                            parsing.Capture(
+                                'subsequence',
                                 parsing.Alt(
                                     parsing.Rule('alternatives'),
                                     parsing.Error("Expected sequences"))),
@@ -204,19 +205,23 @@ class EBNF(parsing.Parser):
                         parsing.Alt(
                             parsing.Seq(
                                 parsing.Call(parsing.Parser.read_text, ":>"),
-                                parsing.Capture('bind', parsing.Rule('Base.id')),
+                                parsing.Capture(
+                                    'bind',
+                                    parsing.Rule('Base.id')),
                                 parsing.Hook('add_bind',
                                              [('_', parsing.Node),
                                               ('bind', parsing.Node)])
                             ),
                             parsing.Seq(
                                 parsing.Call(parsing.Parser.read_text, ":"),
-                                parsing.Capture('cpt', parsing.Rule('Base.id')),
+                                parsing.Capture(
+                                    'cpt',
+                                    parsing.Rule('Base.id')),
                                 parsing.Hook('add_capture',
                                              [('_', parsing.Node),
                                               ('cpt', parsing.Node)])
                             )
-                            )
+                        )
                     )
                 ),
                 parsing.Seq(
@@ -292,7 +297,8 @@ class EBNF(parsing.Parser):
                 parsing.RepOptional(
                     parsing.Seq(
                         parsing.Call(parsing.Parser.read_char, '('),
-                        parsing.Capture('p',
+                        parsing.Capture(
+                            'p',
                             parsing.Alt(
                                 parsing.Rule('param'),
                                 parsing.Error("Expected parameter"))),
@@ -301,7 +307,8 @@ class EBNF(parsing.Parser):
                         parsing.Rep0N(
                             parsing.Seq(
                                 parsing.Call(parsing.Parser.read_char, ','),
-                                parsing.Capture('p',
+                                parsing.Capture(
+                                    'p',
                                     parsing.Alt(
                                         parsing.Rule('param'),
                                         parsing.Error("Expected parameter"))),
@@ -330,7 +337,8 @@ class EBNF(parsing.Parser):
                 parsing.RepOptional(
                     parsing.Seq(
                         parsing.Call(parsing.Parser.read_char, '('),
-                        parsing.Capture('p',
+                        parsing.Capture(
+                            'p',
                             parsing.Alt(
                                 parsing.Rule('param'),
                                 parsing.Error("Expected parameter"))),
@@ -340,7 +348,8 @@ class EBNF(parsing.Parser):
                         parsing.Rep0N(
                             parsing.Seq(
                                 parsing.Call(parsing.Parser.read_char, ','),
-                                parsing.Capture('p',
+                                parsing.Capture(
+                                    'p',
                                     parsing.Alt(
                                         parsing.Rule('param'),
                                         parsing.Error("Expected parameter"))),

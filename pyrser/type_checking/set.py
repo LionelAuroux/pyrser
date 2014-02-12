@@ -2,10 +2,12 @@
 from pyrser import fmt
 from pyrser.type_checking.signature import *
 
-def     RawSet(*signature: [Signature]) -> 'Set':
+
+def RawSet(*signature: [Signature]) -> 'Set':
     return Set(None, signature)
 
-class   Set(Symbol):
+
+class Set(Symbol):
     """
     Set of Signature for a Scope/namespace/type etc...
     Basic abstraction of type checking.
@@ -18,7 +20,7 @@ class   Set(Symbol):
         self._nvars = 0
         self._nfuns = 0
         self._hsig = {}
-        if ls != None:
+        if ls is not None:
             self.update(ls)
         self._istype = istype
 
@@ -80,6 +82,7 @@ class   Set(Symbol):
     def __ior__(self, ls: 'Set') -> 'Set':
         """|= operator"""
         return self.update(ls)
+
     def update(self, ls: 'Set') -> 'Set':
         """Update the Set with values of another Set"""
         values = ls
@@ -98,6 +101,7 @@ class   Set(Symbol):
     def __or__(self, ls: 'Set') -> 'Set':
         """| operator"""
         return self.union(ls)
+
     def union(self, ls: 'Set') -> 'Set':
         """Create a new Set produce by the union of 2 Set"""
         new = RawSet(*tuple(self._hsig.values()))
@@ -108,6 +112,7 @@ class   Set(Symbol):
     def __iand__(self, ls: 'Set') -> 'Set':
         """&= operator"""
         return self.intersection_update(ls)
+
     def intersection_update(self, oset: 'Set') -> 'Set':
         """Update Set with common values of another Set"""
         keys = list(self._hsig.keys())
@@ -117,10 +122,12 @@ class   Set(Symbol):
             else:
                 self._hsig[k] = oset.get(k)
         return self
+
     # &
     def __and__(self, ls: 'Set') -> 'Set':
         """& operator"""
         return self.intersection(ls)
+
     def intersection(self, ls: 'Set') -> 'Set':
         """Create a new Set produce by the intersection of 2 Set"""
         new = RawSet(*tuple(self._hsig.values()))
@@ -131,6 +138,7 @@ class   Set(Symbol):
     def __isub__(self, ls: 'Set') -> 'Set':
         """-= operator"""
         return self.difference_update(ls)
+
     def difference_update(self, oset: 'Set') -> 'Set':
         """Remove values common with another Set"""
         keys = list(self._hsig.keys())
@@ -138,10 +146,12 @@ class   Set(Symbol):
             if k in oset:
                 del self._hsig[k]
         return self
+
     # -
     def __sub__(self, ls: 'Set') -> 'Set':
         """- operator"""
         return self.difference(ls)
+
     def difference(self, ls: 'Set') -> 'Set':
         """Create a new Set produce by a Set subtracted by another Set"""
         new = RawSet(*tuple(self._hsig.values()))
@@ -152,6 +162,7 @@ class   Set(Symbol):
     def __ixor__(self, ls: 'Set') -> 'Set':
         """^= operator"""
         return self.symmetric_difference_update(ls)
+
     def symmetric_difference_update(self, oset: 'Set') -> 'Set':
         """Remove common values and Update specific values from another Set"""
         skey = set()
@@ -165,10 +176,12 @@ class   Set(Symbol):
         for k in skey:
             del self._hsig[k]
         return self
+
     # ^
     def __xor__(self, ls: 'Set') -> 'Set':
         """^ operator"""
         return self.symmetric_difference(ls)
+
     def symmetric_difference(self, ls: 'Set') -> 'Set':
         """Create a new Set with values present in only one Set"""
         new = RawSet(*tuple(self._hsig.values()))
@@ -326,7 +339,7 @@ class   Set(Symbol):
         If this scope define a new Type (language specific).
         You could change it!
         """
-        if change != None and type(change) is bool:
+        if change is not None and type(change) is bool:
             self._istype = change
         return self._istype
 

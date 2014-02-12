@@ -102,6 +102,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
             raise ValueError("No entry rule name defined for {}".format(
                 self.__class__.__name__))
         res = self.eval_rule(entry)
+        self.rule_nodes.clear()
         if not res:
             raise error.ParseError(
                 "Parse error with the rule {rule!r}",
@@ -124,6 +125,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
             raise ValueError("No entry rule name defined for {}".format(
                 self.__class__.__name__))
         res = self.eval_rule(entry)
+        self.rule_nodes.clear()
         if not res:
             raise error.ParseError(
                 "Parse error with the rule {rule!r}",

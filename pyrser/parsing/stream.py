@@ -96,7 +96,12 @@ class Tag:
         self._end = end
 
     def __str__(self) -> str:
+        if self._begin == self._end:
+            return ""
         return self._stream[self._begin:self._end]
+
+    def __repr__(self) -> str:
+        return "strid:%d %s:%s" % (id(self._stream), self._begin, self._end)
 
 
 class Stream:
@@ -107,6 +112,8 @@ class Stream:
         self.__name = name
         self._contexts = []
         self._cursor = Cursor()
+        # use to store begin:end => value
+        self.value_cache = dict()
 
     def __len__(self) -> int:
         return self.__len

@@ -8,6 +8,7 @@ from pyrser.directives import ignore
 
 from tests.grammar.csv import *
 
+
 class WordList(grammar.Grammar):
     grammar = """
         wordlist =[ [word : w #add_to(_, w)]+ eof ]

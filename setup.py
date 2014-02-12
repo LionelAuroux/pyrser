@@ -12,7 +12,7 @@ setuptools.setup(
     license='GPLv3',
     maintainer='Lionel Auroux',
     maintainer_email='lionel.auroux@gmail.com',
-    keywords = "parse parser parsing peg packrat grammar language",
+    keywords="parse parser parsing peg packrat grammar language",
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
@@ -21,7 +21,8 @@ setuptools.setup(
         'Intended Audience :: Information Technology',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+        'License :: OSI Approved ::' +
+            ' GNU General Public License v3 or later (GPLv3+)',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',

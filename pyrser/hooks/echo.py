@@ -1,4 +1,5 @@
 from pyrser import meta
+from pyrser.parsing import Node
 from pyrser.parsing.base import BasicParser
 
 
@@ -6,25 +7,17 @@ from pyrser.parsing.base import BasicParser
 def echo_nodes(self, *rest):
     """
     Print nodes.
+
     example::
-
-        R ::=
-            In : node #echo(node)
-        ;
+        R = [
+            In : node #echo("coucou", 12, node)
+        ]
     """
-    print(*rest)
-    return True
-
-
-@meta.hook(BasicParser, "vars")
-def vars_nodes(self, rest):
-    """
-    Vars one node instance.
-    example::
-
-        R ::=
-            In : node #vars(node)
-        ;
-    """
-    print(vars(rest))
+    txt = ""
+    for thing in rest:
+        if isinstance(thing, Node):
+            txt += self.value(thing)
+        else:
+            txt += str(thing)
+    print(txt)
     return True

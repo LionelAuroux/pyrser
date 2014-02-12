@@ -7,6 +7,28 @@ from pyrser import grammar
 
 
 class InternalParse_Test(unittest.TestCase):
+
+    def test_000_Node(self):
+        d = parsing.Node()
+        d.tata = [1, 2, 3, 4, 5]
+        d["chuchu"] = 'bla'
+        d['papa'] = d
+        ndict = {}
+        res = d.check(ndict)
+        out = ""
+        for k, v in ndict.items():
+            out += "[%s]=%s\n" % (k, v)
+        self.assertTrue(res, "Failed detect recursive node:\n%s" % out)
+        d = parsing.Node()
+        d.tata = [1, 2, 3, 4, 5]
+        d["chuchu"] = 'bla'
+        ndict = {}
+        res = d.check(ndict)
+        out = ""
+        for k, v in ndict.items():
+            out += "[%s]=%s\n" % (k, v)
+        self.assertFalse(res, "Failed detect recursive node:\n%s" % out)
+
     def test_00_Directive(self):
         """Test Directive/DirectiveWrapper
         """
@@ -135,7 +157,8 @@ class InternalParse_Test(unittest.TestCase):
             'failed in read_cstring for s2')
         s2 = parser.get_tag('s2')
         parser.skip_ignore()
-        self.assertEqual(str(s2), '"deuxieme chaine\\n"', "failed in capture s2")
+        self.assertEqual(str(s2), '"deuxieme chaine\\n"',
+                         "failed in capture s2")
         self.assertTrue(
             parser.begin_tag('s3') and
             parser.read_cstring() and
@@ -163,9 +186,12 @@ class InternalParse_Test(unittest.TestCase):
             parsing.Call(parsing.Parser.end_tag, 'i3'))
         parseTree(parser)
         # Warning! skip_ignore is called between each parsing.Seq
-        self.assertEqual(str(parser.get_tag("i1")), "abc ", "failed in captured i1")
-        self.assertEqual(str(parser.get_tag("i2")), "def ", "failed in captured i2")
-        self.assertEqual(str(parser.get_tag("i3")), "ghg", "failed in captured i3")
+        self.assertEqual(str(parser.get_tag("i1")), "abc ",
+                         "failed in captured i1")
+        self.assertEqual(str(parser.get_tag("i2")), "def ",
+                         "failed in captured i2")
+        self.assertEqual(str(parser.get_tag("i3")), "ghg",
+                         "failed in captured i3")
 
     def test_07_RepXN(self):
         """
@@ -257,7 +283,7 @@ class InternalParse_Test(unittest.TestCase):
 
         parser = parsing.Parser()
         parser.parsed_stream("asbga    12121      njnj 89898")
-        parser.rulenodes['test'] = self
+        parser.rule_nodes['test'] = self
         parser.set_hooks({'checkWord': check_word, 'checkInt': check_int})
         parser.set_rules({
             'main': parsing.Seq(
@@ -302,20 +328,20 @@ class InternalParse_Test(unittest.TestCase):
         Basic test for context variables
         """
         parser = parsing.Parser()
-        parser.rulenodes.update({'coucou': 42,
+        parser.rule_nodes.update({'coucou': 42,
                                  'grigri': 666,
                                  'toto': [12, 33]})
-        self.assertEqual(parser.rulenodes['toto'], [12, 33],
+        self.assertEqual(parser.rule_nodes['toto'], [12, 33],
                          "failed comparing list")
         parser.push_rule_nodes()
-        parser.rulenodes.update({'local1': 666, 'local2': 777})
-        parser.rulenodes['toto'] = [1, 2, 3, 4]
-        self.assertEqual(parser.rulenodes['coucou'], 42,
+        parser.rule_nodes.update({'local1': 666, 'local2': 777})
+        parser.rule_nodes['toto'] = [1, 2, 3, 4]
+        self.assertEqual(parser.rule_nodes['coucou'], 42,
                          "failed outer scope not visible in local")
         parser.push_rule_nodes()
-        self.assertEqual(parser.rulenodes['grigri'], 666,
+        self.assertEqual(parser.rule_nodes['grigri'], 666,
                          "failed outer scope not visible in local")
-        self.assertTrue('grigri' in parser.rulenodes,
+        self.assertTrue('grigri' in parser.rule_nodes,
                         "failed outer scope not visible in local")
         parser.pop_rule_nodes()
 
@@ -329,7 +355,7 @@ class InternalParse_Test(unittest.TestCase):
         def dummy(self):
             res = parsing.Node()
             res.text = "cool"
-            self.rulenodes["_"] = res
+            self.rule_nodes["_"] = res
             return True
         meta.set_one(parsing.Parser._rules, "A.B.C.test",
                      parsing.Call(parsing.Parser.dummy))
@@ -476,7 +502,10 @@ class InternalParse_Test(unittest.TestCase):
         parser.parsed_stream("==")
         parseTree = parsing.Seq(
             parsing.Call(parsing.Parser.read_char, '='),
-            parsing.Complement(parsing.Call(parsing.Parser.read_char, '=')))
+            parsing.Complement(
+                parsing.Call(parsing.Parser.read_char, '=')
+            )
+        )
         res = parseTree(parser)
         self.assertEqual(res, False, "failed to get the correct final value")
         self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 0,

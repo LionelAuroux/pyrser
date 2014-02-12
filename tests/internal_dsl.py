@@ -278,6 +278,7 @@ class InternalDsl_Test(unittest.TestCase):
         def my_hook_char(self, txt):
             self.test.assertEqual(txt, "\t", 'failed to receive "\t" in hook')
             return True
+
         bnf = dsl.EBNF("""
             the_rule = [ #my_hook_char('\t') ]
         """)
@@ -452,10 +453,13 @@ class InternalDsl_Test(unittest.TestCase):
         class dummyList(parsing.Node):
             def __init__(self):
                 self._ls = []
+
             def append(self, x):
                 self._ls.append(x)
+
             def __getitem__(self, n):
                 return self._ls[n]
+
         @meta.hook(parsing.Parser)
         def in_list(self, ls, ident):
             if type(ls) is parsing.Node:
@@ -492,34 +496,40 @@ class InternalDsl_Test(unittest.TestCase):
             # A.put visible in subrules
             ast.put = True
             return True
+
         @meta.hook(parsing.Parser)
         def check1(self):
-            self.test.assertTrue('A' in self.rulenodes)
+            self.test.assertTrue('A' in self.rule_nodes)
             # _ is from rule1, not main
-            self.test.assertFalse(hasattr(self.rulenodes['_'], 'put'))
+            self.test.assertFalse(hasattr(self.rule_nodes['_'], 'put'))
             # return of rule1 with .toto == True
-            self.rulenodes['_'].toto = True
+            self.rule_nodes['_'].toto = True
             return True
+
         @meta.hook(parsing.Parser)
         def check2(self):
-            self.test.assertTrue('A' in self.rulenodes)
-            self.test.assertTrue('B' in self.rulenodes)
+            self.test.assertTrue('A' in self.rule_nodes)
+            self.test.assertTrue('B' in self.rule_nodes)
             return False
+
         @meta.hook(parsing.Parser)
         def check3(self):
-            self.test.assertTrue('A' in self.rulenodes)
+            self.test.assertTrue('A' in self.rule_nodes)
             # B no more living (alternative)
-            self.test.assertFalse('B' in self.rulenodes)
+            self.test.assertFalse('B' in self.rule_nodes)
             return True
+
         @meta.hook(parsing.Parser)
         def toto(self):
-            self.test.assertTrue(hasattr(self.rulenodes['r'], 'toto'))
-            self.test.assertTrue(hasattr(self.rulenodes['r'], 'bla'))
+            self.test.assertTrue(hasattr(self.rule_nodes['r'], 'toto'))
+            self.test.assertTrue(hasattr(self.rule_nodes['r'], 'bla'))
             return True
+
         @meta.hook(parsing.Parser)
         def check4(self):
-            self.rulenodes['_'].bla = True
+            self.rule_nodes['_'].bla = True
             return True
+
         bnf = dsl.EBNF("""
             main =
             [ __scope__:A #put(_)

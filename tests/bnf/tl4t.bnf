@@ -3,12 +3,10 @@
 **/
 
 source =
-[
+[   
     @ignore("C/C++")
-    __scope__:block
-    [stmt:s #new_stmt(block, s)]+
+    [stmt:s #new_stmt(_, s)]+
     eof
-    #bind('_', block)
 ]
 
 stmt =
@@ -19,7 +17,7 @@ stmt =
 decl_var =
 [
     __scope__:e
-   "var" name:n ':' type:t [';' | '=' expr:e ]? #new_declvar(_, n, t, e)
+    "var" name:n ':' type:t [';' | '=' expr:>e ]? #new_declvar(_, n, t, e)
 ]
 
 decl_fun =
@@ -49,9 +47,7 @@ type = [ id ]
 
 block =
 [
-    __scope__:block
-    '{' [stmt:s #new_stmt(block, s) ]* '}'
-    #bind('_', block)
+    '{' [stmt:s #new_stmt(_, s) ]* '}'
 ]
 
 expr = [ assignement_expression:>_ ';' ]
@@ -158,13 +154,6 @@ multiplicative_expression =
 unary_op =
 [
     @ignore('null') 
-/*
-    "++"
-    |"--"
-    |"&&"
-    | '&' !'='
-    | '*' !'='
-*/  
     [
      '~' !'='
     | '!' !'='
@@ -177,7 +166,7 @@ unary_expression =
     postfix_expression:>_
     |
         __scope__:op
-        [   unary_op:op
+        [   unary_op:>op
         |   Base.id:i
             #is_unary(op, i)
         ]

@@ -154,9 +154,6 @@ class Capture(Functor):
 
     def __call__(self, parser: BasicParser) -> Node:
         if parser.begin_tag(self.tagname):
-            # by default, create a slot value for the result
-            return_node = Node()
-            parser.rulenodes[self.tagname] = return_node
             # subcontext
             parser.push_rule_nodes()
             res = self.pt(parser)
@@ -166,19 +163,32 @@ class Capture(Functor):
                 # no bindings, wrap it in a Node instance
                 if type(res) is bool:
                     res = Node()
-                # capture tag in cache
-                node_id = id(res)
-                parser.captured_tags[node_id] = [tag, None]
-                # update node
-                #print("CAPT REPR %s" % repr(res))
-                parser.rulenodes[self.tagname] = res
+                # update node cache
+                parser.tag_node(self.tagname, res)
+                parser.rule_nodes[self.tagname] = res
                 # forward nodes
                 return res
         return False
 
 
+class DeclNode(Functor):
+    """Functor to handle node declaration with __scope__:N."""
+
+    def __init__(self, tagname: str):
+        Functor.__init__(self)
+        if not isinstance(tagname, str) or len(tagname) == 0:
+            raise TypeError("Illegal tagname for capture")
+        self.tagname = tagname
+
+    def __call__(self, parser: BasicParser) -> Node:
+        parser.rule_nodes[self.tagname] = Node()
+        return True
+
+
 class Bind(Functor):
-    """Functor to handle the binding of a resulting nodes to an existing name."""
+    """Functor to handle the binding of a resulting nodes
+    to an existing name.
+    """
 
     def __init__(self, tagname: str, pt: Functor):
         Functor.__init__(self)
@@ -204,17 +214,14 @@ class Alt(Functor):
 
     def __call__(self, parser: BasicParser) -> Node:
         # save result of current rule
-        parser.push_rule_nodes()#
-        #print("ALT %s" % repr(parser.rulenodes))
+        parser.push_rule_nodes()
         for pt in self.ptlist:
             parser._stream.save_context()
             parser.skip_ignore()
             parser.push_rule_nodes()
             res = pt(parser)
             if res:
-                if '_' in parser.rulenodes.maps: print("FOUND _")
                 parser.pop_rule_nodes()
-                if '_' in parser.rulenodes.maps: print("FOUND _")
                 parser.pop_rule_nodes()
                 parser._stream.validate_context()
                 return res
@@ -290,7 +297,6 @@ class Error(Functor):
 class Rule(Functor):
     """Call a rule by its name."""
 
-    #TODO(iopi): Handle additionnal value
     def __init__(self, name: str):
         Functor.__init__(self)
         self.name = name
@@ -319,9 +325,9 @@ class Hook(Functor):
         valueparam = []
         for v, t in self.param:
             if t is Node:
-                if v not in parser.rulenodes:
+                if v not in parser.rule_nodes:
                     error.throw("Unknown capture variable : %s" % v, parser)
-                valueparam.append(parser.rulenodes[v])
+                valueparam.append(parser.rule_nodes[v])
             elif type(v) is t:
                 valueparam.append(v)
             else:
@@ -415,7 +421,7 @@ class Directive(Functor):
         valueparam = []
         for v, t in self.param:
             if t is Node:
-                valueparam.append(parser.rulenodes[v])
+                valueparam.append(parser.rule_nodes[v])
             elif type(v) is t:
                 valueparam.append(v)
             else:
