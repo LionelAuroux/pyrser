@@ -94,21 +94,37 @@ class GrammarFile_Test(unittest.TestCase):
             var a : int;
         """)
         self.assertTrue(res)
-        self.assertTrue(isinstance(res.node[0], DeclVar))
+        self.assertTrue(isinstance(res.body[0], DeclVar))
+        txt = res.to_tl4t()
+        self.assertEqual(str(txt), "var a : int;\n")
         res = test.parse("""
             fun a() : int;
         """)
         self.assertTrue(res)
-        self.assertTrue(isinstance(res.node[0], DeclFun))
-        self.assertTrue(res.node[0].t == 'int')
+        self.assertTrue(isinstance(res.body[0], DeclFun))
+        self.assertTrue(res.body[0].t == 'int')
+        txt = res.to_tl4t()
+        self.assertEqual(str(txt), "fun a() : int;\n")
         res = test.parse("""
             fun a(x : str) : int;
         """)
         self.assertTrue(res)
-        self.assertTrue(isinstance(res.node[0], DeclFun))
-        self.assertTrue(isinstance(res.node[0].p[0], Param))
-        self.assertTrue(res.node[0].p[0].name, "x")
-        self.assertTrue(res.node[0].p[0].t, "int")
+        self.assertTrue(isinstance(res.body[0], DeclFun))
+        self.assertTrue(isinstance(res.body[0].p[0], Param))
+        self.assertTrue(res.body[0].p[0].name, "x")
+        self.assertTrue(res.body[0].p[0].t, "int")
+        txt = res.to_tl4t()
+        self.assertEqual(str(txt), "fun a(x : str) : int;\n")
+        res = test.parse("""
+            fun a(x : str, y : int) : int;
+        """)
+        self.assertTrue(res)
+        self.assertTrue(isinstance(res.body[0], DeclFun))
+        self.assertTrue(isinstance(res.body[0].p[0], Param))
+        self.assertTrue(res.body[0].p[0].name, "x")
+        self.assertTrue(res.body[0].p[0].t, "int")
+        txt = res.to_tl4t()
+        self.assertEqual(str(txt), "fun a(x : str, y : int) : int;\n")
         res = test.parse("""
             fun a(x : str) : int
             {
@@ -116,15 +132,47 @@ class GrammarFile_Test(unittest.TestCase):
             }
         """)
         self.assertTrue(res)
-        self.assertTrue(isinstance(res.node[0], DeclFun))
-        self.assertTrue(isinstance(res.node[0].p[0], Param))
-        self.assertTrue(res.node[0].p[0].name, "x")
-        self.assertTrue(res.node[0].p[0].t, "int")
-        self.assertTrue(isinstance(res.node[0].block[0], DeclVar))
-        self.assertTrue(res.node[0].block[0].name, "z")
-        self.assertTrue(res.node[0].block[0].t, "toto")
+        self.assertTrue(isinstance(res.body[0], DeclFun))
+        self.assertTrue(isinstance(res.body[0].p[0], Param))
+        self.assertTrue(res.body[0].p[0].name, "x")
+        self.assertTrue(res.body[0].p[0].t, "int")
+        self.assertTrue(isinstance(res.body[0].block.body[0], DeclVar))
+        self.assertTrue(res.body[0].block.body[0].name, "z")
+        self.assertTrue(res.body[0].block.body[0].t, "toto")
+        txt = res.to_tl4t()
+        self.assertEqual(str(txt), "fun a(x : str) : int\n{\n    var z : toto;\n}")
         res = test.parse("""
             a = 42;
         """)
         self.assertTrue(res)
-        self.assertTrue(isinstance(res.node[0], Expr))
+        self.assertTrue(isinstance(res.body[0], ExprStmt))
+        txt = res.to_tl4t()
+        self.assertEqual(str(txt), "a = 42;\n")
+        res = test.parse("""
+            a = +--+42;
+        """)
+        self.assertTrue(res)
+        self.assertTrue(isinstance(res.body[0], ExprStmt))
+        txt = res.to_tl4t()
+        self.assertEqual(str(txt), "a = +--+42;\n")
+        res = test.parse("""
+            a = 12 - 42;
+        """)
+        self.assertTrue(res)
+        self.assertTrue(isinstance(res.body[0], ExprStmt))
+        txt = res.to_tl4t()
+        self.assertEqual(str(txt), "a = 12 - 42;\n")
+        res = test.parse("""
+            a = f(12, "blabla", z);
+        """)
+        self.assertTrue(res)
+        self.assertTrue(isinstance(res.body[0], ExprStmt))
+        txt = res.to_tl4t()
+        self.assertEqual(str(txt), """a = f(12, "blabla", z);\n""")
+        res = test.parse("""
+            a = (7 - 8) * 43;
+        """)
+        self.assertTrue(res)
+        self.assertTrue(isinstance(res.body[0], ExprStmt))
+        txt = res.to_tl4t()
+        self.assertEqual(str(txt), """a = (7 - 8) * 43;\n""")

@@ -1,41 +1,43 @@
-# type set for type checking
+# scope for type checking
 from pyrser import fmt
+from pyrser.type_checking.symbol import *
 from pyrser.type_checking.signature import *
 
 
-def RawSet(*signature: [Signature]) -> 'Set':
-    return Set(None, signature)
+# forward just for annotation (not the same id that final type)
+class Scope: pass
 
 
-class Set(Symbol):
+class Scope(Symbol):
     """
-    Set of Signature for a Scope/namespace/type etc...
+    Scope of Signature for a Scope/namespace/type etc...
     Basic abstraction of type checking.
-    Set is not a 'pure' python set but something between a set and a dict...
+    Scope is not a 'pure' python set but something between a set and a dict...
     """
 
-    def __init__(self, name: str, ls: [Signature]=None, istype=False):
+    def __init__(self, name: str=None, sig: [Signature]=None):
+        """Unnamed scope for global scope"""
         super().__init__(name)
         self._ntypes = 0
         self._nvars = 0
         self._nfuns = 0
         self._hsig = {}
-        if ls is not None:
-            self.update(ls)
-        self._istype = istype
+        if sig is not None:
+            if isinstance(sig, Signature):
+                self.add(sig)
+            elif len(sig) > 0:
+                self.update(sig)
 
     def to_fmt(self) -> fmt.indentable:
         """
         Return an Fmt representation for pretty-printing
         """
         qual = "scope"
-        if self.is_type():
-            qual = "type"
         txt = fmt.sep(" ", [qual])
         name = self.show_name()
         if name != "":
             txt.lsdata.append(name)
-        if hasattr(self, '_hsig') and len(self._hsig) > 0:
+        if len(self._hsig) > 0:
             lsb = []
             for k in sorted(self._hsig.keys()):
                 s = self._hsig[k]
@@ -79,15 +81,15 @@ class Set(Symbol):
         return False
 
     # |=
-    def __ior__(self, ls: 'Set') -> 'Set':
+    def __ior__(self, sig: Scope) -> Scope:
         """|= operator"""
-        return self.update(ls)
+        return self.update(sig)
 
-    def update(self, ls: 'Set') -> 'Set':
+    def update(self, sig: Scope) -> Scope:
         """Update the Set with values of another Set"""
-        values = ls
-        if hasattr(ls, 'values'):
-            values = ls.values()
+        values = sig
+        if hasattr(sig, 'values'):
+            values = sig.values()
         for s in values:
             if s.internal_name() not in self._hsig:
                 self._hsig[s.internal_name()] = s
@@ -98,22 +100,22 @@ class Set(Symbol):
         return self
 
     # |
-    def __or__(self, ls: 'Set') -> 'Set':
+    def __or__(self, sig: Scope) -> Scope:
         """| operator"""
-        return self.union(ls)
+        return self.union(sig)
 
-    def union(self, ls: 'Set') -> 'Set':
+    def union(self, sig: Scope) -> Scope:
         """Create a new Set produce by the union of 2 Set"""
-        new = RawSet(*tuple(self._hsig.values()))
-        new |= ls
+        new = Scope(sig=self._hsig.values())
+        new |= sig
         return new
 
     # &=
-    def __iand__(self, ls: 'Set') -> 'Set':
+    def __iand__(self, sig: Scope) -> Scope:
         """&= operator"""
-        return self.intersection_update(ls)
+        return self.intersection_update(sig)
 
-    def intersection_update(self, oset: 'Set') -> 'Set':
+    def intersection_update(self, oset: Scope) -> Scope:
         """Update Set with common values of another Set"""
         keys = list(self._hsig.keys())
         for k in keys:
@@ -124,22 +126,22 @@ class Set(Symbol):
         return self
 
     # &
-    def __and__(self, ls: 'Set') -> 'Set':
+    def __and__(self, sig: Scope) -> Scope:
         """& operator"""
-        return self.intersection(ls)
+        return self.intersection(sig)
 
-    def intersection(self, ls: 'Set') -> 'Set':
+    def intersection(self, sig: Scope) -> Scope:
         """Create a new Set produce by the intersection of 2 Set"""
-        new = RawSet(*tuple(self._hsig.values()))
-        new &= ls
+        new = Scope(sig=self._hsig.values())
+        new &= sig
         return new
 
     # -=
-    def __isub__(self, ls: 'Set') -> 'Set':
+    def __isub__(self, sig: Scope) -> Scope:
         """-= operator"""
-        return self.difference_update(ls)
+        return self.difference_update(sig)
 
-    def difference_update(self, oset: 'Set') -> 'Set':
+    def difference_update(self, oset: Scope) -> Scope:
         """Remove values common with another Set"""
         keys = list(self._hsig.keys())
         for k in keys:
@@ -148,22 +150,22 @@ class Set(Symbol):
         return self
 
     # -
-    def __sub__(self, ls: 'Set') -> 'Set':
+    def __sub__(self, sig: Scope) -> Scope:
         """- operator"""
-        return self.difference(ls)
+        return self.difference(sig)
 
-    def difference(self, ls: 'Set') -> 'Set':
+    def difference(self, sig: Scope) -> Scope:
         """Create a new Set produce by a Set subtracted by another Set"""
-        new = RawSet(*tuple(self._hsig.values()))
-        new -= ls
+        new = Scope(sig=self._hsig.values())
+        new -= sig
         return new
 
     # ^=
-    def __ixor__(self, ls: 'Set') -> 'Set':
+    def __ixor__(self, sig: Scope) -> Scope:
         """^= operator"""
-        return self.symmetric_difference_update(ls)
+        return self.symmetric_difference_update(sig)
 
-    def symmetric_difference_update(self, oset: 'Set') -> 'Set':
+    def symmetric_difference_update(self, oset: Scope) -> Scope:
         """Remove common values and Update specific values from another Set"""
         skey = set()
         keys = list(self._hsig.keys())
@@ -178,14 +180,14 @@ class Set(Symbol):
         return self
 
     # ^
-    def __xor__(self, ls: 'Set') -> 'Set':
+    def __xor__(self, sig: Scope) -> Scope:
         """^ operator"""
-        return self.symmetric_difference(ls)
+        return self.symmetric_difference(sig)
 
-    def symmetric_difference(self, ls: 'Set') -> 'Set':
+    def symmetric_difference(self, sig: Scope) -> Scope:
         """Create a new Set with values present in only one Set"""
-        new = RawSet(*tuple(self._hsig.values()))
-        new ^= ls
+        new = Scope(sig=self._hsig.values())
+        new ^= sig
         return new
 
     def add(self, it: Signature) -> bool:
@@ -239,7 +241,7 @@ class Set(Symbol):
             item = self._hsig[key]
         return item
 
-    def get_by_symbol_name(self, name: str) -> 'Set':
+    def get_by_symbol_name(self, name: str) -> Scope:
         """
         Retrieve a Set of all signature by symbol name
         """
@@ -247,9 +249,9 @@ class Set(Symbol):
         for s in self._hsig.values():
             if s.name == name:
                 lst.append(s)
-        return RawSet(*tuple(lst))
+        return Scope(sig=lst)
 
-    def get_by_return_type(self, tname: str) -> 'Set':
+    def get_by_return_type(self, tname: str) -> Scope:
         """
         Retrieve a Set of all signature by (return) type
         """
@@ -257,9 +259,9 @@ class Set(Symbol):
         for s in self._hsig.values():
             if s.tret == tname:
                 lst.append(s)
-        return RawSet(*tuple(lst))
+        return Scope(sig=lst)
 
-    def get_by_params(self, *params) -> ('Set', 'Set'):
+    def get_by_params(self, *params) -> (Scope, Scope):
         """
         Retrieve a Set of all signature that match the parameter list.
         Must be overload in some language to handle things like ellipsis (...).
@@ -283,14 +285,14 @@ class Set(Symbol):
                 if mcnt == len(s.tparams) and mcnt == len(params):
                     # select this signature
                     lst.append(s)
-        scopep = RawSet()
+        scopep = Scope()
         # for each selected signature
         for s in lst:
             # for each params in this signature
             for i in range(len(s.tparams)):
                 # collect this params
                 scopep.update(params[i].get_by_return_type(s.tparams[i]))
-        return (RawSet(*tuple(lst)), scopep)
+        return (Scope(sig=lst), scopep)
 
     def values(self) -> [Signature]:
         """
@@ -310,7 +312,8 @@ class Set(Symbol):
         """
         n = 0
         for s in self._hsig.values():
-            if hasattr(s, 'is_type') and s.is_type():
+            #if isinstance(s, Type):
+            if type(s).__name__ == 'Type':
                 n += 1
         return n
 
@@ -334,20 +337,12 @@ class Set(Symbol):
                 n += 1
         return n
 
-    def is_type(self, change=None) -> bool:
-        """
-        If this scope define a new Type (language specific).
-        You could change it!
-        """
-        if change is not None and type(change) is bool:
-            self._istype = change
-        return self._istype
-
     def set_name(self, name: str):
         """
         You could set the name after construction
         """
         self.name = name
+        # update internal names
         lsig = self._hsig.values()
         self._hsig = {}
         for s in lsig:

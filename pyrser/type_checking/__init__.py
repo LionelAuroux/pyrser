@@ -1,10 +1,9 @@
-from pyrser.type_checking.set import Set, RawSet
+from pyrser.type_checking.symbol import Symbol
 from pyrser.type_checking.signature import Signature
-from pyrser.type_checking.signature import Symbol
+from pyrser.type_checking.scope import Scope
 
 __all__ = [
-    'RawSet',
-    'Set',
+    'Scope',
     'Symbol',
     'Signature'
 ]

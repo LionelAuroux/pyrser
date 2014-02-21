@@ -5,7 +5,7 @@
 source =
 [   
     @ignore("C/C++")
-    [stmt:s #new_stmt(_, s)]+
+    [stmt:s #new_rootstmt(_, s)]+
     eof
 ]
 
@@ -47,12 +47,28 @@ type = [ id ]
 
 block =
 [
-    '{' [stmt:s #new_stmt(_, s) ]* '}'
+    '{' [stmt:s #new_stmt(_, s) ]+ '}'
 ]
 
-expr = [ assignement_expression:>_ ';' ]
+expr = [ assignement_expression:e ';' #new_expr_stmt(_, e) ]
 
-assign_op = [ @ignore('null') ['=' !'='| "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|="]:op #new_raw(_, op) ]
+assign_op = [
+    @ignore('null')
+    [
+        '=' !'='
+        | "+="
+        | "-="
+        | "*="
+        | "/="
+        | "%="
+        | "<<="
+        | ">>="
+        | "&="
+        | "^="
+        | "|="
+    ]:op
+    #new_raw(_, op)
+]
 assignement_expression =
 [
     or_expression:>_
@@ -107,7 +123,16 @@ equality_expression =
     ]*
 ]
 
-cmp_op = [ @ignore('null') ["<=" | ">=" | '<' !'<' | '>' !'>' ]:op #new_raw(_, op) ]
+cmp_op = [
+    @ignore('null')
+    [
+        "<="
+        | ">="
+        | '<' !'<'
+        | '>' !'>'
+    ]:op
+    #new_raw(_, op)
+]
 relational_expression =
 [
     shift_expression:>_
@@ -129,7 +154,14 @@ shift_expression =
     ]*
 ]
 
-add_op = [ @ignore('null') ['+' !['+'|'='] | '-' !['-'|'='|'>']]:op #new_raw(_, op) ]
+add_op = [
+    @ignore('null')
+    [
+        '+' !['+'|'=']
+        | '-' !['-'|'='|'>']
+    ]:op
+    #new_raw(_, op)
+]
 additive_expression =
 [
     multiplicative_expression:>_
@@ -168,7 +200,7 @@ unary_expression =
         __scope__:op
         [   unary_op:>op
         |   Base.id:i
-            #is_unary(op, i)
+            #new_raw(op, i)
         ]
         unary_expression:expr
         #new_unary(_, op, expr)
@@ -178,27 +210,32 @@ postfix_expression =
 [
     primary_expression:>_
     [
+        __scope__:pexp
+        [
 /*        '[' expression:expr ']' #new_array_call(e, e, expr) */
-         '(' func_arg_list?:args ')' #new_func_call(_, _, args)
+         '(' func_arg_list?:args ')' #new_func_call(pexp, _, args)
 /*
         | '.' identifier:i #new_dot(_, _, i)
         | "->" identifier:i #new_arrow(_, _, i)
         | ["++"|"--"]:op #new_raw(op, op) #new_post(_, op, _)
 */
+        ]
+        #bind('_', pexp)
     ]*
 ]
 
 func_arg_list =
 [
     assignement_expression:a #new_arg(_, a)
-    [   ','
+    [
+        ','
         assignement_expression:a #new_arg(_, a)
     ]*
 ]
 
 primary_expression =
 [
-    '(' expression:expr ')' #new_paren(_, expr)
+    '(' or_expression:expr ')' #new_paren(_, expr)
     |[ literal | identifier]:>_
 ]
 
