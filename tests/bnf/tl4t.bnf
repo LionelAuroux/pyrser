@@ -67,7 +67,7 @@ assign_op = [
         | "^="
         | "|="
     ]:op
-    #new_raw(_, op)
+    #new_operator(_, op)
 ]
 assignement_expression =
 [
@@ -79,7 +79,7 @@ assignement_expression =
     ]*
 ]
 
-or_op = [ @ignore('null') ["|" !["|"|"="]]:op #new_raw(_, op) ]
+or_op = [ @ignore('null') ["|" !["|"|"="]]:op #new_operator(_, op) ]
 or_expression =
 [
     xor_expression:>_
@@ -90,7 +90,7 @@ or_expression =
     ]*
 ]
 
-xor_op = [ @ignore('null') ["^" !"="]:op #new_raw(_, op) ]
+xor_op = [ @ignore('null') ["^" !"="]:op #new_operator(_, op) ]
 xor_expression =
 [
     and_expression:>_
@@ -101,7 +101,7 @@ xor_expression =
     ]*
 ]
 
-and_op = [ @ignore('null') ["&" !["&"|"="]]:op #new_raw(_, op) ]
+and_op = [ @ignore('null') ["&" !["&"|"="]]:op #new_operator(_, op) ]
 and_expression =
 [
     equality_expression:>_
@@ -112,7 +112,7 @@ and_expression =
     ]*
 ]
 
-eqneq_op = [ @ignore('null') ["==" | "!="]:op #new_raw(_, op) ]
+eqneq_op = [ @ignore('null') ["==" | "!="]:op #new_operator(_, op) ]
 equality_expression =
 [
     relational_expression:>_
@@ -131,7 +131,7 @@ cmp_op = [
         | '<' !'<'
         | '>' !'>'
     ]:op
-    #new_raw(_, op)
+    #new_operator(_, op)
 ]
 relational_expression =
 [
@@ -143,7 +143,7 @@ relational_expression =
     ]*
 ]
 
-shift_op = [ @ignore('null') ["<<" !"=" | ">>" !"="]:op #new_raw(_, op) ]
+shift_op = [ @ignore('null') ["<<" !"=" | ">>" !"="]:op #new_operator(_, op) ]
 shift_expression =
 [
     additive_expression:>_
@@ -160,7 +160,7 @@ add_op = [
         '+' !['+'|'=']
         | '-' !['-'|'='|'>']
     ]:op
-    #new_raw(_, op)
+    #new_operator(_, op)
 ]
 additive_expression =
 [
@@ -172,7 +172,7 @@ additive_expression =
     ]*
 ]
 
-mul_op = [ @ignore('null') [['*'|'/'|'%']:op !'='] #new_raw(_, op) ]
+mul_op = [ @ignore('null') [['*'|'/'|'%']:op !'='] #new_operator(_, op) ]
 multiplicative_expression =
 [
     unary_expression:>_
@@ -191,7 +191,7 @@ unary_op =
     | '!' !'='
     | '+' !'='
     | '-' !['>'|'=']
-    ]:op #new_raw(_, op)
+    ]:op #new_operator(_, op)
 ]
 unary_expression =
 [
@@ -200,7 +200,7 @@ unary_expression =
         __scope__:op
         [   unary_op:>op
         |   Base.id:i
-            #new_raw(op, i)
+            #new_operator(op, i)
         ]
         unary_expression:expr
         #new_unary(_, op, expr)
@@ -217,7 +217,7 @@ postfix_expression =
 /*
         | '.' identifier:i #new_dot(_, _, i)
         | "->" identifier:i #new_arrow(_, _, i)
-        | ["++"|"--"]:op #new_raw(op, op) #new_post(_, op, _)
+        | ["++"|"--"]:op #new_operator(op, op) #new_post(_, op, _)
 */
         ]
         #bind('_', pexp)
@@ -313,13 +313,14 @@ char_const = [ encoding_prefix? Base.char ]
 literal =
 [
     @ignore('null')
+    __scope__:t
     [
-        hexadecimal_const_int
-        | octal_const
-        | double_const
-        | decimal_const
-        | string_const
-        | char_const
+        hexadecimal_const_int #set(t, "int")
+        | octal_const #set(t, "int")
+        | double_const #set(t, "double")
+        | decimal_const #set(t, "int")
+        | string_const #set(t, "string")
+        | char_const #set(t, "char")
     ]:val
-    #new_literal(_, val)
+    #new_literal(_, val, t)
 ]

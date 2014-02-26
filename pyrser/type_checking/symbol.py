@@ -1,3 +1,4 @@
+# symbol for type checking
 import weakref
 
 class Symbol:
@@ -11,13 +12,17 @@ class Symbol:
         self.name = name
         self.set_parent(parent)
 
-    def set_parent(self, parent):
+    def set_parent(self, parent) -> object:
         if parent is not None:
             self.parent = weakref.ref(parent)
         else:
             self.parent = None
+        return self
 
-    def get_parent(self):
+    def get_parent(self) -> object:
+        """
+        Auto deref parent and return the instance.
+        """
         if self.parent is not None:
             return self.parent()
         return None
@@ -32,10 +37,17 @@ class Symbol:
         while p is not None:
             lstparent.append(p)
             p = p.get_parent()
+        return lstparent
+
+    def get_scope_names(self):
+        """
+        Return the list of all contained scope from global to local
+        """
         # allow global scope to have an None string instance
         lscope = []
-        for scope in reversed(lstparent):
+        for scope in reversed(self.get_scope_list()):
             if scope.name is not None:
+                # handle fun/block scope decoration
                 lscope.append(scope.name)
         return lscope
 
@@ -44,7 +56,7 @@ class Symbol:
         """
         Return a convenient name for type checking
         """
-        return ".".join(self.get_scope_list())
+        return ".".join(self.get_scope_names())
 
     # to overload for new language
     # TODO: to overload properly in signature/var/val etc...
@@ -52,9 +64,15 @@ class Symbol:
         """
         Return the unique internal name
         """
-        unq = "_".join(self.get_scope_list())
+        unq = "_".join(self.get_scope_names())
         if hasattr(self, 'tparams'):
             unq += "_" + "_".join(self.tparams)
         if hasattr(self, 'tret'):
             unq += "_" + self.tret
         return unq
+
+    def __str__(self):
+        return self.show_name()
+
+    def __repr__(self):
+        return self.internal_name()

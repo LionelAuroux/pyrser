@@ -14,7 +14,6 @@ class Type(Scope):
     def __init__(self, name: str, sig: [Signature]=None):
         super().__init__(name)
 
-
     def to_fmt(self) -> fmt.indentable:
         """
         Return an Fmt representation for pretty-printing

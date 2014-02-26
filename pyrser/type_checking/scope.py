@@ -15,15 +15,20 @@ class Scope(Symbol):
     Scope is not a 'pure' python set but something between a set and a dict...
     """
 
-    def __init__(self, name: str=None, sig: [Signature]=None):
+    def __init__(self, name: str=None, sig: [Signature]=None, auto_update_parent=True):
         """Unnamed scope for global scope"""
         super().__init__(name)
+        # during typing, this scope need or not feedback pass
+        self.need_feedback = False
+        # auto update parent during add of Signature
+        self.auto_update_parent = auto_update_parent
+        # TODO: ...could be unusable
         self._ntypes = 0
         self._nvars = 0
         self._nfuns = 0
         self._hsig = {}
         if sig is not None:
-            if isinstance(sig, Signature):
+            if isinstance(sig, Signature) or isinstance(sig, Scope):
                 self.add(sig)
             elif len(sig) > 0:
                 self.update(sig)
@@ -74,9 +79,9 @@ class Scope(Symbol):
 
     # in
     def __contains__(self, s: Signature) -> bool:
-        if type(s) is Signature:
+        if isinstance(s, Signature):
             return s.internal_name() in self._hsig
-        if type(s) is str:
+        elif isinstance(s, str):
             return s in self._hsig
         return False
 
@@ -91,11 +96,9 @@ class Scope(Symbol):
         if hasattr(sig, 'values'):
             values = sig.values()
         for s in values:
-            if s.internal_name() not in self._hsig:
-                self._hsig[s.internal_name()] = s
-            else:
-                raise KeyError(s.internal_name() + ' redefine')
-            s.set_parent(self)
+            self._hsig[s.internal_name()] = s
+            if self.auto_update_parent:
+                s.set_parent(self)
         self.__update_count()
         return self
 
@@ -197,7 +200,8 @@ class Scope(Symbol):
         if it.internal_name() in self._hsig:
             return False
         self._hsig[it.internal_name()] = it
-        it.set_parent(self)
+        if self.auto_update_parent:
+            it.set_parent(self)
         self.__update_count()
         return True
 
@@ -249,7 +253,14 @@ class Scope(Symbol):
         for s in self._hsig.values():
             if s.name == name:
                 lst.append(s)
-        return Scope(sig=lst)
+        # include parent
+        # TODO: see all case of local redefinition for
+        # global overloads
+        if len(lst) == 0:
+            p = self.get_parent()
+            if p is not None:
+                return p.get_by_symbol_name(name)
+        return Scope(sig=lst, auto_update_parent=False)
 
     def get_by_return_type(self, tname: str) -> Scope:
         """
@@ -259,9 +270,22 @@ class Scope(Symbol):
         for s in self._hsig.values():
             if s.tret == tname:
                 lst.append(s)
-        return Scope(sig=lst)
+        return Scope(sig=lst, auto_update_parent=False)
 
-    def get_by_params(self, *params) -> (Scope, Scope):
+    def get_all_polymorphic_return(self) -> bool:
+        """
+        For now, polymorphic return type are handle by symbol artefact.
+
+        --> possible multi-polymorphic but with different constraint attached!
+        """
+        lst = []
+        for s in self._hsig.values():
+            if s.tret.is_polymorphic():
+                # TODO: must encapsulate s into a subscope for meta-var instanciation
+                lst.append(s)
+        return Scope(sig=lst, auto_update_parent=False)
+
+    def get_by_params(self, *params) -> (Scope, [Scope]):
         """
         Retrieve a Set of all signature that match the parameter list.
         Must be overload in some language to handle things like ellipsis (...).
@@ -270,29 +294,63 @@ class Scope(Symbol):
             pair[1] the overloads for the parameters
         """
         lst = []
+        scopep = [None] * len(params)
         # for each of our signature
         for s in self._hsig.values():
             # number of matchable params
             mcnt = 0
             # for each params of this signature
             if hasattr(s, 'tparams'):
+                # temporary collect
+                tmp = [None] * len(s.tparams)
                 for i in range(len(s.tparams)):
                     # match param of the signature
                     m = params[i].get_by_return_type(s.tparams[i])
                     if len(m) > 0:
                         mcnt += 1
+                        if tmp[i] is None:
+                            tmp[i] = m
+                        else:
+                            tmp[i].update(m)
+                    # TODO:???
+                    # co/contra-variance before or after poly?
+                    # iopi: FOR ME, BEFORE
+                    elif s.tparams[i].is_polymorphic():
+                        # handle polymorphic parameter
+                        mcnt += 1
+                        if tmp[i] is None:
+                            tmp[i] = Scope(sig=params[i].values())
+                        else:
+                            tmp[i].update(params[i].values())
+                        # we must instanciate params[i].values
+                        #...
+                    else:
+                        # handle polymorphic return type
+                        m = params[i].get_all_polymorphic_return()
+                        if len(m) > 0:
+                            mcnt += 1
+                            if tmp[i] is None:
+                                tmp[i] = m
+                            else:
+                                tmp[i].update(m)
+                            # we must instanciate s.tparams[i]
+                            #...
+                        # here handle (co/contra) variance
+                        # we just need to search a t1->t2
+                        # and add it into the tree (with/without warnings)
+                        # ...TODO
                 # this could must be redefine for handle language with ellipsis
                 if mcnt == len(s.tparams) and mcnt == len(params):
                     # select this signature
+                    # TODO: must encapsul s if contains polymorphic parameter...
                     lst.append(s)
-        scopep = Scope()
-        # for each selected signature
-        for s in lst:
-            # for each params in this signature
-            for i in range(len(s.tparams)):
-                # collect this params
-                scopep.update(params[i].get_by_return_type(s.tparams[i]))
-        return (Scope(sig=lst), scopep)
+                    for i in range(mcnt):
+                        m = tmp[i]
+                        if scopep[i] is None:
+                            scopep[i] = m
+                        else:
+                            scopep[i].update(m)
+        return (Scope(sig=lst, auto_update_parent=False), scopep)
 
     def values(self) -> [Signature]:
         """
@@ -312,7 +370,6 @@ class Scope(Symbol):
         """
         n = 0
         for s in self._hsig.values():
-            #if isinstance(s, Type):
             if type(s).__name__ == 'Type':
                 n += 1
         return n

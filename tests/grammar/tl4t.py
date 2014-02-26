@@ -6,12 +6,14 @@ from pyrser import fmt
 from pyrser.parsing.node import *
 from pyrser.hooks.echo import *
 from pyrser.hooks.vars import *
+from pyrser.hooks.set import *
+from pyrser.type_checking.inference import *
 
 
 ### ABSTRACTION
 
 
-class BlockStmt(Node):
+class BlockStmt(Node, Inference):
     def __init__(self, root=False):
         self.body = []
         # if root node (no brace when pprint)
@@ -28,8 +30,12 @@ class BlockStmt(Node):
             lsblock = fmt.block('{\n', '}', [fmt.tab(lssub)])
         return lsblock
 
+    # to connect Inference
+    def type_algos(self):
+        return (self.infer_block, self.feedback_block, [self.body])
 
-class DeclVar(Node):
+
+class DeclVar(Node, Inference):
     def __init__(self, name: str, t: str, expr=None):
         super().__init__()
         self.name = name
@@ -50,7 +56,7 @@ class DeclVar(Node):
         return fmt.end(';\n', [fmt.sep(" ", lsdecl)])
 
 
-class DeclFun(DeclVar):
+class DeclFun(DeclVar, Inference):
     def __init__(self, name: str, t: str, p: [], block=None):
         super().__init__(name, t)
         self.p = p
@@ -80,7 +86,7 @@ class DeclFun(DeclVar):
         return lsblock
 
 
-class Param(Node):
+class Param(Node, Inference):
     def __init__(self, n: str, t: str):
         self.name = n
         self.t = t
@@ -89,7 +95,7 @@ class Param(Node):
         return fmt.sep(" ", [self.name, ':', self.t])
 
 
-class Terminal(Node):
+class Terminal(Node, Inference):
     def __init__(self, value):
         self.value = value
 
@@ -97,19 +103,32 @@ class Terminal(Node):
         return self.value
 
 
-class Literal(Terminal):
-    pass
+class Literal(Terminal, Inference):
+
+    def __init__(self, value, t):
+        self.value = value
+        self.type = t
+
+    # to connect Inference
+    def type_algos(self):
+        return (self.infer_literal, self.feedback_literal, [self.value, self.type])
 
 
-class Id(Terminal):
-    pass
+class Id(Terminal, Inference):
+
+    # to connect Inference
+    def type_algos(self):
+        return (self.infer_id, self.feedback_id, [self.value])
 
 
-class Raw(Terminal):
-    pass
+class Operator(Terminal, Inference):
+
+    # to connect Inference
+    def type_algos(self):
+        return (self.infer_operator, self.feedback_operator, [self.value])
 
 
-class Expr(Node):
+class Expr(Node, Inference):
     def __init__(self, ce: 'expr', p: ['expr']):
         self.call_expr = ce
         self.p = p
@@ -125,32 +144,40 @@ class Expr(Node):
         ])
         return lsblock
 
+    # to connect Inference
+    def type_algos(self):
+        return (self.infer_fun, self.feedback_fun, [self.call_expr, self.p])
 
-class ExprStmt(Node):
+
+class ExprStmt(Node, Inference):
     def __init__(self, e: Expr):
         self.expr = e
 
     def to_tl4t(self):
         return fmt.end(";\n", self.expr.to_tl4t())
 
+    # to connect Inference
+    def type_algos(self):
+        return (self.infer_subexpr, self.feedback_subexpr, [self.expr])
 
-class Binary(Expr):
-    def __init__(self, left: Expr, op: Raw, right: Expr):
+
+class Binary(Expr, Inference):
+    def __init__(self, left: Expr, op: Operator, right: Expr):
         super().__init__(op, [left, right])
 
     def to_tl4t(self):
         return fmt.sep(" ", [self.p[0].to_tl4t(), self.call_expr.to_tl4t(), self.p[1].to_tl4t()])
 
 
-class Unary(Expr):
-    def __init__(self, op: Raw, expr: Expr):
+class Unary(Expr, Inference):
+    def __init__(self, op: Operator, expr: Expr):
         super().__init__(op, [expr])
 
     def to_tl4t(self):
         return fmt.sep("", [self.call_expr.to_tl4t(), self.p[0].to_tl4t()])
 
 
-class Paren(Expr):
+class Paren(Expr, Inference):
     def __init__(self, expr: Expr):
         super().__init__(None, [expr])
 
@@ -259,8 +286,8 @@ def new_paren(self, ast, expr):
 
 
 @meta.hook(TL4T)
-def new_literal(self, ast, val):
-    ast.set(Literal(self.value(val)))
+def new_literal(self, ast, val, t):
+    ast.set(Literal(self.value(val), t.value))
     return True
 
 
@@ -271,6 +298,6 @@ def new_id(self, ast, ident):
 
 
 @meta.hook(TL4T)
-def new_raw(self, ast, op):
-    ast.set(Raw(self.value(op)))
+def new_operator(self, ast, op):
+    ast.set(Operator(self.value(op)))
     return True

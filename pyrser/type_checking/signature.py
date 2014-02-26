@@ -1,7 +1,8 @@
-# function or var signature
+# basically function signature, but base class for many features
 import weakref
 from pyrser import fmt
 from pyrser.type_checking.symbol import *
+from pyrser.type_checking.type_name import *
 
 
 class Signature(Symbol):
@@ -11,26 +12,31 @@ class Signature(Symbol):
 
     def __init__(self, name: str, tret: str, *tparams):
         super().__init__(name)
+        if not isinstance(tret, TypeName):
+            tret = TypeName(tret)
         self.tret = tret
         if len(tparams) > 0:
-            self.tparams = tparams
+            self.tparams = []
+            for p in tparams:
+                if not isinstance(p, TypeName):
+                    p = TypeName(p)
+                self.tparams.append(p)
 
     def to_fmt(self):
         """
         Return an Fmt representation for pretty-printing
         """
         params = ""
-        txt = fmt.sep(" ", ['var'])
+        txt = fmt.sep(" ", ['fun'])
         name = self.show_name()
         if name != "":
             txt.lsdata.append(name)
         if hasattr(self, 'tparams'):
             params = '(' + ", ".join(self.tparams) + ')'
-            txt.lsdata[0] = 'fun'
             txt.lsdata.append(': ' + params)
-            txt.lsdata.append('-> ' + self.tret)
         else:
-            txt.lsdata.append(': ' + self.tret)
+            txt.lsdata.append(': ()')
+        txt.lsdata.append('-> ' + self.tret)
         return txt
 
     def __str__(self):

@@ -1,9 +1,10 @@
 from pyrser import meta
+from pyrser.parsing import Node
 from pyrser.parsing.base import BasicParser
 
 
-@meta.hook(BasicParser, "copy")
-def copy_node(self, dst, src):
+@meta.hook(BasicParser, "set")
+def set_node(self, dst, src):
     """
         Basically copy one node to another.
         usefull to transmit a node from a terminal
@@ -11,11 +12,14 @@ def copy_node(self, dst, src):
 
         example::
             R = [
-                In : node #copy(_, node)
+                In : node #set(_, node)
             ]
 
         here the node return by the rule In is
         also the node return by the rule R
     """
-    dst.set(src)
+    if not isinstance(src, Node):
+        dst.value = src
+    else:
+        dst.set(src)
     return True
