@@ -21,7 +21,7 @@ rules of thumb:
     * Each inherited rules exists with and without the namespace prefix in your child class::
         
         class A(grammar.Grammar):
-            grammar="rule ::= id eof;"
+            grammar="rule = [ id eof ]"
 
         class B(grammar.Grammar, A):
             # here exist ``A.rule`` and ``rule``.
@@ -31,10 +31,10 @@ rules of thumb:
     * So the prefixed rule name always exists::
 
         class A(grammar.Grammar):
-            grammar="rule ::= id eof;"
+            grammar="rule = [ id eof ]"
 
         class B(grammar.Grammar, A):
-            grammar="rule ::= A.rule | string eof;"
+            grammar="rule = [ A.rule | string eof ]"
 
 
 Default rules

@@ -347,54 +347,54 @@ A complete grammar for a JSON parser looks like this::
                 
         """
 
-        @meta.hook(JSON)
-        def is_num(self, ast, n):
-            ast.node = float(self.textnode(n))
-            return True
+    @meta.hook(JSON)
+    def is_num(self, ast, n):
+        ast.node = float(self.value(n))
+        return True
 
-        @meta.hook(JSON)
-        def is_str(self, ast, s):
-            ast.node = self.textnode(s).strip('"')
-            return True
+    @meta.hook(JSON)
+    def is_str(self, ast, s):
+        ast.node = self.value(s).strip('"')
+        return True
 
-        @meta.hook(JSON)
-        def is_bool(self, ast, b):
-            bval = self.textnode(b)
-            if bval == "true":
-                ast.node = True
-            if bval == "false":
-                ast.node = False
-            return True
+    @meta.hook(JSON)
+    def is_bool(self, ast, b):
+        bval = self.value(b)
+        if bval == "true":
+            ast.node = True
+        if bval == "false":
+            ast.node = False
+        return True
 
-        @meta.hook(JSON)
-        def is_none(self, ast):
-            ast.node = None
-            return True
+    @meta.hook(JSON)
+    def is_none(self, ast):
+        ast.node = None
+        return True
 
-        @meta.hook(JSON)
-        def is_pair(self, ast, s, v):
-            ast.node = (self.textnode(s).strip('"'), v.node)
-            return True
+    @meta.hook(JSON)
+    def is_pair(self, ast, s, v):
+        ast.node = (self.value(s).strip('"'), v.node)
+        return True
 
-        @meta.hook(JSON)
-        def is_array(self, ast):
-            ast.node = []
-            return True
+    @meta.hook(JSON)
+    def is_array(self, ast):
+        ast.node = []
+        return True
 
-        @meta.hook(JSON)
-        def add_item(self, ast, item):
-            ast.node.append(item.node)
-            return True
+    @meta.hook(JSON)
+    def add_item(self, ast, item):
+        ast.node.append(item.node)
+        return True
 
-        @meta.hook(JSON)
-        def is_dict(self, ast):
-            ast.node = {}
-            return True
+    @meta.hook(JSON)
+    def is_dict(self, ast):
+        ast.node = {}
+        return True
 
-        @meta.hook(JSON)
-        def add_kv(self, ast, item):
-            ast.node[item.node[0]] = item.node[1]
-            return True
+    @meta.hook(JSON)
+    def add_kv(self, ast, item):
+        ast.node[item.node[0]] = item.node[1]
+        return True
 
 7- Parser in action
 -------------------
