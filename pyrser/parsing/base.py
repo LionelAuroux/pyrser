@@ -116,12 +116,12 @@ class BasicParser(metaclass=MetaBasicParser):
 
 ### STREAM
 
-    def parsed_stream(self, sNewStream: str, sName="string"):
+    def parsed_stream(self, content: str, name="string"):
         """Push a new Stream into the parser.
         All subsequent called functions will parse this new stream,
         until the 'popStream' function is called.
         """
-        self.__streams.append(Stream(sNewStream, sName))
+        self.__streams.append(Stream(content, name))
 
     def pop_stream(self):
         """Pop the last Stream pushed on to the parser stack."""

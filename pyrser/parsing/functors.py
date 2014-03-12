@@ -356,7 +356,7 @@ class MetaDirectiveWrapper(type):
         return cls
 
 
-class DirectiveWrapper(metaclass=MetaDirectiveWrapper):
+class DirectiveWrapper(Functor, metaclass=MetaDirectiveWrapper):
     """functor to wrap begin/end directive"""
 
     def __init__(self, ):

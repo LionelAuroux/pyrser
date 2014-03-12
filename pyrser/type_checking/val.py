@@ -2,12 +2,14 @@
 from pyrser import fmt
 from pyrser.type_checking.signature import *
 
+
 class Val(Signature):
     """
     Describe a value signature for the language
     """
     nvalues = 0
     valuniq = dict()
+
     def __init__(self, value, tret: str):
         if not isinstance(value, str):
             value = str(value)

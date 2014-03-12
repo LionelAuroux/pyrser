@@ -1,6 +1,7 @@
 # symbol for type checking
 import weakref
 
+
 class Symbol:
     """
     Symbol are semantic name used in a language.
@@ -27,7 +28,7 @@ class Symbol:
             return self.parent()
         return None
 
-    def get_scope_list(self):
+    def get_scope_list(self) -> list:
         """
         Return the list of all contained scope from global to local
         """
@@ -39,7 +40,7 @@ class Symbol:
             p = p.get_parent()
         return lstparent
 
-    def get_scope_names(self):
+    def get_scope_names(self) -> list:
         """
         Return the list of all contained scope from global to local
         """
@@ -52,7 +53,7 @@ class Symbol:
         return lscope
 
     # to overload for new language
-    def show_name(self):
+    def show_name(self) -> str:
         """
         Return a convenient name for type checking
         """
@@ -60,7 +61,7 @@ class Symbol:
 
     # to overload for new language
     # TODO: to overload properly in signature/var/val etc...
-    def internal_name(self):
+    def internal_name(self) -> str:
         """
         Return the unique internal name
         """
@@ -71,8 +72,8 @@ class Symbol:
             unq += "_" + self.tret
         return unq
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.show_name()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.internal_name()

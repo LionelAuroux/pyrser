@@ -1,5 +1,6 @@
 # qualified (or not) type names
 
+
 class TypeName(str):
 
     def __init__(self, value):
@@ -8,21 +9,27 @@ class TypeName(str):
         # split value into composed type and/or qualifiers
         self.components = value.split()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.value
 
-    def __lt__(self, oth):
+    def __lt__(self, oth) -> bool:
         if isinstance(oth, TypeName):
             return self.value < oth.value
         return self.value < oth
 
-    def __eq__(self, oth):
+    def __eq__(self, oth) -> bool:
         if isinstance(oth, TypeName):
             return self.value == oth.value
         return self.value == oth
 
-    def get_subcomponents(self):
+    def get_subcomponents(self) -> list:
         return self.components[1:]
 
-    def is_polymorphic(self):
-        return self.value[0] == '?'
+    def is_polymorphic(self) -> bool:
+        """
+        Check if one of composed type name is poly
+        """
+        for c in self.components:
+            if c[0] == '?':
+                return True
+        return False

@@ -2,6 +2,7 @@
 from pyrser import fmt
 from pyrser.type_checking.signature import *
 
+
 class Var(Signature):
     """
     Describe a variable signature for the language

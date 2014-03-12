@@ -65,9 +65,11 @@ def to_yml_item(item, pp, name):
         return
     if isinstance(item, list):
         inner = fmt.tab([])
-        tag = fmt.tab([fmt.block(name + " " +
-                                 str(yml_attr('type', 'list')) + ':\n',
-                                 '', inner)])
+        tag = fmt.block(
+            name + " " + str(yml_attr('type', 'list')) + ':\n',
+            '',
+            inner
+        )
         i = 0
         for subitem in item:
             idxname = str(fmt.sep(" ", ['[', i, ']']))

@@ -10,12 +10,14 @@ class Signature(Symbol):
     Describe a function or variable signature for the language
     """
 
-    def __init__(self, name: str, tret: str, *tparams):
+    def __init__(self, name: str, tret: str, tparams: list=None,
+                 variadic=None):
         super().__init__(name)
         if not isinstance(tret, TypeName):
             tret = TypeName(tret)
         self.tret = tret
-        if len(tparams) > 0:
+        self.variadic = variadic
+        if tparams is not None and len(tparams) > 0:
             self.tparams = []
             for p in tparams:
                 if not isinstance(p, TypeName):
@@ -31,11 +33,13 @@ class Signature(Symbol):
         name = self.show_name()
         if name != "":
             txt.lsdata.append(name)
+        tparams = []
         if hasattr(self, 'tparams'):
-            params = '(' + ", ".join(self.tparams) + ')'
-            txt.lsdata.append(': ' + params)
-        else:
-            txt.lsdata.append(': ()')
+            tparams = list(self.tparams)
+        if self.variadic:
+            tparams.append('...')
+        params = '(' + ", ".join(tparams) + ')'
+        txt.lsdata.append(': ' + params)
         txt.lsdata.append('-> ' + self.tret)
         return txt
 

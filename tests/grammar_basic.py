@@ -1,5 +1,4 @@
 import unittest
-from collections import ChainMap
 from pyrser import grammar
 from pyrser import meta
 from pyrser import parsing

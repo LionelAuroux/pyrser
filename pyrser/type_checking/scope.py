@@ -1,11 +1,15 @@
 # scope for type checking
+import weakref
 from pyrser import fmt
 from pyrser.type_checking.symbol import *
 from pyrser.type_checking.signature import *
+from pyrser.type_checking.evalctx import *
+from pyrser.passes.to_yml import *
 
 
 # forward just for annotation (not the same id that final type)
-class Scope: pass
+class Scope:
+    pass
 
 
 class Scope(Symbol):
@@ -15,7 +19,8 @@ class Scope(Symbol):
     Scope is not a 'pure' python set but something between a set and a dict...
     """
 
-    def __init__(self, name: str=None, sig: [Signature]=None, auto_update_parent=True):
+    def __init__(self, name: str=None, sig: [Signature]=None,
+                 auto_update_parent=True):
         """Unnamed scope for global scope"""
         super().__init__(name)
         # during typing, this scope need or not feedback pass
@@ -252,10 +257,12 @@ class Scope(Symbol):
         lst = []
         for s in self._hsig.values():
             if s.name == name:
-                lst.append(s)
+                # create an EvalCtx only when necessary
+                lst.append(EvalCtx.from_sig(s))
         # include parent
         # TODO: see all case of local redefinition for
-        # global overloads
+        #       global overloads
+        # possible algos... take all with different internal_name
         if len(lst) == 0:
             p = self.get_parent()
             if p is not None:
@@ -269,7 +276,7 @@ class Scope(Symbol):
         lst = []
         for s in self._hsig.values():
             if s.tret == tname:
-                lst.append(s)
+                lst.append(EvalCtx.from_sig(s))
         return Scope(sig=lst, auto_update_parent=False)
 
     def get_all_polymorphic_return(self) -> bool:
@@ -281,75 +288,77 @@ class Scope(Symbol):
         lst = []
         for s in self._hsig.values():
             if s.tret.is_polymorphic():
-                # TODO: must encapsulate s into a subscope for meta-var instanciation
-                lst.append(s)
+                # encapsulate s into a EvalCtx for meta-var resolution
+                lst.append(EvalCtx.from_sig(s))
         return Scope(sig=lst, auto_update_parent=False)
 
-    def get_by_params(self, *params) -> (Scope, [Scope]):
+    def get_by_params(self, params: [Scope]) -> (Scope, [Scope]):
         """
         Retrieve a Set of all signature that match the parameter list.
-        Must be overload in some language to handle things like ellipsis (...).
         Return a pair.
             pair[0] the overloads for the functions
             pair[1] the overloads for the parameters
         """
         lst = []
-        scopep = [None] * len(params)
-        # for each of our signature
+        scopep = []
+        # for each of our signatures
         for s in self._hsig.values():
-            # number of matchable params
-            mcnt = 0
             # for each params of this signature
             if hasattr(s, 'tparams'):
+                # number of matched params
+                mcnt = 0
                 # temporary collect
-                tmp = [None] * len(s.tparams)
-                for i in range(len(s.tparams)):
-                    # match param of the signature
-                    m = params[i].get_by_return_type(s.tparams[i])
-                    if len(m) > 0:
-                        mcnt += 1
-                        if tmp[i] is None:
-                            tmp[i] = m
-                        else:
-                            tmp[i].update(m)
-                    # TODO:???
-                    # co/contra-variance before or after poly?
-                    # iopi: FOR ME, BEFORE
-                    elif s.tparams[i].is_polymorphic():
-                        # handle polymorphic parameter
-                        mcnt += 1
-                        if tmp[i] is None:
-                            tmp[i] = Scope(sig=params[i].values())
-                        else:
-                            tmp[i].update(params[i].values())
-                        # we must instanciate params[i].values
-                        #...
-                    else:
-                        # handle polymorphic return type
-                        m = params[i].get_all_polymorphic_return()
+                nbparam_sig = len(s.tparams)
+                nbparam_candidates = len(params)
+                # don't treat signature to short
+                if nbparam_candidates > nbparam_sig and not s.variadic:
+                    continue
+                tmp = [None] * nbparam_candidates
+                for i in range(nbparam_candidates):
+                    tmp[i] = Scope()
+                    # match param of the expr
+                    if i < nbparam_sig:
+                        m = params[i].get_by_return_type(s.tparams[i])
                         if len(m) > 0:
                             mcnt += 1
-                            if tmp[i] is None:
-                                tmp[i] = m
-                            else:
-                                tmp[i].update(m)
-                            # we must instanciate s.tparams[i]
-                            #...
-                        # here handle (co/contra) variance
-                        # we just need to search a t1->t2
-                        # and add it into the tree (with/without warnings)
-                        # ...TODO
-                # this could must be redefine for handle language with ellipsis
-                if mcnt == len(s.tparams) and mcnt == len(params):
-                    # select this signature
-                    # TODO: must encapsul s if contains polymorphic parameter...
-                    lst.append(s)
-                    for i in range(mcnt):
-                        m = tmp[i]
-                        if scopep[i] is None:
-                            scopep[i] = m
+                            print("RET TYPE {{%s}}" % m)
+                            tmp[i].update(m)
                         else:
-                            scopep[i].update(m)
+                            # TODO:???
+                            # co/contra-variance
+                            # we just need to search a t1->t2
+                            # and add it into the tree (with/without warnings)
+                            # before polymorphic
+                            # ...
+                            if s.tparams[i].is_polymorphic():
+                                # handle polymorphic parameter
+                                mcnt += 1
+                                if not isinstance(params[i], Scope):
+                                    raise Exception(
+                                        "params[%d] must be a Scope" % i
+                                    )
+                                print("VVV <%s>" % params[i])
+                                tmp[i].update(params[i])
+                            else:
+                                # handle polymorphic return type
+                                m = params[i].get_all_polymorphic_return()
+                                if len(m) > 0:
+                                    mcnt += 1
+                                    print("RET POLY {{%s}}" % m)
+                                    tmp[i].update(m)
+                    # for variadic extra parameters
+                    else:
+                        mcnt += 1
+                        if not isinstance(params[i], Scope):
+                            raise Exception("params[%d] must be a Scope" % i)
+                        print("EXTRA %s" % params[i])
+                        tmp[i].update(params[i])
+                # we have match all candidates
+                if mcnt == len(params):
+                    # select this signature but
+                    # encapsul for type resolution
+                    lst.append(EvalCtx.from_sig(s))
+                    scopep.append(tmp)
         return (Scope(sig=lst, auto_update_parent=False), scopep)
 
     def values(self) -> [Signature]:

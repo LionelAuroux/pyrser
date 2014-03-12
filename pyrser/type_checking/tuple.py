@@ -2,6 +2,7 @@
 from pyrser import fmt
 from pyrser.type_checking.signature import *
 
+
 class Tuple(list):
     """
     A tuple is just a list of signature.

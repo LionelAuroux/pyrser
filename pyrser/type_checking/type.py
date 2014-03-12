@@ -7,10 +7,11 @@ class Type(Scope):
     """
     A Type is a named scope similar to ADT (Abstract Data Type).
     So we have an member variables (ordered) that represent internal state.
-    Member functions (work on an instance of type, depend of the language ref/or not).
+    Member functions (work on an instance of type,
+    depend of the language ref/or not).
     Non member variables/functions/valuess as in a scope.
     """
-    
+
     def __init__(self, name: str, sig: [Signature]=None):
         super().__init__(name)
 

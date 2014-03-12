@@ -18,7 +18,7 @@ class BlockStmt(Node, Inference):
         self.body = []
         # if root node (no brace when pprint)
         self.root = root
-        
+
     def to_tl4t(self) -> fmt.indentable:
         lssub = []
         for s in self.body:
@@ -57,8 +57,9 @@ class DeclVar(Node, Inference):
 
 
 class DeclFun(DeclVar, Inference):
-    def __init__(self, name: str, t: str, p: [], block=None):
+    def __init__(self, name: str, t: str, p: [], block=None, variadic=False):
         super().__init__(name, t)
+        self.variadic = variadic
         self.p = p
         if block is not None:
             self.block = block
@@ -111,7 +112,9 @@ class Literal(Terminal, Inference):
 
     # to connect Inference
     def type_algos(self):
-        return (self.infer_literal, self.feedback_literal, [self.value, self.type])
+        return (
+            self.infer_literal, self.feedback_literal, [self.value, self.type]
+        )
 
 
 class Id(Terminal, Inference):
@@ -166,7 +169,14 @@ class Binary(Expr, Inference):
         super().__init__(op, [left, right])
 
     def to_tl4t(self):
-        return fmt.sep(" ", [self.p[0].to_tl4t(), self.call_expr.to_tl4t(), self.p[1].to_tl4t()])
+        return fmt.sep(
+            " ",
+            [
+                self.p[0].to_tl4t(),
+                self.call_expr.to_tl4t(),
+                self.p[1].to_tl4t()
+            ]
+        )
 
 
 class Unary(Expr, Inference):
@@ -208,7 +218,10 @@ def new_declfun(self, ast, n, t, p, b):
         expr = b
     if hasattr(p, 'node'):
         param = p.node
-    ast.set(DeclFun(self.value(n), self.value(t), param, expr))
+    variadic = False
+    if hasattr(p, 'variadic'):
+        variadic = True
+    ast.set(DeclFun(self.value(n), self.value(t), param, expr, variadic))
     return True
 
 
@@ -233,6 +246,12 @@ def add_param(self, params, p):
     if not hasattr(params, 'node'):
         params.node = []
     params.node.append(p)
+    return True
+
+
+@meta.hook(TL4T)
+def add_param_variadic(self, params):
+    params.variadic = True
     return True
 
 

@@ -54,7 +54,7 @@ class InternalParse_Test(unittest.TestCase):
             Basic test for identifier parsing
         """
         parser = parsing.Parser()
-        parser.parsed_stream("ceci est un test", sName="root")
+        parser.parsed_stream("ceci est un test", name="root")
         self.assertTrue(
             parser.begin_tag('sujet') and
             parser.read_identifier() and
@@ -84,7 +84,7 @@ class InternalParse_Test(unittest.TestCase):
             Basic test for integer parsing
         """
         parser = parsing.Parser()
-        parser.parsed_stream("12 333 44444444444444444444444444", sName="root")
+        parser.parsed_stream("12 333 44444444444444444444444444", name="root")
         self.assertTrue(
             parser.begin_tag('n1') and
             parser.read_integer() and
@@ -115,7 +115,7 @@ class InternalParse_Test(unittest.TestCase):
             Basic test for read_cchar
         """
         parser = parsing.Parser()
-        parser.parsed_stream(r"'c' '\t'", sName="root")
+        parser.parsed_stream(r"'c' '\t'", name="root")
         self.assertTrue(
             parser.begin_tag('c1') and
             parser.read_cchar() and
@@ -141,7 +141,7 @@ class InternalParse_Test(unittest.TestCase):
             r'"premiere chaine"'
             r'"deuxieme chaine\n"'
             r'"troisieme chainee \"."',
-            sName="root")
+            name="root")
         self.assertTrue(
             parser.begin_tag('s1') and
             parser.read_cstring() and

@@ -131,7 +131,7 @@ class EBNF(parsing.Parser):
             #       | ':' Base.id : cpt #add_capture(_, cpt)
             #     ]?
             #     | hook : h #add_hook(_, h)
-            #     | directive : d sequence : s #add_directive(_, d, s)
+            #     | directive : d sequences : s #add_directive(_, d, s)
             # ]
             #
             'sequence': parsing.Alt(
@@ -231,7 +231,7 @@ class EBNF(parsing.Parser):
                 ),
                 parsing.Seq(
                     parsing.Capture('d', parsing.Rule('directive')),
-                    parsing.Capture('s', parsing.Rule('sequence')),
+                    parsing.Capture('s', parsing.Rule('sequences')),
                     parsing.Hook('add_directive', [('_', parsing.Node),
                                                    ('d', parsing.Node),
                                                    ('s', parsing.Node)])

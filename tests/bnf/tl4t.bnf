@@ -5,8 +5,10 @@
 source =
 [   
     @ignore("C/C++")
-    [stmt:s #new_rootstmt(_, s)]+
-    eof
+    [
+        [stmt:s #new_rootstmt(_, s)]+
+        eof
+    ]
 ]
 
 stmt =
@@ -27,7 +29,13 @@ decl_fun =
 
 params =
 [
-    '(' [param:p #add_param(_, p) [',' param:p #add_param(_, p) ]*]? ')'
+    '(' [
+            param:p #add_param(_, p)
+            [',' param:p #add_param(_, p) ]*
+            [',' '...' #add_param_variadic(_) ]?
+        | '...' #add_param_variadic(_)
+        ]?
+    ')'
 ]
 
 param =
@@ -55,19 +63,21 @@ expr = [ assignement_expression:e ';' #new_expr_stmt(_, e) ]
 assign_op = [
     @ignore('null')
     [
-        '=' !'='
-        | "+="
-        | "-="
-        | "*="
-        | "/="
-        | "%="
-        | "<<="
-        | ">>="
-        | "&="
-        | "^="
-        | "|="
-    ]:op
-    #new_operator(_, op)
+        [
+            '=' !'='
+            | "+="
+            | "-="
+            | "*="
+            | "/="
+            | "%="
+            | "<<="
+            | ">>="
+            | "&="
+            | "^="
+            | "|="
+        ]:op
+        #new_operator(_, op)
+    ]
 ]
 assignement_expression =
 [
@@ -79,7 +89,7 @@ assignement_expression =
     ]*
 ]
 
-or_op = [ @ignore('null') ["|" !["|"|"="]]:op #new_operator(_, op) ]
+or_op = [ @ignore('null') [["|" !["|"|"="]]:op #new_operator(_, op)] ]
 or_expression =
 [
     xor_expression:>_
@@ -90,7 +100,7 @@ or_expression =
     ]*
 ]
 
-xor_op = [ @ignore('null') ["^" !"="]:op #new_operator(_, op) ]
+xor_op = [ @ignore('null') [ ["^" !"="]:op #new_operator(_, op) ] ]
 xor_expression =
 [
     and_expression:>_
@@ -101,7 +111,7 @@ xor_expression =
     ]*
 ]
 
-and_op = [ @ignore('null') ["&" !["&"|"="]]:op #new_operator(_, op) ]
+and_op = [ @ignore('null') [ ["&" !["&"|"="]]:op #new_operator(_, op) ] ]
 and_expression =
 [
     equality_expression:>_
@@ -112,7 +122,7 @@ and_expression =
     ]*
 ]
 
-eqneq_op = [ @ignore('null') ["==" | "!="]:op #new_operator(_, op) ]
+eqneq_op = [ @ignore('null') [ ["==" | "!="]:op #new_operator(_, op) ] ]
 equality_expression =
 [
     relational_expression:>_
@@ -313,6 +323,7 @@ char_const = [ encoding_prefix? Base.char ]
 literal =
 [
     @ignore('null')
+    [
     __scope__:t
     [
         hexadecimal_const_int #set(t, "int")
@@ -323,4 +334,5 @@ literal =
         | char_const #set(t, "char")
     ]:val
     #new_literal(_, val, t)
+    ]
 ]

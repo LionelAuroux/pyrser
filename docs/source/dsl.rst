@@ -72,11 +72,12 @@ Pyrser use the following DSL to describe a grammar.
 ``#hook(p1, "p2", 3)``:
     Call a hook with ``p1`` as ``pyrser.parsing.node.Node``, ``"p2"`` as ``str``, ``3`` as ``int``.
 
-``@foo A``:
-    Apply the directive ``foo`` to the rule ``A``.
+``@foo expr``:
+    Apply the directive ``foo`` to the expression ``expr``.
 
-``@foo(p1, "p2", 3) A``:
-    Apply the directive ``foo`` to the rule ``A`` with parameter to the directive (as hooks).
+``@foo(p1, "p2", 3) expr``:
+    Apply the directive ``foo`` to the expression ``expr`` with parameter to the directive (as hooks).
+Note: ``expr`` is compose of all basics expression except for pipe (``|``) operator.
 
 Python API: class EBNF
 ~~~~~~~~~~~~~~~~~~~~~~

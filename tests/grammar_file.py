@@ -1,5 +1,6 @@
 import unittest
 from pyrser import grammar, meta
+from pyrser.passes.to_yml import *
 from pyrser.hooks.echo import *
 from tests.grammar.tl4t import *
 
@@ -140,7 +141,10 @@ class GrammarFile_Test(unittest.TestCase):
         self.assertTrue(res.body[0].block.body[0].name, "z")
         self.assertTrue(res.body[0].block.body[0].t, "toto")
         txt = res.to_tl4t()
-        self.assertEqual(str(txt), "fun a(x : str) : int\n{\n    var z : toto;\n}")
+        self.assertEqual(
+            str(txt),
+            "fun a(x : str) : int\n{\n    var z : toto;\n}"
+        )
         res = test.parse("""
             a = 42;
         """)
@@ -161,6 +165,7 @@ class GrammarFile_Test(unittest.TestCase):
         self.assertTrue(res)
         self.assertTrue(isinstance(res.body[0], ExprStmt))
         txt = res.to_tl4t()
+        print(res.to_yml())
         self.assertEqual(str(txt), "a = 12 - 42;\n")
         res = test.parse("""
             a = f(12, "blabla", z);
