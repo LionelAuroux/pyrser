@@ -5,6 +5,7 @@ from pyrser.parsing.node import Node
 from pyrser.parsing.stream import Tag
 
 
+
 class Functor:
     """Dummy Base class for all parse tree classes.
 
@@ -12,8 +13,13 @@ class Functor:
         pt if contain a Functor
         ptlist if contain a list of Functor
     """
-    pass
 
+    def do_call(self, parser: BasicParser) -> Node:
+        pass
+
+    def __call__(self, parser: BasicParser) -> Node:
+        res = self.do_call(parser)
+        return res
 
 class Seq(Functor):
     """A B C bnf primitive as a functor."""
@@ -24,7 +30,7 @@ class Seq(Functor):
             raise TypeError("Expected Functor")
         self.ptlist = ptlist
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         parser._stream.save_context()
         for pt in self.ptlist:
             parser.skip_ignore()
@@ -42,7 +48,7 @@ class Scope(Functor):
         self.end = end
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         if not self.begin(parser):
             return False
         res = self.pt(parser)
@@ -57,7 +63,7 @@ class LookAhead(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         parser._stream.save_context()
         res = self.pt(parser)
         parser._stream.restore_context()
@@ -71,7 +77,7 @@ class Neg(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser):
+    def do_call(self, parser: BasicParser):
         parser._stream.save_context()
         if self.pt(parser):
             res = parser._stream.restore_context()
@@ -86,7 +92,7 @@ class Complement(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         if parser.read_eof():
             return False
         ## skip/undo?
@@ -108,7 +114,7 @@ class Until(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         ## skip/undo?
         parser.skip_ignore()
         parser._stream.save_context()
@@ -130,14 +136,14 @@ class Call(Functor):
         self.callObject = callObject
         self.params = params
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         return self.callObject(parser, *self.params)
 
 
 class CallTrue(Call):
     """Functor to wrap arbitrary callable object in BNF clause."""
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         self.callObject(*self.params)
         return True
 
@@ -152,7 +158,7 @@ class Capture(Functor):
         self.tagname = tagname
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         if parser.begin_tag(self.tagname):
             # subcontext
             parser.push_rule_nodes()
@@ -180,7 +186,7 @@ class DeclNode(Functor):
             raise TypeError("Illegal tagname for capture")
         self.tagname = tagname
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         parser.rule_nodes[self.tagname] = Node()
         return True
 
@@ -197,7 +203,7 @@ class Bind(Functor):
         self.tagname = tagname
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         res = self.pt(parser)
         if res:
             parser.bind(self.tagname, res)
@@ -212,7 +218,7 @@ class Alt(Functor):
         Functor.__init__(self)
         self.ptlist = ptlist
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         # save result of current rule
         parser.push_rule_nodes()
         for pt in self.ptlist:
@@ -237,7 +243,7 @@ class RepOptional(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         parser.skip_ignore()
         res = self.pt(parser)
         if res:
@@ -252,7 +258,7 @@ class Rep0N(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         parser.skip_ignore()
         parser.push_rule_nodes()
         while self.pt(parser):
@@ -268,7 +274,7 @@ class Rep1N(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         parser._stream.save_context()
         # skip/undo
         parser.skip_ignore()
@@ -290,7 +296,7 @@ class Error(Functor):
         self.msg = msg
         self.kw = kwargs
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         error.throw(self.msg, parser, **self.kw)
 
 
@@ -301,7 +307,7 @@ class Rule(Functor):
         Functor.__init__(self)
         self.name = name
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         parser.push_rule_nodes()
         res = parser.eval_rule(self.name)
         parser.pop_rule_nodes()
@@ -321,7 +327,7 @@ class Hook(Functor):
                                 "str, Node)")
         self.param = param
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         valueparam = []
         for v, t in self.param:
             if t is Node:
@@ -417,7 +423,7 @@ class Directive(Functor):
                     "Must be pair of value and type (i.e: int, str, Node)")
         self.param = param
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         valueparam = []
         for v, t in self.param:
             if t is Node:
