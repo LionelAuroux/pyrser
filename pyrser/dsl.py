@@ -231,7 +231,7 @@ class EBNF(parsing.Parser):
                 ),
                 parsing.Seq(
                     parsing.Capture('d', parsing.Rule('directive')),
-                    parsing.Capture('s', parsing.Rule('sequence')),
+                    parsing.Capture('s', parsing.Rule('sequences')),
                     parsing.Hook('add_directive', [('_', parsing.Node),
                                                    ('d', parsing.Node),
                                                    ('s', parsing.Node)])
