@@ -6,6 +6,8 @@ from pyrser.parsing.node import Node
 from pyrser.parsing.stream import Tag
 
 
+_decorators = []
+
 
 class Functor:
     """Dummy Base class for all parse tree classes.
@@ -19,8 +21,20 @@ class Functor:
         pass
 
     def __call__(self, parser: BasicParser) -> Node:
+        global _decorators
+
+        # call the begin methods in order
+        for i in range(0, len(_decorators)):
+            _decorators[i].begin(parser, self)
+
         res = self.do_call(parser)
+
+        # call the end methods in reverse order
+        for i in range(len(_decorators) - 1, -1, -1):
+            _decorators[i].end(res, parser, self)
+
         return res
+
 
 class Seq(Functor):
     """A B C bnf primitive as a functor."""
@@ -453,4 +467,96 @@ class Directive(Functor):
         res = self.pt(parser)
         if not self.directive.end(parser, *valueparam):
             return False
+        return res
+
+
+class MetaDecoratorWrapper(type):
+    """metaclass of all DecoratorWrapper subclasses.
+    ensure that begin and end exists in subclasses as method"""
+    def __new__(metacls, name, bases, namespace):
+        cls = type.__new__(metacls, name, bases, namespace)
+        if 'begin' not in namespace:
+            raise TypeError(
+                "DirectiveWrapper %s must have a begin method" % name)
+        if not(isinstance(namespace['begin'], types.FunctionType)):
+            raise TypeError(
+                "'begin' not a function class in DirectiveWrapper %s" % name)
+        if 'end' not in namespace:
+            raise TypeError(
+                "DirectiveWrapper %s subclasse must have a end method" % name)
+        if not(isinstance(namespace['end'], types.FunctionType)):
+            raise TypeError(
+                "'end' not a function class in DirectiveWrapper %s" % name)
+        return cls
+
+
+class DecoratorWrapper(Functor, metaclass=MetaDecoratorWrapper):
+
+    def begin(self):
+        pass
+
+    def end(self):
+        pass
+
+
+class Decorator(Functor):
+    def __init__(self, decoratorClass: type, param: [(object, type)],
+                 pt: Functor):
+        self.decorator_class = decoratorClass
+        self.pt = pt
+        # compose the list of value param, check type
+        for v, t in param:
+            if type(t) is not type:
+                raise TypeError(
+                    "Must be pair of value and type (i.e: int, str, Node)")
+        self.param = param
+
+    def checkParam(self, the_class: type, params: list) -> bool:
+        sinit = inspect.signature(the_class.__init__)
+
+        idx = 0
+        for param in list(sinit.parameters.values())[1:]:
+            if idx >= len(params) and param.default is inspect.Parameter.empty:
+                raise RuntimeError("{}: No parameter given to begin"
+                                   " method for argument {}, expected {}".
+                                   format(
+                                       the_class.__name__,
+                                       idx, param.annotation))
+            elif idx < len(params) and
+            not isinstance(params[idx], param.annotation):
+                raise TypeError(
+                    "{}: Wrong parameter in begin method parameter {} "
+                    "expected {} got {}".format(
+                        the_class.__name__,
+                        idx, type(params[idx]),
+                        param.annotation))
+            idx += 1
+
+        return True
+
+    def do_call(self, parser: BasicParser) -> Node:
+        """
+            The Decorator call is the one that actually pushes/pops
+            the decorator in the active decorators list (parsing._decorators)
+        """
+        valueparam = []
+        for v, t in self.param:
+            if t is Node:
+                valueparam.append(parser.rule_nodes[v])
+            elif type(v) is t:
+                valueparam.append(v)
+            else:
+                raise TypeError(
+                    "Type mismatch expected {} got {}".format(t, type(v)))
+
+        if not self.checkParam(self.decorator_class, valueparam):
+            return False
+
+        decorator = self.decorator_class(*valueparam)
+
+        global _decorators
+        _decorators.append(decorator)
+        res = self.pt(parser)
+        _decorators.pop()
+
         return res

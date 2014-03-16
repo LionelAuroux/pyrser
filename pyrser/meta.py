@@ -194,3 +194,26 @@ def directive(directname=None):
         set_one(class_dir_list, directname, f)
         return f
     return wrapper
+
+
+# module variable for FunctorDecorator registration
+_decorators = collections.ChainMap()
+
+
+def decorator(directname=None):
+    """
+        Attach a class to a parsing decorator and register it to the global
+        decorator list.
+        The class is registered with its name unless directname is provided
+    """
+    global _decorators
+    class_deco_list = _decorators
+
+    def wrapper(f):
+        nonlocal directname
+        if directname is None:
+            directname = f.__name__
+        f.ns_name = directname
+        set_one(class_deco_list, directname, f)
+
+    return wrapper
