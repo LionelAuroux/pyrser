@@ -1,3 +1,4 @@
+import inspect
 import types
 from pyrser import meta, error
 from pyrser.parsing.base import BasicParser
@@ -372,33 +373,45 @@ class DirectiveWrapper(metaclass=MetaDirectiveWrapper):
         if (not hasattr(self.__class__, 'begin') or
                 not hasattr(self.__class__, 'end')):
             return False
-        pbegin = self.__class__.begin.__code__.co_varnames
-        tbegin = self.__class__.begin.__annotations__
-        pend = self.__class__.end.__code__.co_varnames
-        tend = self.__class__.end.__annotations__
+        sbegin = inspect.signature(self.begin)
+        send = inspect.signature(self.end)
+
         idx = 0
-        for pname in pbegin:
-            if pname in tbegin:
-                if not isinstance(params[idx], tbegin[pname]):
-                    raise TypeError(
-                        "{}: Wrong parameter in begin method parameter {} "
-                        "expected {} got {}".format(
-                            self.__class__.__name__,
-                            idx, type(params[idx]),
-                            tbegin[pname]))
-                idx += 1
+        for param in list(sbegin.parameters.values())[1:]:
+            if idx >= len(params) and param.default is inspect.Parameter.empty:
+                raise RuntimeError("{}: No parameter given to begin"
+                                   " method for argument {}, expected {}".
+                                   format(
+                                       self.__class__.__name__,
+                                       idx, param.annotation))
+            elif idx < len(params) and
+            not isinstance(params[idx], param.annotation):
+                raise TypeError(
+                    "{}: Wrong parameter in begin method parameter {} "
+                    "expected {} got {}".format(
+                        self.__class__.__name__,
+                        idx, type(params[idx]),
+                        param.annotation))
+            idx += 1
+
         idx = 0
-        for pname in pend:
-            if pname in tend:
-                if not isinstance(params[idx], tend[pname]):
-                    raise TypeError(
-                        "{}: Wrong parameter in end method parameter {} "
-                        "expected {} got {}".format(
-                            self.__class__.__name__,
-                            idx,
-                            type(params[idx]),
-                            tend[pname]))
-                idx += 1
+        for param in list(send.parameters.values())[1:]:
+            if idx >= len(params) and param.default is inspect.Parameter.empty:
+                raise RuntimeError("{}: No parameter given to end"
+                                   " method for argument {}, expected {}".
+                                   format(
+                                       self.__class__.__name__,
+                                       idx, param.annotation))
+            elif idx < len(params) and
+            not isinstance(params[idx], param.annotation):
+                raise TypeError(
+                    "{}: Wrong parameter in end method parameter {} "
+                    "expected {} got {}".format(
+                        self.__class__.__name__,
+                        idx, type(params[idx]),
+                        param.annotation))
+            idx += 1
+
         return True
 
     def begin(self):
