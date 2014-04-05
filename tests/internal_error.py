@@ -47,6 +47,7 @@ class InternalError_Test(unittest.TestCase):
              + "^"),
             "Bad FileInfo.get_content"
         )
+
         def intern_func():
             li = FileInfo.from_here(2)
             s = li.get_content()

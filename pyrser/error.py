@@ -38,7 +38,13 @@ class StreamInfo(LocationInfo):
         if len(stream._cursor._eol) > 1:
             ilb = mpos.lineno - 2
             ile = mpos.lineno - 1
-            print("ilb:%d ile:%d LEOL: %d" % (ilb, ile, len(stream._cursor._eol)))
+            print(
+                "ilb:%d ile:%d LEOL: %d" % (
+                    ilb,
+                    ile,
+                    len(stream._cursor._eol)
+                )
+            )
             lb = stream._cursor._eol[ilb].index
             if ile >= len(stream._cursor._eol):
                 le = stream._cursor._maxindex
@@ -133,7 +139,7 @@ class Diagnostic:
         self.logs = OrderedDict()
 
     def __bool__(self):
-        return self.have_errors() != True
+        return self.have_errors() is not True
 
     def notify(self, severity: Severity, msg: str,
                location: object, relatedid=None) -> int:

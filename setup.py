@@ -34,6 +34,6 @@ setuptools.setup(
     ],
     packages=['pyrser', 'pyrser.directives', 'pyrser.hooks', 'pyrser.parsing',
               'pyrser.passes', 'pyrser.type_checking']
-#    test_loader='unittest:TestLoader',
-#    test_suite='tests'
+    #    test_loader='unittest:TestLoader',
+    #    test_suite='tests'
 )

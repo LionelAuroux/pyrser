@@ -42,7 +42,8 @@ def checktypes(func):
                 not isinstance(param.default, param_type)):
             raise ValueError(
                 "{func}: wrong type of a default value for {arg!r}".format(
-                func=func.__qualname__, arg=param.name))
+                    func=func.__qualname__, arg=param.name)
+            )
 
     def check_type(sig, arg_name, arg_type, arg_value):
         # Internal function that encapsulates arguments type checking
@@ -91,8 +92,9 @@ def checktypes(func):
 
             raise ValueError(
                 '{func}: wrong return type, {exp} expected, got {got}'.format(
-                func=func.__qualname__, exp=return_type.__name__,
-                got=type(result).__name__))
+                    func=func.__qualname__, exp=return_type.__name__,
+                    got=type(result).__name__)
+            )
         return result
 
     return wrapper

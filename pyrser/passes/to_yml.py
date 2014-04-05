@@ -24,10 +24,20 @@ def to_yml_item(item, pp, name):
     if refcount > 0:
         name += " &" + str(id(item))
     if type(item).__name__ in scalar:
-        tag = fmt.end('\n', fmt.sep("", [name, " ",
-                                         yml_attr(type(item).__name__,
-                                         repr(item))]
-                                    ))
+        tag = fmt.end(
+            '\n',
+            fmt.sep(
+                "",
+                [
+                    name,
+                    " ",
+                    yml_attr(
+                        type(item).__name__,
+                        repr(item)
+                    )
+                ]
+            )
+        )
         pp.append(tag)
         return
     if isinstance(item, weakref.ref):

@@ -40,15 +40,19 @@ class InternalFmt_Test(unittest.TestCase):
                          "a;\nb;\nc;\n",
                          "Failed to format a list end by ';\n'")
         data = fmt.tab(fmt.block("{\n", "}\n", ['a\n', 'b\n', 'c\n']))
-        self.assertEqual(str(data),
-                         (("{tab}{{\n{tab}a\n"
-                         + "{tab}b\n{tab}c\n{tab}}}\n")).format(tab=(" " * 4)),
-                         "Failed to indent")
+        self.assertEqual(
+            str(data),
+            (("{tab}{{\n{tab}a\n"
+             + "{tab}b\n{tab}c\n{tab}}}\n")).format(tab=(" " * 4)),
+            "Failed to indent"
+        )
         data = fmt.block("{\n", "}\n", [fmt.tab(['a\n', 'b\n', 'c\n'])])
-        self.assertEqual(str(data),
-                         (("{{\n{tab}a\n{tab}b\n"
-                         + "{tab}c\n}}\n")).format(tab=(" " * 4)),
-                         "Failed to indent")
+        self.assertEqual(
+            str(data),
+            (("{{\n{tab}a\n{tab}b\n"
+             + "{tab}c\n}}\n")).format(tab=(" " * 4)),
+            "Failed to indent"
+        )
         data = fmt.block("{\n", "}\n",
                          [fmt.tab(fmt.end("\n",
                                           ['a',
