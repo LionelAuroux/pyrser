@@ -20,19 +20,19 @@ class EBNF(parsing.Parser):
         # TODO:
         res = self.eval_rule('bnf_dsl')
         if not res:
-            raise error.ParseError(
-                "Parse error with the rule {rule!r}",
-                stream_name=self._stream.name,
-                rule='bnf_dsl',
-                pos=self._stream._cursor.max_readed_position,
-                line=self._stream.last_readed_line)
+            self.diagnostic.notify(
+                error.Severity.ERROR,
+                "Parse error with the rule %s" % self._lastRule,
+                error.StreamInfo(self._stream)
+            )
+            res = self.diagnostic
         return res
 
-    def __init__(self, stream=''):
+    def __init__(self, content='', sname='BNF'):
         """
         Define the DSL parser.
         """
-        super().__init__(stream)
+        super().__init__(content, sname)
         self.set_rules({
             #
             # bnf_dsl = [ @ignore("C/C++") bnf_stmts ]
@@ -116,6 +116,7 @@ class EBNF(parsing.Parser):
 
             #
             # sequence = [
+            #   [
             #     [ '~' | "!!" | '!' | "->" ]?: mod
             #     [ ns_name : rid #add_ruleclause_name(_, rid)
             #       | Base.string : txt #add_text(_, txt)
@@ -125,116 +126,149 @@ class EBNF(parsing.Parser):
             #       | '[' alternatives : subsequence ']'
             #         #add_subsequence(_, subsequence)
             #     ] #add_mod(_, mod)
-            #     [repeat : rpt #add_rpt(_, mod, rpt) ]?
+            #     [ repeat : rpt #add_rpt(_, mod, rpt) ]?
+            #   | hook : h #add_hook(_, h)
+            #   | directive : d sequences : s #add_directive(_, d, s)
+            #   ]
             #     [
             #       ":>" Base.id : bind #add_bind(_, bind)
             #       | ':' Base.id : cpt #add_capture(_, cpt)
             #     ]?
-            #     | hook : h #add_hook(_, h)
-            #     | directive : d sequences : s #add_directive(_, d, s)
             # ]
             #
-            'sequence': parsing.Alt(
-                parsing.Seq(
-                    parsing.Capture(
-                        'mod',
-                        parsing.RepOptional(
-                            parsing.Alt(
-                                parsing.Call(parsing.Parser.read_char, '~'),
-                                parsing.Call(parsing.Parser.read_text, '!!'),
-                                parsing.Call(parsing.Parser.read_char, '!'),
-                                parsing.Call(parsing.Parser.read_text, '->')))
-                    ),
-                    parsing.Alt(
-                        parsing.Seq(
-                            parsing.Capture('rid', parsing.Rule('ns_name')),
-                            parsing.Hook('add_ruleclause_name',
-                                         [("_", parsing.Node),
-                                          ("rid", parsing.Node)])
-                        ),
-                        parsing.Seq(
-                            parsing.Capture('txt',
-                                            parsing.Rule('Base.string')),
-                            parsing.Hook('add_text',
-                                         [("_", parsing.Node),
-                                          ("txt", parsing.Node)])
-                        ),
-                        parsing.Seq(
-                            parsing.Capture('begin',
-                                            parsing.Rule('Base.char')),
-                            parsing.Call(parsing.Parser.read_text, ".."),
-                            parsing.Capture('end', parsing.Rule('Base.char')),
-                            parsing.Hook('add_range',
-                                         [("_", parsing.Node),
-                                          ("begin", parsing.Node),
-                                          ("end", parsing.Node)])
-                        ),
-                        parsing.Seq(
-                            parsing.Capture('c', parsing.Rule('Base.char')),
-                            parsing.Hook('add_char',
-                                         [("_", parsing.Node),
-                                          ("c", parsing.Node)])
-                        ),
-                        parsing.Seq(
-                            parsing.Call(parsing.Parser.read_char, "["),
-                            parsing.Capture(
-                                'subsequence',
+            'sequence':
+            parsing.Seq(
+                parsing.Alt(
+                    parsing.Seq(
+                        parsing.Capture(
+                            'mod',
+                            parsing.RepOptional(
                                 parsing.Alt(
-                                    parsing.Rule('alternatives'),
-                                    parsing.Error("Expected sequences"))),
-                            parsing.Alt(
-                                parsing.Call(parsing.Parser.read_char, "]"),
-                                parsing.Error("Expected ']'")),
-                            parsing.Hook('add_subsequence',
-                                         [("_", parsing.Node),
-                                          ("subsequence", parsing.Node)]),
-                        )
-                    ),
-                    parsing.Hook('add_mod', [("_", parsing.Node),
-                                             ("mod", parsing.Node)]),
-                    parsing.RepOptional(
-                        parsing.Seq(
-                            parsing.Capture('rpt', parsing.Rule('repeat')),
-                            parsing.Hook('add_rpt',
-                                         [("_", parsing.Node),
-                                          ("mod", parsing.Node),
-                                          ("rpt", parsing.Node)])
-                        )
-                    ),
-                    parsing.RepOptional(
+                                    parsing.Call(
+                                        parsing.Parser.read_char,
+                                        '~'
+                                    ),
+                                    parsing.Call(
+                                        parsing.Parser.read_text,
+                                        '!!'
+                                    ),
+                                    parsing.Call(
+                                        parsing.Parser.read_char,
+                                        '!'
+                                    ),
+                                    parsing.Call(
+                                        parsing.Parser.read_text,
+                                        '->'
+                                    )
+                                )
+                            )
+                        ),
                         parsing.Alt(
                             parsing.Seq(
-                                parsing.Call(parsing.Parser.read_text, ":>"),
                                 parsing.Capture(
-                                    'bind',
-                                    parsing.Rule('Base.id')),
-                                parsing.Hook('add_bind',
-                                             [('_', parsing.Node),
-                                              ('bind', parsing.Node)])
+                                    'rid',
+                                    parsing.Rule('ns_name')
+                                ),
+                                parsing.Hook('add_ruleclause_name',
+                                             [("_", parsing.Node),
+                                              ("rid", parsing.Node)])
                             ),
                             parsing.Seq(
-                                parsing.Call(parsing.Parser.read_text, ":"),
+                                parsing.Capture('txt',
+                                                parsing.Rule('Base.string')),
+                                parsing.Hook('add_text',
+                                             [("_", parsing.Node),
+                                              ("txt", parsing.Node)])
+                            ),
+                            parsing.Seq(
+                                parsing.Capture('begin',
+                                                parsing.Rule('Base.char')),
+                                parsing.Call(parsing.Parser.read_text, ".."),
                                 parsing.Capture(
-                                    'cpt',
-                                    parsing.Rule('Base.id')),
-                                parsing.Hook('add_capture',
-                                             [('_', parsing.Node),
-                                              ('cpt', parsing.Node)])
+                                    'end',
+                                    parsing.Rule('Base.char')
+                                ),
+                                parsing.Hook('add_range',
+                                             [("_", parsing.Node),
+                                              ("begin", parsing.Node),
+                                              ("end", parsing.Node)])
+                            ),
+                            parsing.Seq(
+                                parsing.Capture(
+                                    'c',
+                                    parsing.Rule('Base.char')
+                                ),
+                                parsing.Hook('add_char',
+                                             [("_", parsing.Node),
+                                              ("c", parsing.Node)])
+                            ),
+                            parsing.Seq(
+                                parsing.Call(parsing.Parser.read_char, "["),
+                                parsing.Capture(
+                                    'subsequence',
+                                    parsing.Alt(
+                                        parsing.Rule('alternatives'),
+                                        parsing.Error("Expected sequences"))),
+                                parsing.Alt(
+                                    parsing.Call(
+                                        parsing.Parser.read_char,
+                                        "]"
+                                    ),
+                                    parsing.Error("Expected ']'")),
+                                parsing.Hook('add_subsequence',
+                                             [("_", parsing.Node),
+                                              ("subsequence", parsing.Node)]),
                             )
-                        )
+                        ),
+                        parsing.Hook('add_mod', [("_", parsing.Node),
+                                                 ("mod", parsing.Node)]),
+                        parsing.RepOptional(
+                            parsing.Seq(
+                                parsing.Capture(
+                                    'rpt',
+                                    parsing.Rule('repeat')
+                                ),
+                                parsing.Hook('add_rpt',
+                                             [("_", parsing.Node),
+                                              ("mod", parsing.Node),
+                                              ("rpt", parsing.Node)])
+                            )
+                        ),
+                    ),
+                    parsing.Seq(
+                        parsing.Capture('h', parsing.Rule('hook')),
+                        parsing.Hook('add_hook', [('_', parsing.Node),
+                                                  ('h', parsing.Node)])
+                    ),
+                    parsing.Seq(
+                        parsing.Capture('d', parsing.Rule('directive')),
+                        parsing.Capture('s', parsing.Rule('sequences')),
+                        parsing.Hook('add_directive', [('_', parsing.Node),
+                                                       ('d', parsing.Node),
+                                                       ('s', parsing.Node)])
                     )
                 ),
-                parsing.Seq(
-                    parsing.Capture('h', parsing.Rule('hook')),
-                    parsing.Hook('add_hook', [('_', parsing.Node),
-                                              ('h', parsing.Node)])
-                ),
-                parsing.Seq(
-                    parsing.Capture('d', parsing.Rule('directive')),
-                    parsing.Capture('s', parsing.Rule('sequences')),
-                    parsing.Hook('add_directive', [('_', parsing.Node),
-                                                   ('d', parsing.Node),
-                                                   ('s', parsing.Node)])
+                parsing.RepOptional(
+                    parsing.Alt(
+                        parsing.Seq(
+                            parsing.Call(parsing.Parser.read_text, ":>"),
+                            parsing.Capture(
+                                'bind',
+                                parsing.Rule('Base.id')),
+                            parsing.Hook('add_bind',
+                                         [('_', parsing.Node),
+                                          ('bind', parsing.Node)])
+                        ),
+                        parsing.Seq(
+                            parsing.Call(parsing.Parser.read_text, ":"),
+                            parsing.Capture(
+                                'cpt',
+                                parsing.Rule('Base.id')),
+                            parsing.Hook('add_capture',
+                                         [('_', parsing.Node),
+                                          ('cpt', parsing.Node)])
+                        )
+                    )
                 )
             ),
 

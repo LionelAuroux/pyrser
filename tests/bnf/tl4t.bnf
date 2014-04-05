@@ -6,7 +6,7 @@ source =
 [   
     @ignore("C/C++")
     [
-        [stmt:s #new_rootstmt(_, s)]+
+        [#info:i stmt:s #new_rootstmt(_, s, i)]+
         eof
     ]
 ]
@@ -19,12 +19,14 @@ stmt =
 decl_var =
 [
     __scope__:e
-    "var" name:n ':' type:t [';' | '=' expr:>e ]? #new_declvar(_, n, t, e)
+    #info:i
+    "var" name:n ':' type:t [';' | '=' expr:>e ]? #new_declvar(_, n, t, e, i)
 ]
 
 decl_fun =
 [
-    "fun" name:n params:p ':' type:t implem:b #new_declfun(_, n, t, p, b)
+    #info:i
+    "fun" name:n params:p ':' type:t implem:b #new_declfun(_, n, t, p, b, i)
 ]
 
 params =
@@ -40,7 +42,8 @@ params =
 
 param =
 [
-    name:n ':' type:t #new_param(_, n, t)
+    #info:i
+    name:n ':' type:t #new_param(_, n, t, i)
 ]
 
 implem =
@@ -55,14 +58,14 @@ type = [ id ]
 
 block =
 [
-    '{' [stmt:s #new_stmt(_, s) ]+ '}'
+    '{' [ #info:i stmt:s #new_stmt(_, s, i) ]+ '}'
 ]
 
-expr = [ assignement_expression:e ';' #new_expr_stmt(_, e) ]
+expr = [ #info:i assignement_expression:e ';' #new_expr_stmt(_, e, i) ]
 
 assign_op = [
     @ignore('null')
-    [
+    [ #info:i
         [
             '=' !'='
             | "+="
@@ -76,144 +79,161 @@ assign_op = [
             | "^="
             | "|="
         ]:op
-        #new_operator(_, op)
+        #new_operator(_, op, i)
     ]
 ]
 assignement_expression =
 [
+    #info:i
     or_expression:>_
     [
         assign_op:op
         assignement_expression:param
-        #new_binary(_, op, param)
+        #new_binary(_, op, param, i)
     ]*
 ]
 
-or_op = [ @ignore('null') [["|" !["|"|"="]]:op #new_operator(_, op)] ]
+or_op = [ @ignore('null') #info:i [["|" !["|"|"="]]:op #new_operator(_, op, i)] ]
 or_expression =
 [
+    #info:i
     xor_expression:>_
     [   
         or_op:op
         xor_expression:param
-        #new_binary(_, op, param)
+        #new_binary(_, op, param, i)
     ]*
 ]
 
-xor_op = [ @ignore('null') [ ["^" !"="]:op #new_operator(_, op) ] ]
+xor_op = [ @ignore('null') #info:i [ ["^" !"="]:op #new_operator(_, op, i) ] ]
 xor_expression =
 [
+    #info:i
     and_expression:>_
     [   
         xor_op:op
         and_expression:param
-        #new_binary(_, op, param)
+        #new_binary(_, op, param, i)
     ]*
 ]
 
-and_op = [ @ignore('null') [ ["&" !["&"|"="]]:op #new_operator(_, op) ] ]
+and_op = [ @ignore('null') #info:i [ ["&" !["&"|"="]]:op #new_operator(_, op, i) ] ]
 and_expression =
 [
+    #info:i
     equality_expression:>_
     [   
         and_op:op
         equality_expression:param
-        #new_binary(_, op, param)
+        #new_binary(_, op, param, i)
     ]*
 ]
 
-eqneq_op = [ @ignore('null') [ ["==" | "!="]:op #new_operator(_, op) ] ]
+eqneq_op = [ @ignore('null') #info:i [ ["==" | "!="]:op #new_operator(_, op, i) ] ]
 equality_expression =
 [
+    #info:i
     relational_expression:>_
     [   
         eqneq_op:op
         relational_expression:param
-        #new_binary(_, op, param)
+        #new_binary(_, op, param, i)
     ]*
 ]
 
 cmp_op = [
     @ignore('null')
+    #info:i
     [
         "<="
         | ">="
         | '<' !'<'
         | '>' !'>'
     ]:op
-    #new_operator(_, op)
+    #new_operator(_, op, i)
 ]
 relational_expression =
 [
+    #info:i
     shift_expression:>_
     [   
         cmp_op:op
         shift_expression:param
-        #new_binary(_, op, param)
+        #new_binary(_, op, param, i)
     ]*
 ]
 
-shift_op = [ @ignore('null') ["<<" !"=" | ">>" !"="]:op #new_operator(_, op) ]
+shift_op = [
+    @ignore('null') #info:i ["<<" !"=" | ">>" !"="]:op 
+    #new_operator(_, op, i) 
+]
 shift_expression =
 [
+    #info:i
     additive_expression:>_
     [   
         shift_op:op
         additive_expression:param
-        #new_binary(_, op, param)
+        #new_binary(_, op, param, i)
     ]*
 ]
 
 add_op = [
     @ignore('null')
+    #info:i
     [
         '+' !['+'|'=']
         | '-' !['-'|'='|'>']
     ]:op
-    #new_operator(_, op)
+    #new_operator(_, op, i)
 ]
 additive_expression =
 [
+    #info:i
     multiplicative_expression:>_
     [   
         add_op:op
         multiplicative_expression:param
-        #new_binary(_, op, param)
+        #new_binary(_, op, param, i)
     ]*
 ]
 
-mul_op = [ @ignore('null') [['*'|'/'|'%']:op !'='] #new_operator(_, op) ]
+mul_op = [ @ignore('null') #info:i [['*'|'/'|'%']:op !'='] #new_operator(_, op, i) ]
 multiplicative_expression =
 [
+    #info:i
     unary_expression:>_
     [   
         mul_op:op
         unary_expression:param
-        #new_binary(_, op, param)
+        #new_binary(_, op, param, i)
     ]*
 ]
 
 unary_op =
 [
     @ignore('null') 
+    #info:i
     [
      '~' !'='
     | '!' !'='
     | '+' !'='
     | '-' !['>'|'=']
-    ]:op #new_operator(_, op)
+    ]:op #new_operator(_, op, i)
 ]
 unary_expression =
 [
     postfix_expression:>_
     |
         __scope__:op
+        #info:i
         [   unary_op:>op
-        |   Base.id:i
-            #new_operator(op, i)
+        |   #info:i
+            Base.id:ident
+            #new_operator(op, ident, i)
         ]
         unary_expression:expr
-        #new_unary(_, op, expr)
+        #new_unary(_, op, expr, i)
 ]
 
 postfix_expression =
@@ -221,13 +241,14 @@ postfix_expression =
     primary_expression:>_
     [
         __scope__:pexp
+        #info:i
         [
 /*        '[' expression:expr ']' #new_array_call(e, e, expr) */
-         '(' func_arg_list?:args ')' #new_func_call(pexp, _, args)
+          '(' func_arg_list?:args ')' #new_func_call(pexp, _, args, i)
 /*
-        | '.' identifier:i #new_dot(_, _, i)
-        | "->" identifier:i #new_arrow(_, _, i)
-        | ["++"|"--"]:op #new_operator(op, op) #new_post(_, op, _)
+        | '.' identifier:ident #new_dot(_, _, ident, i)
+        | "->" identifier:ident #new_arrow(_, _, ident, i)
+        | ["++"|"--"]:op #new_operator(op, op, i) #new_post(_, op, _, i)
 */
         ]
         #bind('_', pexp)
@@ -245,7 +266,7 @@ func_arg_list =
 
 primary_expression =
 [
-    '(' or_expression:expr ')' #new_paren(_, expr)
+    #info:i '(' or_expression:expr ')' #new_paren(_, expr, i)
     |[ literal | identifier]:>_
 ]
 
@@ -253,9 +274,10 @@ identifier =
 [
     @ignore('null') 
     [
+        #info:i
         rootidentifier:id
 /*        #check_is_id(id) */
-        #new_id(_, id)
+        #new_id(_, id, i)
     ]
 ]
 
@@ -325,6 +347,7 @@ literal =
     @ignore('null')
     [
     __scope__:t
+    #info:i
     [
         hexadecimal_const_int #set(t, "int")
         | octal_const #set(t, "int")
@@ -333,6 +356,6 @@ literal =
         | string_const #set(t, "string")
         | char_const #set(t, "char")
     ]:val
-    #new_literal(_, val, t)
+    #new_literal(_, val, t, i)
     ]
 ]

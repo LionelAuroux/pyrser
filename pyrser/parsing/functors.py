@@ -291,7 +291,12 @@ class Error(Functor):
         self.kw = kwargs
 
     def __call__(self, parser: BasicParser) -> bool:
-        error.throw(self.msg, parser, **self.kw)
+        parser.diagnostic.notify(
+            error.Severity.ERROR,
+            self.msg,
+            error.StreamInfo(parser._stream)
+        )
+        return parser.diagnostic
 
 
 class Rule(Functor):

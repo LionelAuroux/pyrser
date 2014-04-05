@@ -61,6 +61,8 @@ class BasicParser(metaclass=MetaBasicParser):
         self.push_rule_nodes()
         self._lastIgnoreIndex = 0
         self._lastIgnore = False
+        self._lastRule = ""
+        self.diagnostic = error.Diagnostic()
 
 ### READ ONLY @property
 
@@ -196,6 +198,7 @@ class BasicParser(metaclass=MetaBasicParser):
         # TODO: other behavior for  empty rules?
         if name not in self.__class__._rules:
             error.throw("Unknown rule : %s" % name, self)
+        self._lastRule = name
         rule_to_eval = self.__class__._rules[name]
         # TODO: add packrat cache here, same rule - same pos == same res
         res = rule_to_eval(self)

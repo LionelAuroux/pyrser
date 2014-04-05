@@ -6,11 +6,6 @@ from collections import *
 from pyrser import meta
 
 
-#forward declaration of BasicParser
-class BasicParser:
-    pass
-
-
 Severity = meta.enum('INFO', 'WARNING', 'ERROR')
 
 
@@ -35,18 +30,34 @@ class StreamInfo(LocationInfo):
     """
 
     def __init__(self, stream: 'Stream'):
-        super().__init__(stream.name, stream.lineno, stream.col_offset, 1)
-        self.content = stream.last_readed_line + '\n'
+        print("BEGIN :%s" % stream._name)
+        mpos = stream._cursor.position
+        print("L:%d R:%s" % (mpos.lineno, repr(stream._cursor._eol)))
+        lb = 0
+        le = stream._cursor._maxindex
+        if len(stream._cursor._eol) > 1:
+            ilb = mpos.lineno - 2
+            ile = mpos.lineno - 1
+            print("ilb:%d ile:%d LEOL: %d" % (ilb, ile, len(stream._cursor._eol)))
+            lb = stream._cursor._eol[ilb].index
+            if ile >= len(stream._cursor._eol):
+                le = stream._cursor._maxindex
+            else:
+                le = stream._cursor._eol[ile].index
+        elif len(stream._cursor._eol) == 1:
+            le = stream._cursor._eol[0].index
+        print("debut:%s fin:%s" % (lb, le))
+        super().__init__(stream.name, mpos.lineno, mpos.col_offset, 1)
+        self.content = stream._content[lb:le] + '\n'
+        print("END")
 
     def get_content(self) -> str:
-        cl = re.compile('(\s+).')
-        m = cl.match(self.content)
         txt = "from {f} at line:{l} col:{c} :\n{content}{i}".format(
             f=self.filepath,
             content=self.content,
             l=self.line,
             c=self.col,
-            i=(' ' * (len(m.group(1)))) + '^'
+            i=(' ' * (self.col - 1)) + '^'
         )
         return txt
 
@@ -58,10 +69,11 @@ class FileInfo(LocationInfo):
     def __init__(self, filepath: str, line: int, col: int, size: int=1):
         super().__init__(os.path.abspath(filepath), line, col, size)
 
-    def from_current(pos=1):
+    def from_here(pos=1):
         f = inspect.currentframe()
         fcaller = inspect.getouterframes(f)[pos]
-        cl = re.compile('(\s+).')
+        rstr = r'(\s+).'
+        cl = re.compile(rstr)
         call = fcaller[4][0]
         m = cl.match(call)
         li = FileInfo(fcaller[1], fcaller[2], len(m.group(1)) + 1)
@@ -119,6 +131,9 @@ class Diagnostic:
     """
     def __init__(self):
         self.logs = OrderedDict()
+
+    def __bool__(self):
+        return self.have_errors() != True
 
     def notify(self, severity: Severity, msg: str,
                location: object, relatedid=None) -> int:
@@ -183,7 +198,7 @@ class ParseError(Exception):
         self.error_line = line
 
 
-def throw(msg: str, parser: BasicParser, **kw):
+def throw(msg: str, parser: 'BasicParser', **kw):
     """Convenient function to raise a ParseError"""
     kw.update(
         stream_name=parser._stream.name,

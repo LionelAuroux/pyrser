@@ -112,14 +112,24 @@ class GrammarBasic_Test(unittest.TestCase):
         Test parser error in CSV
         """
         csv = CSV()
-        with self.assertRaises(error.ParseError) as pe:
-            res = csv.parse("""
+        res = csv.parse("""
             1;2;3;4
+            8;9;10;11
             a;b;c;';4;5
             o;l;p
-            """)
-        self.assertEqual(pe.exception.error_position.col_offset, 19,
-                         "failed to get the correct position")
+        """)
+        self.assertFalse(res, "Failed to detect the error")
+        s = res.get_content()
+        self.assertEqual(
+            s,
+            ("{h}\n".format(h=('=' * 79))
+             + "error : Parse error with the rule eof\n"
+             + "from string at line:4 col:19 :\n"
+             + "            a;b;c;';4;5\n"
+             + "                  ^\n"
+             + "{f}".format(f=('-' * 79))),
+            "Bad Diagnostic.get_content"
+        )
 
     def test_05_parse_error_dsl(self):
         """

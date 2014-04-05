@@ -23,12 +23,12 @@ class InternalError_Test(unittest.TestCase):
                          ("from {f} at line:1 col:8 :\n".format(f=current_file)
                           + "import unittest\n%s~~~~~~~~" % (' ' * 7)),
                          "Bad FileInfo.get_content")
-        li = FileInfo.from_current()
+        li = FileInfo.from_here()
         s = li.get_content()
         self.assertEqual(
             s,
             ("from {f} at line:26 col:9 :\n".format(f=current_file)
-             + "{i}li = FileInfo.from_current()\n".format(i=(' ' * 8))
+             + "{i}li = FileInfo.from_here()\n".format(i=(' ' * 8))
              + "{i}^".format(i=(' ' * 8))),
             "Bad FileInfo.get_content"
         )
@@ -44,7 +44,19 @@ class InternalError_Test(unittest.TestCase):
             s,
             ("from root at line:3 col:1 :\n"
              + "      a\n"
-             + "      ^"),
+             + "^"),
+            "Bad FileInfo.get_content"
+        )
+        def intern_func():
+            li = FileInfo.from_here(2)
+            s = li.get_content()
+            return s
+        s = intern_func()
+        self.assertEqual(
+            s,
+            ("from {f} at line:54 col:9 :\n".format(f=current_file)
+             + "{i}s = intern_func()\n".format(i=(' ' * 8))
+             + "{i}^").format(i=(' ' * 8)),
             "Bad FileInfo.get_content"
         )
 

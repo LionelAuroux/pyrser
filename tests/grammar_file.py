@@ -165,7 +165,6 @@ class GrammarFile_Test(unittest.TestCase):
         self.assertTrue(res)
         self.assertTrue(isinstance(res.body[0], ExprStmt))
         txt = res.to_tl4t()
-        print(res.to_yml())
         self.assertEqual(str(txt), "a = 12 - 42;\n")
         res = test.parse("""
             a = f(12, "blabla", z);
@@ -181,3 +180,9 @@ class GrammarFile_Test(unittest.TestCase):
         self.assertTrue(isinstance(res.body[0], ExprStmt))
         txt = res.to_tl4t()
         self.assertEqual(str(txt), """a = (7 - 8) * 43;\n""")
+
+    def test_04_file_error(self):
+        """
+        Test ERROR
+        """
+        T = grammar.from_file(os.getcwd() + "/tests/bnf/error.bnf", 'source')

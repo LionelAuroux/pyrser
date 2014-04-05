@@ -16,67 +16,67 @@ class Cursor:
     It can be initialized or set from an immutable Position.
     """
     def __init__(self, position: Position=Position(0, 1, 1)):
-        self.__maxindex = self.__index = position.index
-        self.__maxcol = self.__col_offset = position.col_offset
-        self.__maxline = self.__lineno = position.lineno
-        self.__eol = []
+        self._maxindex = self._index = position.index
+        self._maxcol = self._col_offset = position.col_offset
+        self._maxline = self._lineno = position.lineno
+        self._eol = []
 
     @property
     def index(self) -> int:
         """The current index of the cursor."""
-        return self.__index
+        return self._index
 
     @property
     def lineno(self) -> int:
         """The current line number of the cursor."""
-        return self.__lineno
+        return self._lineno
 
     @property
     def col_offset(self) -> int:
         """The current column offset of the cursor."""
-        return self.__col_offset
+        return self._col_offset
 
     @property
     def position(self) -> Position:
         """The current position of the cursor."""
-        return Position(self.__index, self.__lineno, self.__col_offset)
+        return Position(self._index, self._lineno, self._col_offset)
 
     @position.setter
     def position(self, position: Position):
-        self.__index = position.index
-        self.__lineno = position.lineno
-        self.__col_offset = position.col_offset
+        self._index = position.index
+        self._lineno = position.lineno
+        self._col_offset = position.col_offset
 
     @property
     def max_readed_position(self) -> Position:
         """The index of the deepest character readed."""
-        return Position(self.__maxindex, self.__maxline, self.__maxcol)
+        return Position(self._maxindex, self._maxline, self._maxcol)
 
     def step_next_char(self):
         """Puts the cursor on the next character."""
-        self.__index += 1
-        self.__col_offset += 1
-        if self.__index > self.__maxindex:
-            self.__maxindex = self.__index
-            self.__maxcol = self.__col_offset
-            self.__maxline = self.__lineno
+        self._index += 1
+        self._col_offset += 1
+        if self._index > self._maxindex:
+            self._maxindex = self._index
+            self._maxcol = self._col_offset
+            self._maxline = self._lineno
 
     def step_prev_char(self):
         """Puts the cursor on the previous character."""
-        self.__col_offset -= 1
-        self.__index -= 1
+        self._col_offset -= 1
+        self._index -= 1
 
     def step_next_line(self):
         """Sets cursor as beginning of next line."""
-        self.__eol.append(self.position)
-        self.__lineno += 1
-        self.__col_offset = 0
+        self._eol.append(self.position)
+        self._lineno += 1
+        self._col_offset = 0
 
     def step_prev_line(self):
         """Sets cursor as end of previous line."""
         #TODO(bps): raise explicit error for unregistered eol
-        assert self.__eol[-1].index == self.__index
-        self.position = self.__eol.pop()
+        assert self._eol[-1].index == self.__index
+        self.position = self._eol.pop()
 
 
 class Tag:
@@ -107,29 +107,29 @@ class Tag:
 class Stream:
     """Helps keep track of stream processing progress."""
     def __init__(self, content='', name='string'):
-        self.__content = content
-        self.__len = len(content)
-        self.__name = name
+        self._content = content
+        self._len = len(content)
+        self._name = name
         self._contexts = []
         self._cursor = Cursor()
         # use to store begin:end => value
         self.value_cache = dict()
 
     def __len__(self) -> int:
-        return self.__len
+        return self._len
 
     def __getitem__(self, key: int or slice) -> str:
-        return self.__content.__getitem__(key)
+        return self._content.__getitem__(key)
 
     @property
     def name(self) -> int:
         """Name of the stream."""
-        return self.__name
+        return self._name
 
     @property
     def eos_index(self) -> int:
         """End Of Stream index."""
-        return self.__len
+        return self._len
 
     @property
     def index(self) -> int:
@@ -149,7 +149,7 @@ class Stream:
     @property
     def peek_char(self) -> str:
         """The current position character value."""
-        return self.__content[self._cursor.index]
+        return self._content[self._cursor.index]
 
     @property
     def last_readed_line(self) -> str:
@@ -162,9 +162,9 @@ class Stream:
             prevline -= 1
         # search next \n
         nextline = mindex
-        while nextline < self.eos_index and self.__content[nextline] != '\n':
+        while nextline < self.eos_index and self._content[nextline] != '\n':
             nextline += 1
-        last_line = self.__content[prevline + 1:nextline]
+        last_line = self._content[prevline + 1:nextline]
         return last_line
 
     def incpos(self, length: int=1) -> int:
@@ -173,7 +173,7 @@ class Stream:
             raise ValueError("length must be positive")
         i = 0
         while (i < length):
-            if self._cursor.index < self.__len:
+            if self._cursor.index < self._len:
                 if self.peek_char == '\n':
                     self._cursor.step_next_line()
                 self._cursor.step_next_char()

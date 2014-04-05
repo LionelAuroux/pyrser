@@ -25,9 +25,15 @@ class MetaGrammar(parsing.MetaBasicParser):
             cls._hooks = clsbase._hooks.new_child()
             # add rules from DSL
             if 'grammar' in namespace and namespace['grammar'] is not None:
-                dsl_object = cls.dsl_parser(namespace['grammar'])
+                sname = 'BNF'
+                if 'source' in namespace and namespace['source'] is not None:
+                    sname = namespace['source']
+                dsl_object = cls.dsl_parser(namespace['grammar'], sname)
+                rules = dsl_object.get_rules()
+                if not rules:
+                    raise Exception("\n" + rules.get_content() + "\n")
                 # namespace rules with module/classe name
-                for rule_name, rule_pt in dsl_object.get_rules().items():
+                for rule_name, rule_pt in rules.items():
                     if '.' not in rule_name:
                         rule_name = cls.__module__ \
                             + '.' + cls.__name__ \
@@ -92,6 +98,18 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
     def after_parse(self, node):
         return node
 
+    def _do_parse(self, entry):
+        res = self.eval_rule(entry)
+        self.rule_nodes.clear()
+        if not res:
+            self.diagnostic.notify(
+                error.Severity.ERROR,
+                "Parse error with the rule %s" % self._lastRule,
+                error.StreamInfo(self._stream)
+            )
+            return self.diagnostic
+        return self.after_parse(res)
+
     def parse(self, source=None, entry=None):
         """Parse source using the grammar"""
         if source is not None:
@@ -101,16 +119,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
         if entry is None:
             raise ValueError("No entry rule name defined for {}".format(
                 self.__class__.__name__))
-        res = self.eval_rule(entry)
-        self.rule_nodes.clear()
-        if not res:
-            raise error.ParseError(
-                "Parse error with the rule {rule!r}",
-                stream_name=self._stream.name,
-                rule=entry,
-                pos=self._stream._cursor.max_readed_position,
-                line=self._stream.last_readed_line)
-        return self.after_parse(res)
+        return self._do_parse(entry)
 
     def parse_file(self, filename: str, entry=None):
         """Parse filename using the grammar"""
@@ -124,34 +133,29 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
         if entry is None:
             raise ValueError("No entry rule name defined for {}".format(
                 self.__class__.__name__))
-        res = self.eval_rule(entry)
-        self.rule_nodes.clear()
-        if not res:
-            raise error.ParseError(
-                "Parse error with the rule {rule!r}",
-                stream_name=self._stream.name,
-                rule=entry,
-                pos=self._stream._cursor.max_readed_position,
-                line=self._stream.last_readed_line)
-        return self.after_parse(res)
+        return self._do_parse(entry)
 
 
 generated_class = 0
 
 
-def from_string(bnf: str, entry=None, *optional_inherit):
-    """
-    Create a Grammar from a string
-    """
+def build_grammar(inherit: tuple, scope: dict) -> Grammar:
     global generated_class
     class_name = "gen_class_" + str(generated_class)
     generated_class += 1
+    return type(class_name, inherit, scope)
+
+
+def from_string(bnf: str, entry=None, *optional_inherit) -> Grammar:
+    """
+    Create a Grammar from a string
+    """
     inherit = [Grammar] + list(optional_inherit)
     scope = {'grammar': bnf, 'entry': entry}
-    return type(class_name, tuple(inherit), scope)
+    return build_grammar(tuple(inherit), scope)
 
 
-def from_file(fn: str, entry=None, *optional_inherit):
+def from_file(fn: str, entry=None, *optional_inherit) -> Grammar:
     """
     Create a Grammar from a file
     """
@@ -160,5 +164,7 @@ def from_file(fn: str, entry=None, *optional_inherit):
         f = open(fn, 'r')
         bnf = f.read()
         f.close()
-        return from_string(bnf, entry, *optional_inherit)
+        inherit = [Grammar] + list(optional_inherit)
+        scope = {'grammar': bnf, 'entry': entry, 'source': fn}
+        return build_grammar(tuple(inherit), scope)
     raise Exception("File not Found!")
