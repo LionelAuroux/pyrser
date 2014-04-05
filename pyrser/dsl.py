@@ -644,9 +644,14 @@ def hook_param(self, hook, p):
 @meta.hook(EBNF, "EBNF.add_directive")
 def add_directive(self, sequence, d, s):
     """Add a directive in the sequence"""
-    if d.name not in meta._directives:
-        raise TypeError("Unkown directive %s" % d.name)
-    the_class = meta._directives[d.name]
-    sequence.parser_tree = parsing.Directive(the_class(), d.listparam,
-                                             s.parser_tree)
+    if d.name in meta._directives:
+        the_class = meta._directives[d.name]
+        sequence.parser_tree = parsing.Directive(the_class(), d.listparam,
+                                                 s.parser_tree)
+    elif d.name in meta._decorators:
+        the_class = meta._decorators[d.name]
+        sequence.parser_tree = parsing.Decorator(the_class, d.listparam,
+                                                 s.parser_tree)
+    else:
+        raise TypeError("Unkown directive or decorator %s" % d.name)
     return True

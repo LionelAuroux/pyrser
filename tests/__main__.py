@@ -8,12 +8,17 @@ parent_dir = path.join(path.dirname(__file__), os.pardir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
+<<<<<<< local
 from tests import grammar_basic, grammar_file, grammar_type
 from tests import internal_parse
 from tests import internal_dsl
 from tests import internal_fmt
 from tests import internal_type
 from tests import internal_error
+=======
+from tests import grammar_basic, grammar_directive, grammar_file
+from tests import internal_parse, internal_dsl, internal_fmt, internal_type
+>>>>>>> other
 from tests import gen_dsl
 
 
@@ -25,6 +30,7 @@ test_cases = (
     internal_fmt.InternalFmt_Test,
     internal_type.InternalType_Test,
     grammar_basic.GrammarBasic_Test,
+    grammar_directive.GrammarDirective_Test,
     grammar_file.GrammarFile_Test,
     grammar_type.GrammarType_Test,
     gen_dsl.GenDsl_Test,

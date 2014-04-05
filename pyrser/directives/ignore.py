@@ -7,16 +7,19 @@ def ignore_cxx(self) -> bool:
     self._stream.save_context()
     while not self.read_eof():
         idxref = self._stream.index
-        if self._stream.peek_char in " \t\f\r\n":
+        if self._stream.peek_char in " \t\v\f\r\n":
             while (not self.read_eof()
-                    and self._stream.peek_char in " \t\f\r\n"):
+                    and self._stream.peek_char in " \t\v\f\r\n"):
                 self._stream.incpos()
-        if self.peek_text("//") and self.read_until("\n", ""):
-            break
+        if self.peek_text("//"):
+            while not self.read_eof() and not self.peek_char("\n"):
+                self._stream.incpos()
+            if not self.read_char("\n") and self.read_eof():
+                return self._stream.validate_context()
         if self.peek_text("/*"):
             while not self.read_eof() and not self.peek_text("*/"):
                 self._stream.incpos()
-            if self.read_eof() or not self.read_text("*/"):
+            if not self.read_text("*/") and self.read_eof():
                 return self._stream.restore_context()
         if idxref == self._stream.index:
             break

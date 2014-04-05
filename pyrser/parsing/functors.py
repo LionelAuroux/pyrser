@@ -1,8 +1,12 @@
+import inspect
 import types
 from pyrser import meta, error
 from pyrser.parsing.base import BasicParser
 from pyrser.parsing.node import Node
 from pyrser.parsing.stream import Tag
+
+
+_decorators = []
 
 
 class Functor:
@@ -12,7 +16,24 @@ class Functor:
         pt if contain a Functor
         ptlist if contain a list of Functor
     """
-    pass
+
+    def do_call(self, parser: BasicParser) -> Node:
+        pass
+
+    def __call__(self, parser: BasicParser) -> Node:
+        global _decorators
+
+        # call the begin methods in order
+        for i in range(0, len(_decorators)):
+            _decorators[i].begin(parser, self)
+
+        res = self.do_call(parser)
+
+        # call the end methods in reverse order
+        for i in range(len(_decorators) - 1, -1, -1):
+            _decorators[i].end(res, parser, self)
+
+        return res
 
 
 class Seq(Functor):
@@ -24,7 +45,7 @@ class Seq(Functor):
             raise TypeError("Expected Functor")
         self.ptlist = ptlist
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         parser._stream.save_context()
         for pt in self.ptlist:
             parser.skip_ignore()
@@ -42,7 +63,7 @@ class Scope(Functor):
         self.end = end
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         if not self.begin(parser):
             return False
         res = self.pt(parser)
@@ -57,7 +78,7 @@ class LookAhead(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         parser._stream.save_context()
         res = self.pt(parser)
         parser._stream.restore_context()
@@ -71,7 +92,7 @@ class Neg(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser):
+    def do_call(self, parser: BasicParser):
         parser._stream.save_context()
         if self.pt(parser):
             res = parser._stream.restore_context()
@@ -86,7 +107,7 @@ class Complement(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         if parser.read_eof():
             return False
         ## skip/undo?
@@ -108,7 +129,7 @@ class Until(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         ## skip/undo?
         parser.skip_ignore()
         parser._stream.save_context()
@@ -130,14 +151,14 @@ class Call(Functor):
         self.callObject = callObject
         self.params = params
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         return self.callObject(parser, *self.params)
 
 
 class CallTrue(Call):
     """Functor to wrap arbitrary callable object in BNF clause."""
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         self.callObject(*self.params)
         return True
 
@@ -152,7 +173,7 @@ class Capture(Functor):
         self.tagname = tagname
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         if parser.begin_tag(self.tagname):
             # subcontext
             parser.push_rule_nodes()
@@ -180,7 +201,7 @@ class DeclNode(Functor):
             raise TypeError("Illegal tagname for capture")
         self.tagname = tagname
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         parser.rule_nodes[self.tagname] = Node()
         return True
 
@@ -197,7 +218,7 @@ class Bind(Functor):
         self.tagname = tagname
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         res = self.pt(parser)
         if res:
             parser.bind(self.tagname, res)
@@ -212,7 +233,7 @@ class Alt(Functor):
         Functor.__init__(self)
         self.ptlist = ptlist
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         # save result of current rule
         parser.push_rule_nodes()
         for pt in self.ptlist:
@@ -237,7 +258,7 @@ class RepOptional(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         parser.skip_ignore()
         res = self.pt(parser)
         if res:
@@ -252,7 +273,7 @@ class Rep0N(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         parser.skip_ignore()
         parser.push_rule_nodes()
         while self.pt(parser):
@@ -268,7 +289,7 @@ class Rep1N(Functor):
         Functor.__init__(self)
         self.pt = pt
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         parser._stream.save_context()
         # skip/undo
         parser.skip_ignore()
@@ -306,7 +327,7 @@ class Rule(Functor):
         Functor.__init__(self)
         self.name = name
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         parser.push_rule_nodes()
         res = parser.eval_rule(self.name)
         parser.pop_rule_nodes()
@@ -326,7 +347,7 @@ class Hook(Functor):
                                 "str, Node)")
         self.param = param
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         valueparam = []
         for v, t in self.param:
             if t is Node:
@@ -371,33 +392,45 @@ class DirectiveWrapper(Functor, metaclass=MetaDirectiveWrapper):
         if (not hasattr(self.__class__, 'begin') or
                 not hasattr(self.__class__, 'end')):
             return False
-        pbegin = self.__class__.begin.__code__.co_varnames
-        tbegin = self.__class__.begin.__annotations__
-        pend = self.__class__.end.__code__.co_varnames
-        tend = self.__class__.end.__annotations__
+        sbegin = inspect.signature(self.begin)
+        send = inspect.signature(self.end)
+
         idx = 0
-        for pname in pbegin:
-            if pname in tbegin:
-                if not isinstance(params[idx], tbegin[pname]):
-                    raise TypeError(
-                        "{}: Wrong parameter in begin method parameter {} "
-                        "expected {} got {}".format(
-                            self.__class__.__name__,
-                            idx, type(params[idx]),
-                            tbegin[pname]))
-                idx += 1
+        for param in list(sbegin.parameters.values())[1:]:
+            if idx >= len(params) and param.default is inspect.Parameter.empty:
+                raise RuntimeError("{}: No parameter given to begin"
+                                   " method for argument {}, expected {}".
+                                   format(
+                                       self.__class__.__name__,
+                                       idx, param.annotation))
+            elif idx < len(params) and
+            not isinstance(params[idx], param.annotation):
+                raise TypeError(
+                    "{}: Wrong parameter in begin method parameter {} "
+                    "expected {} got {}".format(
+                        self.__class__.__name__,
+                        idx, type(params[idx]),
+                        param.annotation))
+            idx += 1
+
         idx = 0
-        for pname in pend:
-            if pname in tend:
-                if not isinstance(params[idx], tend[pname]):
-                    raise TypeError(
-                        "{}: Wrong parameter in end method parameter {} "
-                        "expected {} got {}".format(
-                            self.__class__.__name__,
-                            idx,
-                            type(params[idx]),
-                            tend[pname]))
-                idx += 1
+        for param in list(send.parameters.values())[1:]:
+            if idx >= len(params) and param.default is inspect.Parameter.empty:
+                raise RuntimeError("{}: No parameter given to end"
+                                   " method for argument {}, expected {}".
+                                   format(
+                                       self.__class__.__name__,
+                                       idx, param.annotation))
+            elif idx < len(params) and
+            not isinstance(params[idx], param.annotation):
+                raise TypeError(
+                    "{}: Wrong parameter in end method parameter {} "
+                    "expected {} got {}".format(
+                        self.__class__.__name__,
+                        idx, type(params[idx]),
+                        param.annotation))
+            idx += 1
+
         return True
 
     def begin(self):
@@ -422,7 +455,7 @@ class Directive(Functor):
                     "Must be pair of value and type (i.e: int, str, Node)")
         self.param = param
 
-    def __call__(self, parser: BasicParser) -> Node:
+    def do_call(self, parser: BasicParser) -> Node:
         valueparam = []
         for v, t in self.param:
             if t is Node:
@@ -439,4 +472,96 @@ class Directive(Functor):
         res = self.pt(parser)
         if not self.directive.end(parser, *valueparam):
             return False
+        return res
+
+
+class MetaDecoratorWrapper(type):
+    """metaclass of all DecoratorWrapper subclasses.
+    ensure that begin and end exists in subclasses as method"""
+    def __new__(metacls, name, bases, namespace):
+        cls = type.__new__(metacls, name, bases, namespace)
+        if 'begin' not in namespace:
+            raise TypeError(
+                "DirectiveWrapper %s must have a begin method" % name)
+        if not(isinstance(namespace['begin'], types.FunctionType)):
+            raise TypeError(
+                "'begin' not a function class in DirectiveWrapper %s" % name)
+        if 'end' not in namespace:
+            raise TypeError(
+                "DirectiveWrapper %s subclasse must have a end method" % name)
+        if not(isinstance(namespace['end'], types.FunctionType)):
+            raise TypeError(
+                "'end' not a function class in DirectiveWrapper %s" % name)
+        return cls
+
+
+class DecoratorWrapper(Functor, metaclass=MetaDecoratorWrapper):
+
+    def begin(self):
+        pass
+
+    def end(self):
+        pass
+
+
+class Decorator(Functor):
+    def __init__(self, decoratorClass: type, param: [(object, type)],
+                 pt: Functor):
+        self.decorator_class = decoratorClass
+        self.pt = pt
+        # compose the list of value param, check type
+        for v, t in param:
+            if type(t) is not type:
+                raise TypeError(
+                    "Must be pair of value and type (i.e: int, str, Node)")
+        self.param = param
+
+    def checkParam(self, the_class: type, params: list) -> bool:
+        sinit = inspect.signature(the_class.__init__)
+
+        idx = 0
+        for param in list(sinit.parameters.values())[1:]:
+            if idx >= len(params) and param.default is inspect.Parameter.empty:
+                raise RuntimeError("{}: No parameter given to begin"
+                                   " method for argument {}, expected {}".
+                                   format(
+                                       the_class.__name__,
+                                       idx, param.annotation))
+            elif idx < len(params) and
+            not isinstance(params[idx], param.annotation):
+                raise TypeError(
+                    "{}: Wrong parameter in begin method parameter {} "
+                    "expected {} got {}".format(
+                        the_class.__name__,
+                        idx, type(params[idx]),
+                        param.annotation))
+            idx += 1
+
+        return True
+
+    def do_call(self, parser: BasicParser) -> Node:
+        """
+            The Decorator call is the one that actually pushes/pops
+            the decorator in the active decorators list (parsing._decorators)
+        """
+        valueparam = []
+        for v, t in self.param:
+            if t is Node:
+                valueparam.append(parser.rule_nodes[v])
+            elif type(v) is t:
+                valueparam.append(v)
+            else:
+                raise TypeError(
+                    "Type mismatch expected {} got {}".format(t, type(v)))
+
+        if not self.checkParam(self.decorator_class, valueparam):
+            return False
+
+        decorator = self.decorator_class(*valueparam)
+
+        global _decorators
+        _decorators.append(decorator)
+        res = self.pt(parser)
+        _decorators.pop()
+
         return res

@@ -1,7 +1,9 @@
 from pyrser.parsing.functors import Functor
 from pyrser.parsing.functors import Call, CallTrue
 from pyrser.parsing.functors import Complement, LookAhead, Neg, Until
-from pyrser.parsing.functors import Hook, Rule, Directive, DirectiveWrapper
+from pyrser.parsing.functors import Hook, Rule
+from pyrser.parsing.functors import Directive, DirectiveWrapper
+from pyrser.parsing.functors import Decorator, DecoratorWrapper
 from pyrser.parsing.functors import Alt, Seq
 from pyrser.parsing.functors import Rep0N, Rep1N, RepOptional
 from pyrser.parsing.functors import Capture, Scope, Bind, DeclNode
@@ -22,6 +24,8 @@ __all__ = [
     'DeclNode',
     'Directive',
     'DirectiveWrapper',
+    'Decorator',
+    'DecoratorWrapper',
     'Error',
     'Functor',
     'Hook',

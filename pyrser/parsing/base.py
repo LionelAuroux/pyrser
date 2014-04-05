@@ -309,9 +309,9 @@ class BasicParser(metaclass=MetaBasicParser):
     def ignore_blanks(self) -> bool:
         """Consume whitespace characters."""
         self._stream.save_context()
-        if not self.read_eof() and self._stream.peek_char in " \t\f\r\n":
+        if not self.read_eof() and self._stream.peek_char in " \t\v\f\r\n":
             while (not self.read_eof()
-                   and self._stream.peek_char in " \t\f\r\n"):
+                   and self._stream.peek_char in " \t\v\f\r\n"):
                 self._stream.incpos()
             return self._stream.validate_context()
         return self._stream.validate_context()
