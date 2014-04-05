@@ -14,6 +14,7 @@ from tests import internal_fmt
 from tests import internal_type
 from tests import internal_error
 from tests import grammar_basic
+from tests import grammar_directive
 from tests import grammar_file
 from tests import grammar_type
 from tests import gen_dsl

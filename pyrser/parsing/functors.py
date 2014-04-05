@@ -403,8 +403,8 @@ class DirectiveWrapper(Functor, metaclass=MetaDirectiveWrapper):
                                    format(
                                        self.__class__.__name__,
                                        idx, param.annotation))
-            elif idx < len(params) and
-            not isinstance(params[idx], param.annotation):
+            elif (idx < len(params)
+                  and not isinstance(params[idx], param.annotation)):
                 raise TypeError(
                     "{}: Wrong parameter in begin method parameter {} "
                     "expected {} got {}".format(
@@ -421,8 +421,8 @@ class DirectiveWrapper(Functor, metaclass=MetaDirectiveWrapper):
                                    format(
                                        self.__class__.__name__,
                                        idx, param.annotation))
-            elif idx < len(params) and
-            not isinstance(params[idx], param.annotation):
+            elif (idx < len(params)
+                  and not isinstance(params[idx], param.annotation)):
                 raise TypeError(
                     "{}: Wrong parameter in end method parameter {} "
                     "expected {} got {}".format(
@@ -527,8 +527,8 @@ class Decorator(Functor):
                                    format(
                                        the_class.__name__,
                                        idx, param.annotation))
-            elif idx < len(params) and
-            not isinstance(params[idx], param.annotation):
+            elif (idx < len(params)
+                  and not isinstance(params[idx], param.annotation)):
                 raise TypeError(
                     "{}: Wrong parameter in begin method parameter {} "
                     "expected {} got {}".format(

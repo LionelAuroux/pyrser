@@ -22,8 +22,8 @@ class Trace(parsing.DecoratorWrapper):
         for all its children tracers.
         """
         item = pt
-        while isinstance(item, parsing.Directive) or
-        isinstance(item, parsing.Decorator):
+        while (isinstance(item, parsing.Directive)
+               or isinstance(item, parsing.Decorator)):
             item = item.pt
 
         if isinstance(item, parsing.Rule) is False:
@@ -40,8 +40,8 @@ class Trace(parsing.DecoratorWrapper):
         """
 
         item = pt
-        while isinstance(item, parsing.Directive) or
-        isinstance(item, parsing.Decorator):
+        while (isinstance(item, parsing.Directive)
+               or isinstance(item, parsing.Decorator)):
             item = item.pt
 
         if isinstance(item, parsing.Rule) is False:
