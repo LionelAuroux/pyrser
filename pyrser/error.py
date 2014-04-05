@@ -30,21 +30,12 @@ class StreamInfo(LocationInfo):
     """
 
     def __init__(self, stream: 'Stream'):
-        print("BEGIN :%s" % stream._name)
         mpos = stream._cursor.position
-        print("L:%d R:%s" % (mpos.lineno, repr(stream._cursor._eol)))
         lb = 0
         le = stream._cursor._maxindex
         if len(stream._cursor._eol) > 1:
             ilb = mpos.lineno - 2
             ile = mpos.lineno - 1
-            print(
-                "ilb:%d ile:%d LEOL: %d" % (
-                    ilb,
-                    ile,
-                    len(stream._cursor._eol)
-                )
-            )
             lb = stream._cursor._eol[ilb].index
             if ile >= len(stream._cursor._eol):
                 le = stream._cursor._maxindex
@@ -52,10 +43,8 @@ class StreamInfo(LocationInfo):
                 le = stream._cursor._eol[ile].index
         elif len(stream._cursor._eol) == 1:
             le = stream._cursor._eol[0].index
-        print("debut:%s fin:%s" % (lb, le))
         super().__init__(stream.name, mpos.lineno, mpos.col_offset, 1)
         self.content = stream._content[lb:le] + '\n'
-        print("END")
 
     def get_content(self) -> str:
         txt = "from {f} at line:{l} col:{c} :\n{content}{i}".format(
@@ -128,7 +117,7 @@ class Notification:
         return txt
 
 
-class Diagnostic:
+class Diagnostic(Exception):
     """
     The diagnostic object is use to handle easily
     all errors/warnings/infos in a compiler that you could
@@ -184,30 +173,30 @@ class Diagnostic:
     def have_errors(self) -> bool:
         inf = self.get_infos()
         return inf[Severity.ERROR] > 0
-
-
-class ParseError(Exception):
-    def __init__(self, message, stream_name="", pos=None, line="", **kwargs):
-        msg = (message + " in {stream_name} at line {line} col {col}\n"
-               "{last_read_line}\n"
-               "{underline}")
-        underline = "%s^" % ('-' * (pos.col_offset - 1))
-        kwargs.update(
-            message=message, stream_name=stream_name,
-            line=pos.lineno, col=pos.col_offset,
-            last_read_line=line, underline=underline)
-        self.raw_msg = message
-        self.msg = msg.format(**kwargs)
-        Exception.__init__(self, self.msg)
-        self.stream_name = stream_name
-        self.error_position = pos
-        self.error_line = line
-
-
-def throw(msg: str, parser: 'BasicParser', **kw):
-    """Convenient function to raise a ParseError"""
-    kw.update(
-        stream_name=parser._stream.name,
-        pos=parser._stream._cursor.max_readed_position,
-        line=parser._stream.last_readed_line)
-    raise ParseError(msg, **kw)
+#
+#
+#class ParseError(Exception):
+#    def __init__(self, message, stream_name="", pos=None, line="", **kwargs):
+#        msg = (message + " in {stream_name} at line {line} col {col}\n"
+#               "{last_read_line}\n"
+#               "{underline}")
+#        underline = "%s^" % ('-' * (pos.col_offset - 1))
+#        kwargs.update(
+#            message=message, stream_name=stream_name,
+#            line=pos.lineno, col=pos.col_offset,
+#            last_read_line=line, underline=underline)
+#        self.raw_msg = message
+#        self.msg = msg.format(**kwargs)
+#        Exception.__init__(self, self.msg)
+#        self.stream_name = stream_name
+#        self.error_position = pos
+#        self.error_line = line
+#
+#
+#def throw(msg: str, parser: 'BasicParser', **kw):
+#    """Convenient function to raise a ParseError"""
+#    kw.update(
+#        stream_name=parser._stream.name,
+#        pos=parser._stream._cursor.max_readed_position,
+#        line=parser._stream.last_readed_line)
+#    raise ParseError(msg, **kw)

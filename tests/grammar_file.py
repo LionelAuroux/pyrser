@@ -185,4 +185,8 @@ class GrammarFile_Test(unittest.TestCase):
         """
         Test ERROR
         """
-        T = grammar.from_file(os.getcwd() + "/tests/bnf/error.bnf", 'source')
+        T = grammar.from_file(os.getcwd() + "/tests/bnf/error_bracket.bnf", 'source')
+        self.assertFalse(T, "Can't detect error in BNF")
+        print(T.get_content())
+        idx = list(T.logs.keys())[0]
+        self.assertEqual(T.logs[idx][0].msg, "Expected ']'", "Bad message in Error")

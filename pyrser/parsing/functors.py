@@ -311,13 +311,13 @@ class Error(Functor):
         self.msg = msg
         self.kw = kwargs
 
-    def __call__(self, parser: BasicParser) -> bool:
+    def do_call(self, parser: BasicParser) -> bool:
         parser.diagnostic.notify(
             error.Severity.ERROR,
             self.msg,
             error.StreamInfo(parser._stream)
         )
-        return parser.diagnostic
+        raise parser.diagnostic
 
 
 class Rule(Functor):

@@ -18,14 +18,16 @@ class EBNF(parsing.Parser):
         Call by the MetaGrammar class.
         """
         # TODO:
-        res = self.eval_rule('bnf_dsl')
-        if not res:
-            self.diagnostic.notify(
+        res = None
+        try:
+            res = self.eval_rule('bnf_dsl')
+        except error.Diagnostic as d:
+            d.notify(
                 error.Severity.ERROR,
                 "Parse error with the rule %s" % self._lastRule,
                 error.StreamInfo(self._stream)
             )
-            res = self.diagnostic
+            res = d
         return res
 
     def __init__(self, content='', sname='BNF'):

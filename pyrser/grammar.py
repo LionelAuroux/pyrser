@@ -31,7 +31,8 @@ class MetaGrammar(parsing.MetaBasicParser):
                 dsl_object = cls.dsl_parser(namespace['grammar'], sname)
                 rules = dsl_object.get_rules()
                 if not rules:
-                    raise Exception("\n" + rules.get_content() + "\n")
+                    #raise Exception("\n" + rules.get_content() + "\n")
+                    return rules
                 # namespace rules with module/classe name
                 for rule_name, rule_pt in rules.items():
                     if '.' not in rule_name:
@@ -99,15 +100,17 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
         return node
 
     def _do_parse(self, entry):
-        res = self.eval_rule(entry)
-        self.rule_nodes.clear()
-        if not res:
-            self.diagnostic.notify(
+        res = None
+        try:
+            res = self.eval_rule(entry)
+            self.rule_nodes.clear()
+        except error.Diagnostic as d:
+            d.notify(
                 error.Severity.ERROR,
                 "Parse error with the rule %s" % self._lastRule,
                 error.StreamInfo(self._stream)
             )
-            return self.diagnostic
+            return d
         return self.after_parse(res)
 
     def parse(self, source=None, entry=None):
