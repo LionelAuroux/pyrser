@@ -9,7 +9,7 @@ Pyrser is a package that allows you to quickly describe a grammar aiming to pars
 Pyrser uses a DSL similar to EBNF to describe grammar rules.
 This DSL doesn't include any language construction, here python.
 In pyrser, we don't mix parsing rules and code.
-The Pyrser's DSL could be use for another language in near future.
+Pyrser's DSL could be use for another language in near future.
 
 Pyrser provides only two abstractions:
     * hooks : that connect one event in your grammar to a method in your handling class.
@@ -22,8 +22,7 @@ A minimal use of pyrser is ::
     class   Helloworld(grammar.Grammar):
         entry = "main"
         grammar = """
-            main ::= ["hello" | "world"]* eof
-            ;
+            main = [["hello" | "world"]+ eof]
         """
     
     import sys
@@ -31,9 +30,9 @@ A minimal use of pyrser is ::
     if hw.parse_file(sys.argv[1]):
         print("OK")
 
-This piece of code allow you to read a list of ``hello`` or ``word``.
+This piece of code allow you to read a list of the words ``hello`` or ``world``.
 
-See :doc:`tutorial` to understand how works this sample.
+See :doc:`tutorial` to understand how this sample works.
 
 PEG Parser
 ==========
@@ -43,6 +42,7 @@ PEGs parser allow you to superset LL(k), LR(k), and deal with "not so context-fr
 To write PEG parser, just remember:
 
     * Don't use left recursivity.
+    * Repetition operators are always greedy
     * You have infinite positive or negative lookahead.
     * Ambiguity is always resolved by yielding the first successful recognition in alternation (``|``).
     * With hooks, Pyrser allows you to choose alternation contextually during parsing.
