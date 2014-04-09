@@ -50,7 +50,6 @@ But Pyrser BNF syntax provides the repeater ``?`` that allows you to describe ``
 
     grammar = """ 
         object = [ '{' members? '}' ]
-        ;
     """
 
 Using :doc:`dsl`, we translate completly the grammar.

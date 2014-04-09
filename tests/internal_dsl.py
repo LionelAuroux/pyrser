@@ -227,15 +227,14 @@ class InternalDsl_Test(unittest.TestCase):
         bnf = dsl.EBNF("""
             the_rule = [ !a+ ]
         """)
-        r = bnf.get_rules()
-        self.assertFalse(r, "Can't detect error")
-        self.assertIsInstance(r, error.Diagnostic, "Fetch a none diagnostic")
+        with self.assertRaises(error.Diagnostic) as pe:
+            r = bnf.get_rules()
         self.assertEqual(
-            r.logs[0].msg,
+            pe.exception.logs[0].msg,
             "Cannot repeat a negated rule",
             "Bad message"
         )
-        os.remove(r.logs[0].location.filepath)
+        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_16_lookaheadRule(self):
         bnf = dsl.EBNF("""
@@ -250,15 +249,14 @@ class InternalDsl_Test(unittest.TestCase):
         bnf = dsl.EBNF("""
             the_rule = [ !!a+ ]
         """)
-        r = bnf.get_rules()
-        self.assertFalse(r, "Can't detect error")
-        self.assertIsInstance(r, error.Diagnostic, "Fetch a none diagnostic")
+        with self.assertRaises(error.Diagnostic) as pe:
+            r = bnf.get_rules()
         self.assertEqual(
-            r.logs[0].msg,
+            pe.exception.logs[0].msg,
             "Cannot repeat a lookahead rule",
             "Bad message"
         )
-        os.remove(r.logs[0].location.filepath)
+        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_18_hookNoParam(self):
         bnf = dsl.EBNF("""

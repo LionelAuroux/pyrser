@@ -1,4 +1,5 @@
 import unittest
+import os
 from pyrser import grammar, meta
 from pyrser import error
 from pyrser.passes.to_yml import *
@@ -26,7 +27,6 @@ class GrammarFile_Test(unittest.TestCase):
         """
         Test JSON
         """
-        import os
         JSON = grammar.from_file(os.getcwd() + "/tests/bnf/json.bnf", 'json')
 
         # add hook to the dynamically created base class
