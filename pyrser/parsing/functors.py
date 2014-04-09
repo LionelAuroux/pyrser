@@ -315,7 +315,7 @@ class Error(Functor):
         parser.diagnostic.notify(
             error.Severity.ERROR,
             self.msg,
-            error.StreamInfo(parser._stream)
+            error.LocationInfo.from_stream(parser._stream)
         )
         raise parser.diagnostic
 
@@ -352,7 +352,12 @@ class Hook(Functor):
         for v, t in self.param:
             if t is Node:
                 if v not in parser.rule_nodes:
-                    error.throw("Unknown capture variable : %s" % v, parser)
+                    parser.diagnostic.notify(
+                        error.Severity.ERROR,
+                        "Unknown capture variable : %s" % v,
+                        error.LocationInfo.from_stream(parser._stream)
+                    )
+                    raise parser.diagnostic
                 valueparam.append(parser.rule_nodes[v])
             elif type(v) is t:
                 valueparam.append(v)

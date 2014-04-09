@@ -121,154 +121,159 @@ class GrammarBasic_Test(unittest.TestCase):
         self.assertFalse(res, "Failed to detect the error")
         s = res.get_content()
         self.assertEqual(
-            s,
-            ("{h}\n".format(h=('=' * 79))
-             + "error : Parse error with the rule eof\n"
-             + "from string at line:4 col:19 :\n"
-             + "            a;b;c;';4;5\n"
-             + "                  ^\n"
-             + "{f}".format(f=('-' * 79))),
-            "Bad Diagnostic.get_content"
+            res.logs[0].msg,
+            "Parse error in 'eof'",
+            "Bad message in Diagnostic"
+        )
+        self.assertEqual(
+            res.logs[0].location.line,
+            4,
+            "Bad line in Diagnostic"
+        )
+        self.assertEqual(
+            res.logs[0].location.col,
+            19,
+            "Bad line in Diagnostic"
         )
 
     def test_05_parse_error_dsl(self):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(error.ParseError) as pe:
+        with self.assertRaises(error.Diagnostic) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf"""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.raw_msg, "Expected '='",
+        self.assertEqual(pe.exception.logs[0].msg, "Expected '='",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 37,
+        self.assertEqual(pe.exception.logs[0].location.col, 37,
                          "failed to get the correct position")
 
     def test_06_parse_error_dsl(self):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(error.ParseError) as pe:
+        with self.assertRaises(error.Diagnostic) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf = [ clause"""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.raw_msg, "Expected ']'",
+        self.assertEqual(pe.exception.logs[0].msg, "Expected ']'",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 48,
+        self.assertEqual(pe.exception.logs[0].location.col, 48,
                          "failed to get the correct position")
 
     def test_07_parse_error_dsl(self):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(error.ParseError) as pe:
+        with self.assertRaises(error.Diagnostic) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf =[ #hook(12"""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.raw_msg, "Expected ')'",
+        self.assertEqual(pe.exception.logs[0].msg, "Expected ')'",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 49,
+        self.assertEqual(pe.exception.logs[0].location.col, 49,
                          "failed to get the correct position")
 
     def test_08_parse_error_dsl(self):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(error.ParseError) as pe:
+        with self.assertRaises(error.Diagnostic) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf = [ @dir(12"""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.raw_msg, "Expected ')'",
+        self.assertEqual(pe.exception.logs[0].msg, "Expected ')'",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 49,
+        self.assertEqual(pe.exception.logs[0].location.col, 49,
                          "failed to get the correct position")
 
     def test_09_parse_error_dsl(self):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(error.ParseError) as pe:
+        with self.assertRaises(error.Diagnostic) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf =[ #hook(12,"""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.raw_msg, "Expected parameter",
+        self.assertEqual(pe.exception.logs[0].msg, "Expected parameter",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 50,
+        self.assertEqual(pe.exception.logs[0].location.col, 50,
                          "failed to get the correct position")
 
     def test_10_parse_error_dsl(self):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(error.ParseError) as pe:
+        with self.assertRaises(error.Diagnostic) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf =[ #hook("""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.raw_msg, "Expected parameter",
+        self.assertEqual(pe.exception.logs[0].msg, "Expected parameter",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 47,
+        self.assertEqual(pe.exception.logs[0].location.col, 47,
                          "failed to get the correct position")
 
     def test_11_parse_error_dsl(self):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(error.ParseError) as pe:
+        with self.assertRaises(error.Diagnostic) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf =[ @dir(12,"""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.raw_msg, "Expected parameter",
+        self.assertEqual(pe.exception.logs[0].msg, "Expected parameter",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 49,
+        self.assertEqual(pe.exception.logs[0].location.col, 49,
                          "failed to get the correct position")
 
     def test_12_parse_error_dsl(self):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(error.ParseError) as pe:
+        with self.assertRaises(error.Diagnostic) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf =[ @dir("""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.raw_msg, "Expected parameter",
+        self.assertEqual(pe.exception.logs[0].msg, "Expected parameter",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 46,
+        self.assertEqual(pe.exception.logs[0].location.col, 46,
                          "failed to get the correct position")
 
     def test_13_parse_error_dsl(self):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(error.ParseError) as pe:
+        with self.assertRaises(error.Diagnostic) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf =[ [a"""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.raw_msg, "Expected ']'",
+        self.assertEqual(pe.exception.logs[0].msg, "Expected ']'",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 43,
+        self.assertEqual(pe.exception.logs[0].location.col, 43,
                          "failed to get the correct position")
 
     def test_14_parse_error_dsl(self):
         """
         Test parser error in the DSL
         """
-        with self.assertRaises(error.ParseError) as pe:
+        with self.assertRaises(error.Diagnostic) as pe:
             class TestDsl(grammar.Grammar):
                 grammar = """
                     not_finished_bnf =[ ["""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.raw_msg, "Expected sequences",
+        self.assertEqual(pe.exception.logs[0].msg, "Expected sequences",
                          "failed to get the correct message")
-        self.assertEqual(pe.exception.error_position.col_offset, 42,
+        self.assertEqual(pe.exception.logs[0].location.col, 42,
                          "failed to get the correct position")
 
     def test_15_ignore_cpp(self):

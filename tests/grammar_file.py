@@ -1,5 +1,6 @@
 import unittest
 from pyrser import grammar, meta
+from pyrser import error
 from pyrser.passes.to_yml import *
 from pyrser.hooks.echo import *
 from tests.grammar.tl4t import *
@@ -185,8 +186,68 @@ class GrammarFile_Test(unittest.TestCase):
         """
         Test ERROR
         """
-        T = grammar.from_file(os.getcwd() + "/tests/bnf/error_bracket.bnf", 'source')
-        self.assertFalse(T, "Can't detect error in BNF")
-        print(T.get_content())
-        idx = list(T.logs.keys())[0]
-        self.assertEqual(T.logs[idx][0].msg, "Expected ']'", "Bad message in Error")
+        with self.assertRaises(error.Diagnostic) as pe:
+            T = grammar.from_file(
+                os.getcwd() + "/tests/bnf/error_bracket.bnf",
+                'source'
+            )
+        self.assertFalse(pe.exception, "Can't detect error in BNF")
+        self.assertEqual(
+            pe.exception.logs[0].msg,
+            "Expected ']'",
+            "Bad message in Error"
+        )
+        self.assertEqual(pe.exception.logs[0].location.line, 2, "Bad line")
+        self.assertEqual(pe.exception.logs[0].location.col, 7, "Bad col")
+        with self.assertRaises(error.Diagnostic) as pe:
+            T = grammar.from_file(
+                os.getcwd() + "/tests/bnf/error_bracket2.bnf",
+                'source'
+            )
+        self.assertFalse(pe.exception, "Can't detect error in BNF")
+        self.assertEqual(
+            pe.exception.logs[0].msg,
+            "Expected '['",
+            "Bad message in Error"
+        )
+        self.assertEqual(pe.exception.logs[0].location.line, 2, "Bad line")
+        self.assertEqual(pe.exception.logs[0].location.col, 1, "Bad col")
+        with self.assertRaises(error.Diagnostic) as pe:
+            T = grammar.from_file(
+                os.getcwd() + "/tests/bnf/error_rule.bnf",
+                'source'
+            )
+        self.assertFalse(pe.exception, "Can't detect error in BNF")
+        self.assertEqual(
+            pe.exception.logs[0].msg,
+            "Expected '='",
+            "Bad message in Error"
+        )
+        self.assertEqual(pe.exception.logs[0].location.line, 2, "Bad line")
+        self.assertEqual(pe.exception.logs[0].location.col, 1, "Bad col")
+        with self.assertRaises(error.Diagnostic) as pe:
+            T = grammar.from_file(
+                os.getcwd() + "/tests/bnf/error_bracket3.bnf",
+                'source'
+            )
+        self.assertFalse(pe.exception, "Can't detect error in BNF")
+        self.assertEqual(
+            pe.exception.logs[0].msg,
+            "Expected sequences",
+            "Bad message in Error"
+        )
+        self.assertEqual(pe.exception.logs[0].location.line, 1, "Bad line")
+        self.assertEqual(pe.exception.logs[0].location.col, 8, "Bad col")
+        with self.assertRaises(error.Diagnostic) as pe:
+            T = grammar.from_file(
+                os.getcwd() + "/tests/bnf/error_empty.bnf",
+                'source'
+            )
+        self.assertFalse(pe.exception, "Can't detect error in BNF")
+        self.assertEqual(
+            pe.exception.logs[0].msg,
+            "Parse error in 'directive'",
+            "Bad message in Error"
+        )
+        self.assertEqual(pe.exception.logs[0].location.line, 1, "Bad line")
+        self.assertEqual(pe.exception.logs[0].location.col, 7, "Bad col")

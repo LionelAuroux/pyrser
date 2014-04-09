@@ -3,6 +3,7 @@ from pyrser import parsing
 from pyrser import dsl
 from pyrser import meta
 from pyrser import error
+import os
 
 
 class InternalDsl_Test(unittest.TestCase):
@@ -226,8 +227,15 @@ class InternalDsl_Test(unittest.TestCase):
         bnf = dsl.EBNF("""
             the_rule = [ !a+ ]
         """)
-        with self.assertRaises(error.ParseError):
-            bnf.get_rules()
+        r = bnf.get_rules()
+        self.assertFalse(r, "Can't detect error")
+        self.assertIsInstance(r, error.Diagnostic, "Fetch a none diagnostic")
+        self.assertEqual(
+            r.logs[0].msg,
+            "Cannot repeat a negated rule",
+            "Bad message"
+        )
+        os.remove(r.logs[0].location.filepath)
 
     def test_16_lookaheadRule(self):
         bnf = dsl.EBNF("""
@@ -238,12 +246,19 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertIsInstance(res['the_rule'], parsing.LookAhead)
         self.assertEqual(res['the_rule'].pt.name, 'a')
 
-    def test_17_negatedRepeatedRule(self):
+    def test_17_lookaheadRepeatedRule(self):
         bnf = dsl.EBNF("""
             the_rule = [ !!a+ ]
         """)
-        with self.assertRaises(error.ParseError):
-            bnf.get_rules()
+        r = bnf.get_rules()
+        self.assertFalse(r, "Can't detect error")
+        self.assertIsInstance(r, error.Diagnostic, "Fetch a none diagnostic")
+        self.assertEqual(
+            r.logs[0].msg,
+            "Cannot repeat a lookahead rule",
+            "Bad message"
+        )
+        os.remove(r.logs[0].location.filepath)
 
     def test_18_hookNoParam(self):
         bnf = dsl.EBNF("""
@@ -271,7 +286,9 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData = parsing.Parser()
         dummyData.set_rules(res)
         dummyData.test = self
-        self.assertTrue(dummyData.eval_rule('the_rule'))
+        #with dummyData as s:
+        res = dummyData.eval_rule('the_rule')
+        self.assertTrue(res)
 
     def test_20_hookOneParamChar(self):
         @meta.hook(parsing.Parser)
@@ -289,7 +306,9 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData = parsing.Parser()
         dummyData.set_rules(res)
         dummyData.test = self
-        self.assertTrue(dummyData.eval_rule('the_rule'))
+        #with dummyData as s:
+        res = dummyData.eval_rule('the_rule')
+        self.assertTrue(res)
 
     def test_21_hookOneParamNum(self):
         @meta.hook(parsing.Parser)
@@ -309,7 +328,9 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData = parsing.Parser()
         dummyData.set_rules(res)
         dummyData.test = self
-        self.assertTrue(dummyData.eval_rule('the_rule'))
+        #with dummyData as s:
+        res = dummyData.eval_rule('the_rule')
+        self.assertTrue(res)
 
     def test_22_hookOneParamId(self):
         @meta.hook(parsing.Parser)
@@ -327,7 +348,9 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData = parsing.Parser()
         dummyData.set_rules(res)
         dummyData.test = self
-        self.assertTrue(dummyData.eval_rule('the_rule'))
+        #with dummyData as s:
+        res = dummyData.eval_rule('the_rule')
+        self.assertTrue(res)
 
     def test_23_hookParams(self):
         @meta.hook(parsing.Parser)
@@ -347,7 +370,9 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData = parsing.Parser()
         dummyData.set_rules(res)
         dummyData.test = self
-        self.assertTrue(dummyData.eval_rule('the_rule'))
+        #with dummyData as s:
+        res = dummyData.eval_rule('the_rule')
+        self.assertTrue(res)
 
     def test_24_hookAndCapture(self):
         @meta.hook(parsing.Parser)
@@ -378,6 +403,7 @@ class InternalDsl_Test(unittest.TestCase):
             """)
         dummyData.set_rules(res)
         dummyData.test = self
+        #with dummyData as s:
         eval_res = dummyData.eval_rule('the_rule')
         self.assertTrue(eval_res)
 
@@ -417,7 +443,9 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData = parsing.Parser()
         dummyData.set_rules(res)
         dummyData.test = self
-        self.assertTrue(dummyData.eval_rule('the_rule'))
+        #with dummyData as s:
+        res = dummyData.eval_rule('the_rule')
+        self.assertTrue(res)
 
     def test_25_list_id(self):
         @meta.hook(parsing.Parser)
@@ -440,6 +468,7 @@ class InternalDsl_Test(unittest.TestCase):
         """)
         dummyData.set_rules(res)
         dummyData.test = self
+        #with dummyData as s:
         eval_res = dummyData.eval_rule('list')
         self.assertTrue(eval_res)
         self.assertTrue(eval_res.list[0] == "a")
@@ -481,6 +510,7 @@ class InternalDsl_Test(unittest.TestCase):
         """)
         dummyData.set_rules(res)
         dummyData.test = self
+        #with dummyData as s:
         eval_res = dummyData.eval_rule('list')
         self.assertTrue(eval_res)
         self.assertTrue(eval_res[0] == "a")
@@ -548,4 +578,5 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData = parsing.Parser("")
         dummyData.set_rules(res)
         dummyData.test = self
+        #with dummyData as s:
         eval_res = dummyData.eval_rule('main')

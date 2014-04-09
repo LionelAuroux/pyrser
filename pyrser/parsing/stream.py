@@ -75,7 +75,7 @@ class Cursor:
     def step_prev_line(self):
         """Sets cursor as end of previous line."""
         #TODO(bps): raise explicit error for unregistered eol
-        assert self._eol[-1].index == self.__index
+        assert self._eol[-1].index == self._index
         self.position = self._eol.pop()
 
 
@@ -106,7 +106,7 @@ class Tag:
 
 class Stream:
     """Helps keep track of stream processing progress."""
-    def __init__(self, content='', name='string'):
+    def __init__(self, content: str=None, name: str=None):
         self._content = content
         self._len = len(content)
         self._name = name
@@ -158,7 +158,7 @@ class Stream:
         mindex = mpos.index
         # search last \n
         prevline = mindex - 1 if mindex == self.eos_index else mindex
-        while prevline >= 0 and self.__content[prevline] != '\n':
+        while prevline >= 0 and self._content[prevline] != '\n':
             prevline -= 1
         # search next \n
         nextline = mindex

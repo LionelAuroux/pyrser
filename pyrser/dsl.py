@@ -21,16 +21,20 @@ class EBNF(parsing.Parser):
         res = None
         try:
             res = self.eval_rule('bnf_dsl')
+            if not res:
+                # we fail to parse, but error is not set
+                self.diagnostic.notify(
+                    error.Severity.ERROR,
+                    "Parse error in '%s'" % self._lastRule,
+                    error.LocationInfo.from_maxstream(self._stream)
+                )
+                raise self.diagnostic
         except error.Diagnostic as d:
-            d.notify(
-                error.Severity.ERROR,
-                "Parse error with the rule %s" % self._lastRule,
-                error.StreamInfo(self._stream)
-            )
-            res = d
+            # forward Exception when parsing DSL
+            raise d
         return res
 
-    def __init__(self, content='', sname='BNF'):
+    def __init__(self, content='', sname=None):
         """
         Define the DSL parser.
         """
@@ -541,9 +545,25 @@ def add_rpt(self, sequence, mod, pt):
     """Add a repeater to the previous sequence"""
     modstr = self.value(mod)
     if modstr == '!!':
-        error.throw("Cannot repeat a lookahead rule", self)
+        # cursor on the REPEATER
+        self._stream.restore_context()
+        # log the error
+        self.diagnostic.notify(
+            error.Severity.ERROR,
+            "Cannot repeat a lookahead rule",
+            error.LocationInfo.from_stream(self._stream)
+        )
+        raise self.diagnostic
     if modstr == '!':
-        error.throw("Cannot repeat a negated rule", self)
+        # cursor on the REPEATER
+        self._stream.restore_context()
+        # log the error
+        self.diagnostic.notify(
+            error.Severity.ERROR,
+            "Cannot repeat a negated rule",
+            error.LocationInfo.from_stream(self._stream)
+        )
+        raise self.diagnostic
     oldnode = sequence
     sequence.parser_tree = pt.functor(oldnode.parser_tree)
     return True

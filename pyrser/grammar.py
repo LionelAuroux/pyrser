@@ -25,13 +25,11 @@ class MetaGrammar(parsing.MetaBasicParser):
             cls._hooks = clsbase._hooks.new_child()
             # add rules from DSL
             if 'grammar' in namespace and namespace['grammar'] is not None:
-                sname = 'BNF'
+                sname = None
                 if 'source' in namespace and namespace['source'] is not None:
                     sname = namespace['source']
-                dsl_object = cls.dsl_parser(namespace['grammar'], sname)
-                rules = dsl_object.get_rules()
+                rules = cls.dsl_parser(namespace['grammar'], sname).get_rules()
                 if not rules:
-                    #raise Exception("\n" + rules.get_content() + "\n")
                     return rules
                 # namespace rules with module/classe name
                 for rule_name, rule_pt in rules.items():
@@ -103,12 +101,21 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
         res = None
         try:
             res = self.eval_rule(entry)
+            if not res:
+                # we fail to parse, but error is not set
+                self.diagnostic.notify(
+                    error.Severity.ERROR,
+                    "Parse error in '%s'" % self._lastRule,
+                    error.LocationInfo.from_maxstream(self._stream)
+                )
+                return self.diagnostic
             self.rule_nodes.clear()
         except error.Diagnostic as d:
+            # User put an error rule
             d.notify(
                 error.Severity.ERROR,
-                "Parse error with the rule %s" % self._lastRule,
-                error.StreamInfo(self._stream)
+                "Exception during the evaluation '%s'" % self._lastRule,
+                error.LocationInfo.from_stream(self._stream)
             )
             return d
         return self.after_parse(res)

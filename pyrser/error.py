@@ -1,7 +1,9 @@
 # error handling
 import os
+import tempfile
 import inspect
 import re
+import weakref
 from collections import *
 from pyrser import meta
 
@@ -10,7 +12,7 @@ Severity = meta.enum('INFO', 'WARNING', 'ERROR')
 
 
 class LocationInfo:
-    __slots__ = ['filepath', 'line', 'col', 'size']
+    #__slots__ = ['filepath', 'line', 'col', 'size']
 
     def __init__(self, filepath: str, line: int, col: int, size: int=1):
         self.filepath = filepath
@@ -18,52 +20,33 @@ class LocationInfo:
         self.col = col
         self.size = size
 
-    def get_content(self) -> str:
-        raise Exception(
-            "You can't use LocationInfo directly, use subclasses."
+    @staticmethod
+    def from_stream(stream: 'Stream') -> 'LocationInfo':
+        if stream._name is None:
+            (fh, stream._name) = tempfile.mkstemp()
+            tmpf = os.fdopen(fh, 'w')
+            tmpf.write(stream._content)
+            tmpf.close()
+        return LocationInfo(
+            stream._name,
+            stream._cursor.lineno,
+            stream._cursor.col_offset
         )
 
-
-class StreamInfo(LocationInfo):
-    """
-    Primitive to stream info in all diagnostic.
-    """
-
-    def __init__(self, stream: 'Stream'):
-        mpos = stream._cursor.position
-        lb = 0
-        le = stream._cursor._maxindex
-        if len(stream._cursor._eol) > 1:
-            ilb = mpos.lineno - 2
-            ile = mpos.lineno - 1
-            lb = stream._cursor._eol[ilb].index
-            if ile >= len(stream._cursor._eol):
-                le = stream._cursor._maxindex
-            else:
-                le = stream._cursor._eol[ile].index
-        elif len(stream._cursor._eol) == 1:
-            le = stream._cursor._eol[0].index
-        super().__init__(stream.name, mpos.lineno, mpos.col_offset, 1)
-        self.content = stream._content[lb:le] + '\n'
-
-    def get_content(self) -> str:
-        txt = "from {f} at line:{l} col:{c} :\n{content}{i}".format(
-            f=self.filepath,
-            content=self.content,
-            l=self.line,
-            c=self.col,
-            i=(' ' * (self.col - 1)) + '^'
+    @staticmethod
+    def from_maxstream(stream: 'Stream') -> 'LocationInfo':
+        if stream._name is None:
+            (fh, stream._name) = tempfile.mkstemp()
+            tmpf = os.fdopen(fh, 'w')
+            tmpf.write(stream._content)
+            tmpf.close()
+        return LocationInfo(
+            stream._name,
+            stream._cursor._maxline,
+            stream._cursor._maxcol
         )
-        return txt
 
-
-class FileInfo(LocationInfo):
-    """
-    Primitive to handle file info in all diagnostic.
-    """
-    def __init__(self, filepath: str, line: int, col: int, size: int=1):
-        super().__init__(os.path.abspath(filepath), line, col, size)
-
+    @staticmethod
     def from_here(pos=1):
         f = inspect.currentframe()
         fcaller = inspect.getouterframes(f)[pos]
@@ -71,7 +54,8 @@ class FileInfo(LocationInfo):
         cl = re.compile(rstr)
         call = fcaller[4][0]
         m = cl.match(call)
-        li = FileInfo(fcaller[1], fcaller[2], len(m.group(1)) + 1)
+        current_file = os.path.abspath(fcaller[1])
+        li = LocationInfo(current_file, fcaller[2], len(m.group(1)) + 1)
         return li
 
     def get_content(self) -> str:
@@ -125,37 +109,21 @@ class Diagnostic(Exception):
     You could use different severity for your notification.
     """
     def __init__(self):
-        self.logs = OrderedDict()
+        self.logs = []
 
     def __bool__(self):
         return self.have_errors() is not True
 
     def notify(self, severity: Severity, msg: str,
-               location: object, relatedid=None) -> int:
+               location: object) -> int:
         nfy = Notification(severity, msg, location)
-        idx = id(nfy)
-        self.logs[idx] = (nfy, relatedid)
-        return idx
-
-    def items(self):
-        return self.logs.items()
-
-    def keys(self):
-        return self.logs.keys()
-
-    def values(self):
-        return self.logs.values()
-
-    def __getitem__(self, idx) -> Notification:
-        return self.logs[idx][0]
-
-    def get_related(self, idx) -> int:
-        return self.logs[idx][1]
+        self.logs.append(nfy)
+        return len(self.logs) - 1
 
     def get_content(self) -> str:
         ls = []
-        for v in self.logs.values():
-            ls.append(v[0].get_content())
+        for v in self.logs:
+            ls.append(v.get_content())
         txt = ('=' * 79) + '\n'
         txt += ('\n' + ('-' * 79) + '\n').join(ls)
         txt += '\n' + ('-' * 79)
@@ -165,38 +133,11 @@ class Diagnostic(Exception):
         infos = dict()
         for s in Severity.map.values():
             infos[s] = 0
-        for v in self.logs.values():
-            s = v[0].severity
+        for v in self.logs:
+            s = v.severity
             infos[s] += 1
         return infos
 
     def have_errors(self) -> bool:
         inf = self.get_infos()
         return inf[Severity.ERROR] > 0
-#
-#
-#class ParseError(Exception):
-#    def __init__(self, message, stream_name="", pos=None, line="", **kwargs):
-#        msg = (message + " in {stream_name} at line {line} col {col}\n"
-#               "{last_read_line}\n"
-#               "{underline}")
-#        underline = "%s^" % ('-' * (pos.col_offset - 1))
-#        kwargs.update(
-#            message=message, stream_name=stream_name,
-#            line=pos.lineno, col=pos.col_offset,
-#            last_read_line=line, underline=underline)
-#        self.raw_msg = message
-#        self.msg = msg.format(**kwargs)
-#        Exception.__init__(self, self.msg)
-#        self.stream_name = stream_name
-#        self.error_position = pos
-#        self.error_line = line
-#
-#
-#def throw(msg: str, parser: 'BasicParser', **kw):
-#    """Convenient function to raise a ParseError"""
-#    kw.update(
-#        stream_name=parser._stream.name,
-#        pos=parser._stream._cursor.max_readed_position,
-#        line=parser._stream.last_readed_line)
-#    raise ParseError(msg, **kw)

@@ -1,4 +1,5 @@
 import collections
+import os
 from pyrser import meta
 from pyrser import error
 from pyrser.parsing.stream import Stream
@@ -54,9 +55,9 @@ class BasicParser(metaclass=MetaBasicParser):
     _rules = collections.ChainMap()
     _hooks = collections.ChainMap()
 
-    def __init__(self, content: str='', stream_name: str="root"):
+    def __init__(self, content: str='', stream_name: str=None):
         self._ignores = [BasicParser.ignore_blanks]
-        self.__streams = [Stream(content, stream_name)]
+        self._streams = [Stream(content, stream_name)]
         self.rule_nodes = None
         self.push_rule_nodes()
         self._lastIgnoreIndex = 0
@@ -69,7 +70,7 @@ class BasicParser(metaclass=MetaBasicParser):
     @property
     def _stream(self) -> Stream:
         """The current Stream."""
-        return self.__streams[-1]
+        return self._streams[-1]
 
     @property
     def rules(self) -> dict:
@@ -111,23 +112,24 @@ class BasicParser(metaclass=MetaBasicParser):
             raise Exception("Incoherent tag cache")
         tag = tag_cache[name]
         k = "%d:%d" % (tag._begin, tag._end)
-        valcache = self.__streams[-1].value_cache
+        valcache = self._streams[-1].value_cache
         if k not in valcache:
             valcache[k] = str(tag)
         return valcache[k]
 
 ### STREAM
 
-    def parsed_stream(self, content: str, name="string"):
+    def parsed_stream(self, content: str, name: str=None):
         """Push a new Stream into the parser.
         All subsequent called functions will parse this new stream,
         until the 'popStream' function is called.
         """
-        self.__streams.append(Stream(content, name))
+        self._streams.append(Stream(content, name))
 
     def pop_stream(self):
         """Pop the last Stream pushed on to the parser stack."""
-        self.__streams.pop()
+        s = self._streams.pop()
+        self.clean_tmp(s)
 
 ### VARIABLE PRIMITIVES
 
@@ -197,7 +199,12 @@ class BasicParser(metaclass=MetaBasicParser):
         self.rule_nodes['_'] = Node()
         # TODO: other behavior for  empty rules?
         if name not in self.__class__._rules:
-            error.throw("Unknown rule : %s" % name, self)
+            self.diagnostic.notify(
+                error.Severity.ERROR,
+                "Unknown rule : %s" % name,
+                error.LocationInfo.from_stream(self._stream)
+            )
+            raise self.diagnostic
         self._lastRule = name
         rule_to_eval = self.__class__._rules[name]
         # TODO: add packrat cache here, same rule - same pos == same res
@@ -210,7 +217,13 @@ class BasicParser(metaclass=MetaBasicParser):
         """Evaluate the hook by its name"""
         if name not in self.__class__._hooks:
             # TODO: don't always throw error, could have return True by default
-            error.throw("Unknown hook : %s" % name, self)
+            self.diagnostic.notify(
+                error.Severity.ERROR,
+                "Unknown hook : %s" % name,
+                error.LocationInfo.from_stream(self._stream)
+            )
+            raise self.diagnostic
+        self._lastRule = '#' + name
         return self.__class__._hooks[name](self, *ctx)
 
 ### PARSING PRIMITIVES

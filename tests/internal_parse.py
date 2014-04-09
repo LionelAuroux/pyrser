@@ -474,7 +474,7 @@ class InternalParse_Test(unittest.TestCase):
                             '=')))
         res = parseTree(parser)
         self.assertEqual(res, False, "failed to get the correct final value")
-        self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 0,
+        self.assertEqual(parser._stream._cursor._index, 0,
                          "failed to get the correct index after a negation")
 
     def test_17_Lookahead(self):
@@ -491,7 +491,7 @@ class InternalParse_Test(unittest.TestCase):
                         )
         res = parseTree(parser)
         self.assertEqual(res, True, "failed to get the correct final value")
-        self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 1,
+        self.assertEqual(parser._stream._cursor._index, 1,
                          "failed to get the correct index after a lookahead")
 
     def test_18_Complement(self):
@@ -508,12 +508,12 @@ class InternalParse_Test(unittest.TestCase):
         )
         res = parseTree(parser)
         self.assertEqual(res, False, "failed to get the correct final value")
-        self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 0,
+        self.assertEqual(parser._stream._cursor._index, 0,
                          "failed to get the correct index after a lookahead")
         parser.parsed_stream("=+")
         res = parseTree(parser)
         self.assertEqual(res, True, "failed to get the correct final value")
-        self.assertEqual(vars(parser._stream._cursor)['_Cursor__index'], 2,
+        self.assertEqual(parser._stream._cursor._index, 2,
                          "failed to get the correct index after a lookahead")
 
     def test_19_Until(self):
