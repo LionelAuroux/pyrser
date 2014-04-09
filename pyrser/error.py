@@ -21,9 +21,11 @@ class LocationInfo:
         self.size = size
 
     @staticmethod
-    def from_stream(stream: 'Stream') -> 'LocationInfo':
-        if stream._name is None:
+    def from_stream(stream: 'Stream', is_error=False) -> 'LocationInfo':
+        if stream._name is None and is_error is True:
             (fh, stream._name) = tempfile.mkstemp()
+            print("STREAM %s" % stream._name)
+            print("%s" % LocationInfo.from_here().get_content())
             tmpf = os.fdopen(fh, 'w')
             tmpf.write(stream._content)
             tmpf.close()

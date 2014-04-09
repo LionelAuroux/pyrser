@@ -115,7 +115,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
             d.notify(
                 error.Severity.ERROR,
                 "Exception during the evaluation '%s'" % self._lastRule,
-                error.LocationInfo.from_stream(self._stream)
+                error.LocationInfo.from_stream(self._stream, is_error=True)
             )
             return d
         return self.after_parse(res)

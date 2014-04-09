@@ -216,7 +216,6 @@ TL4T = grammar.from_file(os.getcwd() + "/tests/bnf/tl4t.bnf", 'source')
 def info(self):
     n = Node()
     n.info = LocationInfo.from_stream(self._stream)
-    n.info.col = self._stream.index
     return n
 
 

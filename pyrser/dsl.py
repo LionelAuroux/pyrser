@@ -551,7 +551,7 @@ def add_rpt(self, sequence, mod, pt):
         self.diagnostic.notify(
             error.Severity.ERROR,
             "Cannot repeat a lookahead rule",
-            error.LocationInfo.from_stream(self._stream)
+            error.LocationInfo.from_stream(self._stream, is_error=True)
         )
         raise self.diagnostic
     if modstr == '!':
@@ -561,7 +561,7 @@ def add_rpt(self, sequence, mod, pt):
         self.diagnostic.notify(
             error.Severity.ERROR,
             "Cannot repeat a negated rule",
-            error.LocationInfo.from_stream(self._stream)
+            error.LocationInfo.from_stream(self._stream, is_error=True)
         )
         raise self.diagnostic
     oldnode = sequence

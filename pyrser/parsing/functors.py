@@ -315,7 +315,7 @@ class Error(Functor):
         parser.diagnostic.notify(
             error.Severity.ERROR,
             self.msg,
-            error.LocationInfo.from_stream(parser._stream)
+            error.LocationInfo.from_stream(parser._stream, is_error=True)
         )
         raise parser.diagnostic
 
@@ -355,7 +355,7 @@ class Hook(Functor):
                     parser.diagnostic.notify(
                         error.Severity.ERROR,
                         "Unknown capture variable : %s" % v,
-                        error.LocationInfo.from_stream(parser._stream)
+                        error.LocationInfo.from_stream(parser._stream, is_error=True)
                     )
                     raise parser.diagnostic
                 valueparam.append(parser.rule_nodes[v])

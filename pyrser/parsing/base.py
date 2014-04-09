@@ -202,7 +202,7 @@ class BasicParser(metaclass=MetaBasicParser):
             self.diagnostic.notify(
                 error.Severity.ERROR,
                 "Unknown rule : %s" % name,
-                error.LocationInfo.from_stream(self._stream)
+                error.LocationInfo.from_stream(self._stream, is_error=True)
             )
             raise self.diagnostic
         self._lastRule = name
@@ -220,7 +220,7 @@ class BasicParser(metaclass=MetaBasicParser):
             self.diagnostic.notify(
                 error.Severity.ERROR,
                 "Unknown hook : %s" % name,
-                error.LocationInfo.from_stream(self._stream)
+                error.LocationInfo.from_stream(self._stream, is_error=True)
             )
             raise self.diagnostic
         self._lastRule = '#' + name
