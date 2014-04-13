@@ -7,6 +7,7 @@ from pyrser.type_checking.tuple import Tuple
 from pyrser.type_checking.type import Type
 from pyrser.type_checking.var import Var
 from pyrser.type_checking.val import Val
+from pyrser.type_checking.fun import Fun
 
 __all__ = [
     'EvalCtx',
@@ -17,5 +18,6 @@ __all__ = [
     'Type',
     'TypeName',
     'Val',
-    'Var'
+    'Var',
+    'Fun'
 ]

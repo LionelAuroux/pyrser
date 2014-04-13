@@ -16,14 +16,16 @@ class InternalType_Test(unittest.TestCase):
                 return "cool " + sig.name
 
             def internal_name(sig: Symbol):
-                return "tjrs " + sig.name
+                return "tjrs "
 
-        class MySignature(MySymbol, Signature):
-            pass
-        s = MySignature('funky', 'bla', 'blu')
+        class MyFun(MySymbol, Fun):
+            def internal_name(sig: Symbol):
+                return super().internal_name() + sig.name + "." + "_".join(sig.tparams) + "." + sig.tret
+
+        s = MyFun('funky', 'bla', ['blu'])
         self.assertEqual(s.show_name(), 'cool funky',
                          "Bad symbol patching in type_checking")
-        self.assertEqual(s.internal_name(), 'tjrs funky',
+        self.assertEqual(s.internal_name(), 'tjrs funky.blu.bla',
                          "Bad symbol patching in type_checking")
 
     def test_scope_01_pp(self):
@@ -31,9 +33,9 @@ class InternalType_Test(unittest.TestCase):
         Test pretty Printing
         """
         var = Var('var1', 'int')
-        f1 = Signature('fun1', 'int', [])
-        f2 = Signature('fun2', 'int', ['int'])
-        f3 = Signature('fun3', 'int', ['int', 'double'])
+        f1 = Fun('fun1', 'int', [])
+        f2 = Fun('fun2', 'int', ['int'])
+        f3 = Fun('fun3', 'int', ['int', 'double'])
         tenv = Scope(sig=[var, f1, f2, f3])
         self.assertEqual(str(var), "var var1 : int",
                          "Bad pretty printing of type")
@@ -51,7 +53,7 @@ class InternalType_Test(unittest.TestCase):
 """, "Bad pretty printing of type")
         t1 = Type('t1')
         self.assertEqual(str(t1), "type t1", "Bad pretty printing of type")
-        t1.add(Signature('fun1', 'a', ['b']))
+        t1.add(Fun('fun1', 'a', ['b']))
         self.assertEqual(str(t1), """type t1 :
     fun t1.fun1 : (b) -> a
 """, "Bad pretty printing of type")
@@ -64,17 +66,17 @@ class InternalType_Test(unittest.TestCase):
         tenv = Scope(sig=var)
         self.assertIn(Var('var1', 'int'), tenv,
                       "Bad __contains__ in type_checking.Scope")
-        tenv.add(Signature('fun1', 'int', ['float', 'char']))
-        self.assertIn(Signature('fun1', 'int', ['float', 'char']), tenv,
+        tenv.add(Fun('fun1', 'int', ['float', 'char']))
+        self.assertIn(Fun('fun1', 'int', ['float', 'char']), tenv,
                       "Bad __contains__ in type_checking.Scope")
         ## inplace modification
         # work with any iterable
-        tenv |= [Signature('fun2', 'int', ['int'])]
-        self.assertIn(Signature('fun2', 'int', ['int']), tenv,
+        tenv |= [Fun('fun2', 'int', ['int'])]
+        self.assertIn(Fun('fun2', 'int', ['int']), tenv,
                       "Bad __contains__ in type_checking.Scope")
         # work with any iterable
-        tenv |= {Signature('fun3', 'int', ['int'])}
-        self.assertIn(Signature('fun3', 'int', ['int']), tenv,
+        tenv |= {Fun('fun3', 'int', ['int'])}
+        self.assertIn(Fun('fun3', 'int', ['int']), tenv,
                       "Bad __contains__ in type_checking.Scope")
         # retrieves past signature
         v = tenv.get(var.internal_name())
@@ -84,100 +86,100 @@ class InternalType_Test(unittest.TestCase):
         v = tenv.get(var.internal_name())
         self.assertNotEqual(id(v), id(var), "Bad &= in type_checking.Scope")
         # difference_update, only with Scope
-        tenv |= [Signature('fun2', 'int', ['int']),
-                 Signature('fun3', 'char', ['double', 'float'])]
+        tenv |= [Fun('fun2', 'int', ['int']),
+                 Fun('fun3', 'char', ['double', 'float'])]
         tenv -= Scope(sig=Var('var1', 'int'))
         self.assertNotIn(Var('var1', 'int'), tenv,
                          "Bad -= in type_checking.Scope")
         # symmetric_difference_update, only with Scope
         tenv ^= Scope(sig=[Var('var2', 'double'),
-                      Signature('fun2', 'int', ['int']),
-                      Signature('fun4', 'plop', ['plip', 'ploum'])])
-        self.assertIn(Signature('fun4', 'plop', ['plip', 'ploum']), tenv,
+                      Fun('fun2', 'int', ['int']),
+                      Fun('fun4', 'plop', ['plip', 'ploum'])])
+        self.assertIn(Fun('fun4', 'plop', ['plip', 'ploum']), tenv,
                       "Bad ^= in type_checking.Scope")
-        self.assertNotIn(Signature('fun2', 'int', ['int']), tenv,
+        self.assertNotIn(Fun('fun2', 'int', ['int']), tenv,
                          "Bad ^= in type_checking.Scope")
         ## binary operation
         # |
-        tenv = Scope(sig=[Signature('tutu', 'toto', ['tata']),
-                     Signature('tutu', 'int', ['char'])]) |\
-            Scope(sig=Signature('blam', 'blim', [])) |\
-            Scope(sig=Signature('gra', 'gri', ['gru']))
-        self.assertIn(Signature('tutu', 'toto', ['tata']), tenv,
+        tenv = Scope(sig=[Fun('tutu', 'toto', ['tata']),
+                     Fun('tutu', 'int', ['char'])]) |\
+            Scope(sig=Fun('blam', 'blim', [])) |\
+            Scope(sig=Fun('gra', 'gri', ['gru']))
+        self.assertIn(Fun('tutu', 'toto', ['tata']), tenv,
                       "Bad | in type_checking.Scope")
-        self.assertIn(Signature('gra', 'gri', ['gru']), tenv,
+        self.assertIn(Fun('gra', 'gri', ['gru']), tenv,
                       "Bad | in type_checking.Scope")
         # &
-        tenv = Scope(sig=[Signature('tutu', 'toto', ['tata']),
-                     Signature('tutu', 'int', ['char'])]) &\
-            Scope(sig=[Signature('blam', 'blim', []),
-                  Signature('tutu', 'toto', ['tata'])])
-        self.assertIn(Signature('tutu', 'toto', ['tata']), tenv,
+        tenv = Scope(sig=[Fun('tutu', 'toto', ['tata']),
+                     Fun('tutu', 'int', ['char'])]) &\
+            Scope(sig=[Fun('blam', 'blim', []),
+                  Fun('tutu', 'toto', ['tata'])])
+        self.assertIn(Fun('tutu', 'toto', ['tata']), tenv,
                       "Bad & in type_checking.Scope")
         self.assertEqual(len(tenv), 1, "Bad & in type_checking.Scope")
         # -
-        tenv = Scope(sig=[Signature('tutu', 'toto', ['tata']),
-                     Signature('tutu', 'int', ['char'])]) -\
-            Scope(sig=Signature('tutu', 'int', ['char']))
-        self.assertIn(Signature('tutu', 'toto', ['tata']), tenv,
+        tenv = Scope(sig=[Fun('tutu', 'toto', ['tata']),
+                     Fun('tutu', 'int', ['char'])]) -\
+            Scope(sig=Fun('tutu', 'int', ['char']))
+        self.assertIn(Fun('tutu', 'toto', ['tata']), tenv,
                       "Bad - in type_checking.Scope")
         self.assertEqual(len(tenv), 1, "Bad - in type_checking.Scope")
         # ^
-        tenv1 = Scope(sig=[Signature('tutu', 'toto', ['tata']),
-                      Signature('tutu', 'int', ['char']),
-                      Signature('gra', 'gru', [])])
-        tenv2 = Scope(sig=[Signature('blim', 'blam', ['tata']),
-                      Signature('f', 'double', ['char']),
-                      Signature('gra', 'gru', []),
-                      Signature('v', 'd', [])])
+        tenv1 = Scope(sig=[Fun('tutu', 'toto', ['tata']),
+                      Fun('tutu', 'int', ['char']),
+                      Fun('gra', 'gru', [])])
+        tenv2 = Scope(sig=[Fun('blim', 'blam', ['tata']),
+                      Fun('f', 'double', ['char']),
+                      Fun('gra', 'gru', []),
+                      Fun('v', 'd', [])])
         tenv = tenv1 ^ tenv2
         self.assertEqual(len(tenv), 5, "Bad ^ in type_checking.Scope")
-        self.assertIn(Signature('tutu', 'toto', ['tata']), tenv,
+        self.assertIn(Fun('tutu', 'toto', ['tata']), tenv,
                       "Bad ^ in type_checking.Scope")
-        self.assertNotIn(Signature('gra', 'gru', []), tenv,
+        self.assertNotIn(Fun('gra', 'gru', []), tenv,
                          "Bad ^ in type_checking.Scope")
 
     def test_scope_03_overload(self):
         # test get by symbol name
-        tenv = Scope(sig=[Signature('tutu', 'tata', []),
-                     Signature('plop', 'plip', []),
-                     Signature('tutu', 'lolo', [])])
-        tenv |= Scope(sig=[Signature('plop', 'gnagna'),
-                      Signature('tutu', 'int', ['double'])])
+        tenv = Scope(sig=[Fun('tutu', 'tata', []),
+                     Fun('plop', 'plip', []),
+                     Fun('tutu', 'lolo', [])])
+        tenv |= Scope(sig=[Fun('plop', 'gnagna'),
+                      Fun('tutu', 'int', ['double'])])
         trest = tenv.get_by_symbol_name('tutu')
-        self.assertIn(Signature('tutu', 'tata'), trest,
+        self.assertIn(Fun('tutu', 'tata'), trest,
                       "get_by_symbol_name in type_checking.Scope")
-        self.assertIn(Signature('tutu', 'lolo'), trest,
+        self.assertIn(Fun('tutu', 'lolo'), trest,
                       "get_by_symbol_name in type_checking.Scope")
-        self.assertIn(Signature('tutu', 'int', ['double']), trest,
+        self.assertIn(Fun('tutu', 'int', ['double']), trest,
                       "get_by_symbol_name in type_checking.Scope")
-        self.assertNotIn(Signature('plop', 'gnagna'), trest,
+        self.assertNotIn(Fun('plop', 'gnagna'), trest,
                          "get_by_symbol_name in type_checking.Scope")
         # test get by return type
-        tenv = Scope(sig=[Signature('tutu', 'int'),
-                     Signature('plop', 'plip'),
-                     Signature('tutu', 'int', [])])
-        tenv |= Scope(sig=[Signature('plop', 'int'),
-                      Signature('tutu', 'int', ['double', 'int'])])
+        tenv = Scope(sig=[Fun('tutu', 'int'),
+                     Fun('plop', 'plip'),
+                     Fun('tutu', 'int', [])])
+        tenv |= Scope(sig=[Fun('plop', 'int'),
+                      Fun('tutu', 'int', ['double', 'int'])])
         trest = tenv.get_by_return_type('int')
-        self.assertIn(Signature('tutu', 'int'), trest,
+        self.assertIn(Fun('tutu', 'int'), trest,
                       "Bad get_by_return_type in type_checking.Scope")
-        self.assertIn(Signature('plop', 'int'), trest,
+        self.assertIn(Fun('plop', 'int'), trest,
                       "Bad get_by_return_type in type_checking.Scope")
         trest = tenv.get_by_return_type('int').get_by_symbol_name('tutu')
-        self.assertNotIn(Signature('plop', 'int'), trest,
+        self.assertNotIn(Fun('plop', 'int'), trest,
                          "Bad get_by_return_type in type_checking.Scope")
         # test get by params
-        f = Scope(sig=[Signature('f', 'void', ['int']),
-                  Signature('f', 'int', ['int', 'double', 'char']),
-                  Signature('f', 'double', ['int', 'juju'])])
-        f |= Scope(sig=Signature('f', 'double', ['char', 'double', 'double']))
-        p1 = Scope(sig=[Signature('a', 'int'), Signature('a', 'double')])
-        p2 = Scope(sig=[Signature('b', 'int'), Signature('b', 'double')])
-        p3 = Scope(sig=[Signature('c', 'int'), Signature('c', 'double'),
-                   Signature('c', 'char')])
+        f = Scope(sig=[Fun('f', 'void', ['int']),
+                  Fun('f', 'int', ['int', 'double', 'char']),
+                  Fun('f', 'double', ['int', 'juju'])])
+        f |= Scope(sig=Fun('f', 'double', ['char', 'double', 'double']))
+        p1 = Scope(sig=[Fun('a', 'int'), Fun('a', 'double')])
+        p2 = Scope(sig=[Fun('b', 'int'), Fun('b', 'double')])
+        p3 = Scope(sig=[Fun('c', 'int'), Fun('c', 'double'),
+                   Fun('c', 'char')])
         (trestf, trestp) = f.get_by_params([p1, p2, p3])
-        self.assertIn(Signature('f', 'int', ['int', 'double', 'char']), trestf,
+        self.assertIn(Fun('f', 'int', ['int', 'double', 'char']), trestf,
                       "Bad get_by_params in type_checking.Scope")
         self.assertEqual(len(trestf), 1,
                          "Bad get_by_params in type_checking.Scope")
@@ -236,24 +238,24 @@ class InternalType_Test(unittest.TestCase):
     def test_poly_01_var(self):
         # ?1 means type placeholders for polymorphisme
         var = Scope(sig=Var('var1', '?1'))
-        tenv = Scope(sig=Signature('fun1', 'int', ['char']))
+        tenv = Scope(sig=Fun('fun1', 'int', ['char']))
         (trestf, trestp) = tenv.get_by_params([var])
-        self.assertIn(Signature('fun1', 'int', ['char']), trestf,
+        self.assertIn(Fun('fun1', 'int', ['char']), trestf,
                       "Bad polymorphic in type_checking.Scope")
         self.assertIn(Var('var1', '?1'), trestp[0][0],
                       "Bad polymorphic in type_checking.Scope")
         var = Scope(sig=Var('var1', 'int'))
-        tenv = Scope(sig=Signature('fun1', 'int', ['?1']))
+        tenv = Scope(sig=Fun('fun1', 'int', ['?1']))
         (trestf, trestp) = tenv.get_by_params([var])
-        self.assertIn(Signature('fun1', 'int', ['?1']), trestf,
+        self.assertIn(Fun('fun1', 'int', ['?1']), trestf,
                       "Bad polymorphic in type_checking.Scope")
         self.assertIn(Var('var1', 'int'), trestp[0][0],
                       "Bad polymorphic in type_checking.Scope")
 
     def test_variadic_01(self):
-        tenv = Scope(sig=[Signature('printf', 'void', ['const * char'],
+        tenv = Scope(sig=[Fun('printf', 'void', ['const * char'],
                      variadic=True),
-                     Signature('printf', 'void', ['int'])])
+                     Fun('printf', 'void', ['int'])])
         sel = tenv.get_by_symbol_name('printf')
         var = Scope(sig=Var('v', 'const * char'))
         val = Scope(sig=Val('666', 'int'))
@@ -268,12 +270,12 @@ class InternalType_Test(unittest.TestCase):
                          "Bad TypeName in type_checking.Var")
 
     def test_tuple_01_pp(self):
-        tp = Tuple([Signature(None, 'X'), Var(None, 'U'), Var(None, 'T')])
+        tp = Tuple([Fun(None, 'X'), Var(None, 'U'), Var(None, 'T')])
         self.assertEqual(str(tp), "tuple(fun : () -> X, var : U, var : T)",
                          "Bad pretty-printing in type_checking.Tuple")
 
     def test_eval_ctx_01(self):
-        ectx = EvalCtx(Signature("f", "int", ["double"]))
+        ectx = EvalCtx(Fun("f", "int", ["double"]))
         self.assertEqual(str(ectx), """evalctx :
     fun f : (double) -> int
     resolution :
@@ -282,9 +284,9 @@ class InternalType_Test(unittest.TestCase):
 """,
                          "Bad TypeName in type_checking.EvalCtx")
         typ = Type("T1")
-        typ.add(Signature("f", "int", ["int"]))
+        typ.add(Fun("f", "int", ["int"]))
         tenv = Scope("test", sig=typ)
-        tenv.add(EvalCtx(Signature("f", "T1")))
+        tenv.add(EvalCtx(Fun("f", "T1")))
         self.assertEqual(
             id(typ),
             id(

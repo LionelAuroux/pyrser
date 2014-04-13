@@ -14,6 +14,8 @@ class Val(Signature):
         if not isinstance(value, str):
             value = str(value)
         self.value = value
+        if not isinstance(tret, TypeName):
+            tret = TypeName(tret)
         self.tret = tret
         k = self.value + "$" + tret
         idx = 0
@@ -23,7 +25,7 @@ class Val(Signature):
             idx = Val.nvalues
         else:
             idx = Val.valuniq[k]
-        super().__init__('$' + str(idx), tret)
+        super().__init__('$' + str(idx))
 
     def to_fmt(self):
         """
@@ -42,7 +44,7 @@ class Val(Signature):
         """
         Return the unique internal name
         """
-        unq = "_".join(self.get_scope_names())
-        if hasattr(self, 'tret'):
+        unq = super().internal_name()
+        if self.tret is not None:
             unq += "_" + self.tret
         return unq

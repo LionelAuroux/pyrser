@@ -9,7 +9,10 @@ class Var(Signature):
     """
 
     def __init__(self, name: str, tret: str):
-        super().__init__(name, tret)
+        super().__init__(name)
+        if not isinstance(tret, TypeName):
+            tret = TypeName(tret)
+        self.tret = tret
 
     def to_fmt(self):
         """
@@ -27,7 +30,7 @@ class Var(Signature):
         """
         Return the unique internal name
         """
-        unq = "_".join(self.get_scope_names())
-        if hasattr(self, 'tret'):
+        unq = super().internal_name()
+        if self.tret is not None:
             unq += "_" + self.tret
         return unq

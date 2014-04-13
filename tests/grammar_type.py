@@ -12,7 +12,7 @@ class GrammarType_Test(unittest.TestCase):
         """)
         txt = res.to_tl4t()
         self.assertEqual(str(txt), "a(42);\n")
-        res.type_node = Scope(sig=Signature('a', 'void', ['int']))
+        res.type_node = Scope(sig=Fun('a', 'void', ['int']))
         res.type_node.add(Type("void"))
         res.type_node.add(Type("int"))
         res.infer_type()
@@ -33,7 +33,7 @@ class GrammarType_Test(unittest.TestCase):
         txt = res.to_tl4t()
         self.assertEqual(str(txt), 'printf("tutu %d", 42, a);\n')
         res.type_node = Scope(
-            sig=Signature('printf', 'void', ['string'], variadic=True)
+            sig=Fun('printf', 'void', ['string'], variadic=True)
         )
         res.type_node.add(Type("void"))
         res.type_node.add(Type("string"))

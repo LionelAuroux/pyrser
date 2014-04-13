@@ -86,7 +86,7 @@ class EvalCtx:
                 for t in p.components:
                     tp.append(self.resolution[t]().show_name())
                 tparams.append(" ".join(tp))
-        ret = Signature(self.name, " ".join(tret), tparams)
+        ret = Fun(self.name, " ".join(tret), tparams)
         # transform as-is into our internal Signature (Val, Var, whatever)
         ret.__class__ = self._sig.__class__
         return ret
@@ -112,7 +112,7 @@ class EvalCtx:
         t2resolv = []
         if hasattr(self._sig, 'tret'):
             t2resolv.append(self._sig.tret)
-        if hasattr(self._sig, 'tparams'):
+        if hasattr(self._sig, 'tparams') and self._sig.tparams is not None:
             for p in self._sig.tparams:
                 t2resolv.append(p)
         for t in t2resolv:

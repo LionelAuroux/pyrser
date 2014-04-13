@@ -60,16 +60,11 @@ class Symbol:
         return ".".join(self.get_scope_names())
 
     # to overload for new language
-    # TODO: to overload properly in signature/var/val etc...
     def internal_name(self) -> str:
         """
-        Return the unique internal name
+        Returns the namespace's internal_name.
         """
         unq = "_".join(self.get_scope_names())
-        if hasattr(self, 'tparams'):
-            unq += "_" + "_".join(self.tparams)
-        if hasattr(self, 'tret'):
-            unq += "_" + self.tret
         return unq
 
     def __str__(self) -> str:

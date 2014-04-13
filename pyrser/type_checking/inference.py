@@ -166,7 +166,7 @@ class Inference:
         """
         print("Infer op of this node: %s" % repr(op))
         # by default all operator are polymorphic
-        self.type_node.add(Signature(op, '?1', ['?1', '?1']))
+        self.type_node.add(Fun(op, '?1', ['?1', '?1']))
         self.type_node.need_feedback = True
         print("NEED FEEDBACK")
 
