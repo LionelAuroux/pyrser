@@ -21,6 +21,9 @@ class Scope(Symbol):
 
     def __init__(self, name: str=None, sig: [Signature]=None,
                  auto_update_parent=True):
+        if name is not None and not isinstance(name, str):
+            raise TypeError("name must be a str object.")
+
         """Unnamed scope for global scope"""
         super().__init__(name)
         # during typing, this scope need or not feedback pass
@@ -91,11 +94,11 @@ class Scope(Symbol):
         return False
 
     # |=
-    def __ior__(self, sig: Scope) -> Scope:
+    def __ior__(self, sig: list or Scope) -> Scope:
         """|= operator"""
         return self.update(sig)
 
-    def update(self, sig: Scope) -> Scope:
+    def update(self, sig: list or Scope) -> Scope:
         """Update the Set with values of another Set"""
         values = sig
         if hasattr(sig, 'values'):
