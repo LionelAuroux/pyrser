@@ -1,8 +1,5 @@
-# basically function signature, but base class for many features
-import weakref
-from pyrser import fmt
+# basically variables/functions signatures, but base class for many features
 from pyrser.type_checking.symbol import *
-from pyrser.type_checking.type_name import *
 
 
 class Signature(Symbol):

@@ -37,7 +37,7 @@ class InternalError_Test(unittest.TestCase):
             "   this\n  is\n      a\n test stream"
         )
         parser.read_text("   this\n  is\n")
-        st = LocationInfo.from_stream(parser._stream)
+        st = LocationInfo.from_stream(parser._stream, is_error=True)
         s = st.get_content()
         self.assertEqual(
             s,

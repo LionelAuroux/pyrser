@@ -1,5 +1,6 @@
 import unittest
 from pyrser.passes.to_yml import *
+from pyrser.type_checking.fun import *
 from tests.grammar.tl4t import *
 
 

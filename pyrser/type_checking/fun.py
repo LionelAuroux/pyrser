@@ -1,6 +1,7 @@
-# val for type checking (literal or ENUM style)
+# fun for type checking (functions signatures)
 from pyrser import fmt
 from pyrser.type_checking.signature import *
+from pyrser.type_checking.type_name import *
 
 
 class Fun(Signature):

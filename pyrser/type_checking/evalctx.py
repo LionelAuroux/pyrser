@@ -3,6 +3,7 @@ import inspect
 from pyrser import fmt
 from pyrser.type_checking.type_name import *
 from pyrser.type_checking.signature import *
+from pyrser.type_checking.fun import *
 from pyrser.type_checking.symbol import *
 
 
