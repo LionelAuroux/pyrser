@@ -1,4 +1,6 @@
 from pyrser.parsing.functors import Functor
+from pyrser.parsing.functors import PeekChar, Char, PeekText, Text, Range
+from pyrser.parsing.functors import UntilChar
 from pyrser.parsing.functors import Call, CallTrue
 from pyrser.parsing.functors import Complement, LookAhead, Neg, Until
 from pyrser.parsing.functors import Hook, Rule
@@ -20,6 +22,7 @@ __all__ = [
     'Call',
     'CallTrue',
     'Capture',
+    'Char',
     'Complement',
     'DeclNode',
     'Directive',
@@ -34,6 +37,9 @@ __all__ = [
     'Neg',
     'Node',
     'Parser',
+    'PeekChar',
+    'PeekText',
+    'Range',
     'Rule',
     'Rep0N',
     'Rep1N',
@@ -41,5 +47,7 @@ __all__ = [
     'Scope',
     'Seq',
     'Stream',
-    'Until'
+    'Text',
+    'Until',
+    'UntilChar'
 ]

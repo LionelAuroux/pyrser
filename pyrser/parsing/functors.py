@@ -36,6 +36,67 @@ class Functor:
         return res
 
 
+class PeekChar(Functor):
+    """ !!'A' bnf primitive functor. """
+
+    def __init__(self, c: str):
+        self.char = c
+
+    def do_call(self, parser: BasicParser) -> bool:
+        return parser.peek_char(self.char)
+
+
+class PeekText(Functor):
+    """ !!"TXT" bnf primitive functor. """
+
+    def __init__(self, c: str):
+        self.char = c
+
+    def do_call(self, parser: BasicParser) -> bool:
+        return parser.peek_text(self.char)
+
+
+class Text(Functor):
+    """ "TXT" bnf primitive functor. """
+
+    def __init__(self, txt: str):
+        self.text = txt
+
+    def do_call(self, parser: BasicParser) -> bool:
+        return parser.read_text(self.text)
+
+
+class Char(Functor):
+    """ 'A' bnf primitive functor. """
+
+    def __init__(self, c: str):
+        self.char = c
+
+    def do_call(self, parser: BasicParser) -> bool:
+        return parser.read_char(self.char)
+
+
+class Range(Functor):
+    """ 'A'..'Z' bnf primitive functor. """
+
+    def __init__(self, begin: str, end: str):
+        self.begin = begin
+        self.end = end
+
+    def do_call(self, parser: BasicParser) -> bool:
+        return parser.read_range(self.begin, self.end)
+
+
+class UntilChar(Functor):
+    """ ->'A' bnf primitive functor. """
+
+    def __init__(self, c: str):
+        self.char = c
+
+    def do_call(self, parser: BasicParser) -> bool:
+        return parser.read_until(self.char)
+
+
 class Seq(Functor):
     """A B C bnf primitive as a functor."""
 

@@ -102,9 +102,8 @@ class InternalDsl_Test(unittest.TestCase):
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
-        self.assertIsInstance(res['the_rule'], parsing.Call)
-        self.assertIs(res['the_rule'].callObject, parsing.Parser.read_char)
-        self.assertTrue(res['the_rule'].params[0] == 'a')
+        self.assertIsInstance(res['the_rule'], parsing.Char)
+        self.assertTrue(res['the_rule'].char == 'a')
 
     def test_07_string(self):
         """
@@ -115,9 +114,8 @@ class InternalDsl_Test(unittest.TestCase):
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
-        self.assertIsInstance(res['the_rule'], parsing.Call)
-        self.assertIs(res['the_rule'].callObject, parsing.Parser.read_text)
-        self.assertTrue(res['the_rule'].params[0] == "bonjour le monde")
+        self.assertIsInstance(res['the_rule'], parsing.Text)
+        self.assertTrue(res['the_rule'].text == "bonjour le monde")
 
     def test_08_range(self):
         """
@@ -128,10 +126,9 @@ class InternalDsl_Test(unittest.TestCase):
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
-        self.assertIsInstance(res['the_rule'], parsing.Call)
-        self.assertIs(res['the_rule'].callObject, parsing.Parser.read_range)
-        self.assertTrue(res['the_rule'].params[0] == 'a')
-        self.assertTrue(res['the_rule'].params[1] == 'z')
+        self.assertIsInstance(res['the_rule'], parsing.Range)
+        self.assertTrue(res['the_rule'].begin == 'a')
+        self.assertTrue(res['the_rule'].end == 'z')
 
     def test_09_complexe(self):
         """
@@ -145,20 +142,15 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertIsInstance(res['the_rule'], parsing.Alt)
         self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Seq)
         self.assertIsInstance(res['the_rule'].ptlist[0].ptlist[0],
-                              parsing.Call)
-        self.assertIs(res['the_rule'].ptlist[0].ptlist[0].callObject,
-                      parsing.Parser.read_range)
-        self.assertTrue(res['the_rule'].ptlist[0].ptlist[0].params[0] == 'a')
-        self.assertTrue(res['the_rule'].ptlist[0].ptlist[0].params[1] == 'z')
+                              parsing.Range)
+        self.assertTrue(res['the_rule'].ptlist[0].ptlist[0].begin == 'a')
+        self.assertTrue(res['the_rule'].ptlist[0].ptlist[0].end == 'z')
         self.assertIsInstance(res['the_rule'].ptlist[0].ptlist[1],
-                              parsing.Call)
-        self.assertIs(res['the_rule'].ptlist[0].ptlist[1].callObject,
-                      parsing.Parser.read_text)
-        self.assertEqual(res['the_rule'].ptlist[0].ptlist[1].params[0], "tutu")
+                              parsing.Text)
+        self.assertEqual(res['the_rule'].ptlist[0].ptlist[1].text, "tutu")
         self.assertIsInstance(res['the_rule'].ptlist[0].ptlist[2],
-                              parsing.Call)
-        self.assertIs(res['the_rule'].ptlist[0].ptlist[2].callObject,
-                      parsing.Parser.read_char)
+                              parsing.Char)
+        self.assertTrue(res['the_rule'].ptlist[0].ptlist[2].char == 'a')
         self.assertIsInstance(res['the_rule'].ptlist[1], parsing.Seq)
         self.assertIsInstance(res['the_rule'].ptlist[1].ptlist[0],
                               parsing.Rule)
@@ -202,7 +194,7 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue('the_rule' in res)
         self.assertIsInstance(res['the_rule'], parsing.Rep1N)
         self.assertTrue(res['the_rule'].pt.ptlist[0].name == 'a')
-        self.assertTrue(res['the_rule'].pt.ptlist[1].params[0] == "toto")
+        self.assertTrue(res['the_rule'].pt.ptlist[1].text == "toto")
 
     def test_13_complementedRepeatedRule(self):
         bnf = dsl.EBNF("""
