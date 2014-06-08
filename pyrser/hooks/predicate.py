@@ -8,9 +8,11 @@ def pred_false(self):
     False in parser. Go to alternative...
 
     example::
-    R = [
-        #false | R2
-    ]
+
+        R = [
+            #false | R2
+        ]
+
     """
     return False
 
@@ -21,8 +23,10 @@ def pred_true(self):
     True in parser. Do nothing
 
     example::
-    R = [
-        R2 | #true
-    ]
+
+        R = [
+            R2 | #true
+        ]
+
     """
     return True

@@ -8,9 +8,11 @@ def dump_nodes(self):
     Dump tag,rule,id and value cache. For debug.
 
     example::
-    R = [
-        #dump_nodes
-    ]
+
+        R = [
+            #dump_nodes
+        ]
+
     """
     print("DUMP NODE")
     try:
