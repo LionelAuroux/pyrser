@@ -30,7 +30,8 @@ sys.path.insert(0, os.path.abspath('../../'))
 # They can be extensions coming with Sphinx (named 'sphinx.ext.*')
 # or your custom ones.
 extensions = ['sphinx.ext.viewcode', 'sphinx.ext.todo', 'sphinx.ext.graphviz',
-              'sphinx.ext.inheritance_diagram', 'sphinx.ext.autodoc']
+              'sphinx.ext.inheritance_diagram', 'sphinx.ext.autodoc',
+              'sphinxcontrib.programoutput']
 
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members', 'undoc-members', 'special-members',
