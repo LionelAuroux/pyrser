@@ -9,9 +9,11 @@ def echo_nodes(self, *rest):
     Print nodes.
 
     example::
+
         R = [
             In : node #echo("coucou", 12, node)
         ]
+
     """
     txt = ""
     for thing in rest:

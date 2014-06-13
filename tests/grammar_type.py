@@ -41,4 +41,4 @@ class GrammarType_Test(unittest.TestCase):
         res.type_node.add(Type("int"))
         res.type_node.add(Var("a", "int"))
         res.infer_type()
-        print(to_yml(res))
+        #print(to_yml(res))

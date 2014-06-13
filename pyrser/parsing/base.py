@@ -1,5 +1,6 @@
 import collections
 import os
+
 from pyrser import meta
 from pyrser import error
 from pyrser.parsing.stream import Stream
@@ -9,7 +10,6 @@ from pyrser.parsing.node import Node
 # TODO: ensure unicity of names
 #: Module variable to store meta class instance by classname
 _MetaBasicParser = {}
-
 
 class MetaBasicParser(type):
     """Metaclass for all parser."""
@@ -47,11 +47,12 @@ class MetaBasicParser(type):
 
 
 class BasicParser(metaclass=MetaBasicParser):
-    """Emtpy basic parser, contains no rule nor hook.
+    """Empty basic parser, contains no rule nor hook.
 
     Unless you know what you are doing, use Parser instead of this class.
 
     """
+
     _rules = collections.ChainMap()
     _hooks = collections.ChainMap()
 
@@ -364,14 +365,17 @@ class Parser(BasicParser):
 @meta.hook(BasicParser)
 def bind(self, dst: str, src: Node) -> bool:
     """Allow to alias a node to another name.
-    Useful to bind a node to _ as return of Rule
+
+    Useful to bind a node to _ as return of Rule::
 
         R = [
             __scope__:L [item:I #add_item(L, I]* #bind('_', L)
         ]
 
     It's also the default behaviour of ':>'
+
     """
+
     for m in self.rule_nodes.maps:
         for k, v in m.items():
             if k == dst:
@@ -413,7 +417,10 @@ def read_integer(self) -> bool:
     """
     Read following BNF rule else return False::
 
-    readInteger ::= ['0'..'9']+ ;
+        readInteger = [
+            ['0'..'9']+
+        ]
+
     """
     if self.read_eof():
         return False
@@ -436,8 +443,10 @@ def read_identifier(self) -> bool:
     """
     Read following BNF rule else return False::
 
-    readIdentifier ::=
-        ['a'..'z'|'A'..'Z'|'_']['0'..'9'|'a'..'z'|'A'..'Z'|'_']*;
+        readIdentifier = [
+            ['a'..'z'|'A'..'Z'|'_']['0'..'9'|'a'..'z'|'A'..'Z'|'_']*
+        ]
+
     """
     if self.read_eof():
         return False
@@ -459,7 +468,8 @@ def read_cstring(self) -> bool:
     """
     Read following BNF rule else return False::
 
-    '"' -> ['/'| '"']
+        '"' -> ['/'| '"']
+
     """
     self._stream.save_context()
     idx = self._stream.index
@@ -475,7 +485,8 @@ def read_cchar(self) -> bool:
     """
     Read following BNF rule else return False::
 
-    "'" -> [~"/" "'"]
+        "'" -> [~"/" "'"]
+
     """
     self._stream.save_context()
     idx = self._stream.index

@@ -9,9 +9,11 @@ def vars_nodes(self, rest):
     Vars one node instance.
 
     example::
+
         R = [
             In : node #vars(node)
         ]
+
     """
     print(vars(rest))
     return True

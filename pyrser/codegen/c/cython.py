@@ -200,7 +200,8 @@ def to_cython(self, ctype_name: str) -> CStub:
                 ))
                 gram.lsdata.append(rule)
         except:
-            print("Can't Transform %s = %s" % (k, to_yml.to_yml(v)))
+            #print("Can't Transform %s = %s" % (k, to_yml.to_yml(v)))
+            pass
     cstub.csource = gram
     # PYTHON GENERATION
     cstub.psource = fmt.end('', [])

@@ -11,6 +11,7 @@ def set_node(self, dst, src):
         rule as result of the current rule.
 
         example::
+
             R = [
                 In : node #set(_, node)
             ]

@@ -12,15 +12,15 @@ class InternalType_Test(unittest.TestCase):
         (python MRO), just use follow the good order. Overloads first.
         """
         class MySymbol(Symbol):
-            def show_name(sig: Symbol):
-                return "cool " + sig.name
+            def show_name(self):
+                return "cool " + self.name
 
-            def internal_name(sig: Symbol):
+            def internal_name(self):
                 return "tjrs "
 
         class MyFun(MySymbol, Fun):
-            def internal_name(sig: Symbol):
-                return super().internal_name() + sig.name + "." + "_".join(sig.tparams) + "." + sig.tret
+            def internal_name(self):
+                return super().internal_name() + self.name + "." + "_".join(self.tparams) + "." + self.tret
 
         s = MyFun('funky', 'bla', ['blu'])
         self.assertEqual(s.show_name(), 'cool funky',
@@ -260,8 +260,8 @@ class InternalType_Test(unittest.TestCase):
         var = Scope(sig=Var('v', 'const * char'))
         val = Scope(sig=Val('666', 'int'))
         (trestf, trestp) = sel.get_by_params([var, val])
-        print("candidat [%s]" % str(trestf))
-        print("param [%s]" % to_yml(trestp))
+        #print("candidat [%s]" % str(trestf))
+        #print("param [%s]" % to_yml(trestp))
 
     def test_type_name_01_pp(self):
         tn = TypeName("* const int")

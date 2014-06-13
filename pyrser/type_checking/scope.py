@@ -324,7 +324,7 @@ class Scope(Symbol):
                         m = params[i].get_by_return_type(s.tparams[i])
                         if len(m) > 0:
                             mcnt += 1
-                            print("RET TYPE {{%s}}" % m)
+                            #print("RET TYPE {{%s}}" % m)
                             tmp[i].update(m)
                         else:
                             # TODO:???
@@ -340,21 +340,21 @@ class Scope(Symbol):
                                     raise Exception(
                                         "params[%d] must be a Scope" % i
                                     )
-                                print("VVV <%s>" % params[i])
+                                #print("VVV <%s>" % params[i])
                                 tmp[i].update(params[i])
                             else:
                                 # handle polymorphic return type
                                 m = params[i].get_all_polymorphic_return()
                                 if len(m) > 0:
                                     mcnt += 1
-                                    print("RET POLY {{%s}}" % m)
+                                    #print("RET POLY {{%s}}" % m)
                                     tmp[i].update(m)
                     # for variadic extra parameters
                     else:
                         mcnt += 1
                         if not isinstance(params[i], Scope):
                             raise Exception("params[%d] must be a Scope" % i)
-                        print("EXTRA %s" % params[i])
+                        #print("EXTRA %s" % params[i])
                         tmp[i].update(params[i])
                 # we have match all candidates
                 if mcnt == len(params):

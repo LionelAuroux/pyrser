@@ -20,13 +20,13 @@ class Inference:
                         " Pyrser Type Systems.") % type(self).__name__)
 
     def infer_type(self):
-        print("Infer type of this node: %s" % repr(self))
+        #print("Infer type of this node: %s" % repr(self))
         # get algo
         type_algo = self.type_algos()
         type_algo[0](*type_algo[2])
 
     def feedback(self, map_type: dict, final_type: TypeName):
-        print("Feedback type of this node: %s : %s" % (repr(self), final_type))
+        #print("Feedback type of this node: %s : %s" % (repr(self), final_type))
         # get algo
         type_algo = self.type_algos()
         type_algo[1](map_type, final_type)
@@ -40,7 +40,7 @@ class Inference:
         # create root type_node for RootBlock
         if not hasattr(self, 'type_node'):
             self.type_node = Scope()
-        print("Infer Block: %s" % repr(body))
+        #print("Infer Block: %s" % repr(body))
         for e in body:
             e.type_node = Scope()
             e.type_node.set_parent(self.type_node)
@@ -50,13 +50,13 @@ class Inference:
         """
         Infer type on the subexpr
         """
-        print("Infer SubExpr: %s" % repr(expr))
+        #print("Infer SubExpr: %s" % repr(expr))
         expr.type_node = Scope()
         expr.type_node.set_parent(self.type_node)
         expr.infer_type()
 
     def infer_fun(self, call_expr, params):
-        print("Infer fun call of this node: %s" % repr(call_expr))
+        #print("Infer fun call of this node: %s" % repr(call_expr))
         # 1 - fetch all possible types for the call expr
         call_expr.type_node = Scope()
         call_expr.type_node.set_parent(self.type_node)
@@ -70,16 +70,19 @@ class Inference:
             p.infer_type()
             tparams.append(p.type_node)
         # 3 - select overloads
-        print("check for proto: ((%s))" % tparams[0])
+        #print("check for proto: ((%s))" % tparams[0])
         if len(tparams) > 1:
-            print("check for proto 2ieme: ((%s))" % tparams[1])
+            #print("check for proto 2ieme: ((%s))" % tparams[1])
+            pass
         (final_call_expr, final_tparams) = f.get_by_params(tparams)
-        print("CALL %s" % str(final_call_expr))
+        #print("CALL %s" % str(final_call_expr))
         for p in final_tparams[0]:
-            print("PP %s" % str(p))
+            #print("PP %s" % str(p))
+            pass
         if len(final_tparams) > 1:
             for p in final_tparams[1]:
-                print("PP %s" % str(p))
+                #print("PP %s" % str(p))
+                pass
         # 4 - record overloads
         self.type_node = final_call_expr
         nversion = len(final_call_expr)
@@ -94,12 +97,12 @@ class Inference:
         my_map = dict()
         my_type = list(self.type_node.values())[0]
         if my_type.tret.is_polymorphic():
-            print("HAVE RET POLY :%s" % type(my_type))
+            #print("HAVE RET POLY :%s" % type(my_type))
             # try to get from real tret
             sig = list(call_expr.type_node.values())[0]
             if not sig.tret.is_polymorphic():
-                print("HAVE R TYPE %s" % sig.tret)
-                print("%s" % sig)
+                #print("HAVE R TYPE %s" % sig.tret)
+                #print("%s" % sig)
                 my_map.update(sig.resolution)
                 my_type.set_resolved_name(
                     sig.resolution,
@@ -111,23 +114,23 @@ class Inference:
             p = my_type.tparams[i]
             if p.is_polymorphic():
                 # take type in final_tparams
-                print("HAVE P[%d] POLY" % i)
+                #print("HAVE P[%d] POLY" % i)
                 sig = list(final_tparams[0][i].values())[0]
                 if not sig.tret.is_polymorphic():
-                    print("P HAVE REAL TYPE %s" % sig.tret)
-                    print("SIG.RESOL <%s>" % sig)
+                    #print("P HAVE REAL TYPE %s" % sig.tret)
+                    #print("SIG.RESOL <%s>" % sig)
                     my_map[p.value] = sig.resolution[sig.tret.value]
                     my_type.set_resolved_name(sig.resolution, p, sig.tret)
-        print("AFTER RESOLV %s" % my_type)
-        print("NEW SIG %s" % my_type.get_compute_sig())
+        #print("AFTER RESOLV %s" % my_type)
+        #print("NEW SIG %s" % my_type.get_compute_sig())
         self.type_node.clear()
         self.type_node.add(my_type)
         # 6 - feedback
         for i in range(arity):
             p = my_type.tparams[i]
             if params[i].type_node.need_feedback:
-                print("FEED BACK P[%d] %s" % (i, p))
-                print("FEED MAP %s" % my_map)
+                #print("FEED BACK P[%d] %s" % (i, p))
+                #print("FEED MAP %s" % my_map)
                 params[i].feedback(my_map, p)
 
     def infer_id(self, ident):
@@ -136,7 +139,7 @@ class Inference:
         - check if ID is declarated in the scope
         - if no ID is polymorphic type
         """
-        print("Infer ID of this node: %s" % repr(ident))
+        #print("Infer ID of this node: %s" % repr(ident))
         # check if ID is declared
         defined = self.type_node.get_by_symbol_name(ident)
         if len(defined) > 0:
@@ -145,8 +148,8 @@ class Inference:
         else:
             self.type_node.add(Var(ident, '?1'))
             self.type_node.need_feedback = True
-            print("NEED FEEDBACK")
-            print(str(self.type_node))
+            #print("NEED FEEDBACK")
+            #print(str(self.type_node))
 
     def infer_literal(self, literal, t):
         """
@@ -154,21 +157,21 @@ class Inference:
         Type of literal depend of language.
         We adopt a basic convention
         """
-        print("Infer LITERAL of this node: %s" % repr(literal))
+        #print("Infer LITERAL of this node: %s" % repr(literal))
         self.type_node.add(EvalCtx.from_sig(Val(literal, t)))
-        print("LITCTX [%s]" % str(self.type_node))
-        print("RVAL %s" % repr(list(self.type_node.values())[0].resolution))
+        #print("LITCTX [%s]" % str(self.type_node))
+        #print("RVAL %s" % repr(list(self.type_node.values())[0].resolution))
 
     def infer_operator(self, op):
         """
         Infer type of OPERATOR!
         Classic (?1, ?1) -> ?1
         """
-        print("Infer op of this node: %s" % repr(op))
+        #print("Infer op of this node: %s" % repr(op))
         # by default all operator are polymorphic
         self.type_node.add(Fun(op, '?1', ['?1', '?1']))
         self.type_node.need_feedback = True
-        print("NEED FEEDBACK")
+        #print("NEED FEEDBACK")
 
     ## FEEDBACK ALGOS
 
@@ -184,12 +187,12 @@ class Inference:
             expr.type_node.feedback(final_type)
 
     def feedback_fun(self, map_type: dict, final_type: TypeName):
-        print("feedback FUN")
+        #print("feedback FUN")
         self.type_node = self.type_node.get_by_return_type(final_type)
         # ...
 
     def feedback_id(self, map_type: dict, final_type: TypeName):
-        print("feedback ID")
+        #print("feedback ID")
         # instancie META!!!
         if len(self.type_node) > 1:
             self.type_node = self.type_node.get_by_return_type(final_type)
@@ -203,12 +206,12 @@ class Inference:
                 self.type_node.set_resolved_name(map_type, the_sig.tret,
                                                  final_type)
                 #self.type_node = self.type_node.get_compute_sig()
-                print("New EVAL CTX %s" % self.type_node)
+                #print("New EVAL CTX %s" % self.type_node)
 
     def feedback_literal(self, map_type: dict, final_type: TypeName):
-        print("feedback LITERAL")
+        #print("feedback LITERAL")
         self.type_node = self.type_node.get_by_return_type(final_type)
 
     def feedback_operator(self, map_type: dict, final_type: TypeName):
-        print("feedback OP")
+        #print("feedback OP")
         self.type_node = self.type_node.get_by_return_type(final_type)
