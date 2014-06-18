@@ -88,16 +88,17 @@ class Notification:
         self.location = location
         self.msg = msg
 
-    def get_content(self) -> str:
+    def get_content(self, without_locinfos=False) -> str:
         sevtxt = ""
         locinfos = ""
         if self.location is not None:
             locinfos = self.location.get_content()
-        txt = "{s} : {msg}\n{l}".format(
+        txt = "{s} : {msg}\n".format(
             s=Severity.rmap[self.severity].lower(),
-            msg=self.msg,
-            l=locinfos
+            msg=self.msg
         )
+        if not without_locinfos:
+            txt += locinfos
         return txt
 
 

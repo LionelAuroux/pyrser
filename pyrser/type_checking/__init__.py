@@ -8,6 +8,7 @@ from pyrser.type_checking.type import Type
 from pyrser.type_checking.var import Var
 from pyrser.type_checking.val import Val
 from pyrser.type_checking.fun import Fun
+from pyrser.type_checking.translator import Translator, MapSourceTranslate, MapTargetTranslate
 
 __all__ = [
     'EvalCtx',
@@ -19,5 +20,8 @@ __all__ = [
     'TypeName',
     'Val',
     'Var',
-    'Fun'
+    'Fun',
+    'Translator',
+    'MapSourceTranslate',
+    'MapTargetTranslate',
 ]

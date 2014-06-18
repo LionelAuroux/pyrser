@@ -15,6 +15,9 @@ class Var(Signature):
             tret = TypeName(tret)
         self.tret = tret
 
+    def is_polymorphic(self) -> bool:
+        return self.tret.is_polymorphic()
+
     def to_fmt(self):
         """
         Return an Fmt representation for pretty-printing

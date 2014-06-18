@@ -50,6 +50,11 @@ class EvalCtx:
             return self._sig.variadic
         return None
 
+    def is_polymorphic(self) -> bool:
+        if self._sig is not None and hasattr(self._sig, 'is_polymorphic'):
+            return self._sig.is_polymorphic()
+        return False
+
     def from_sig(sig: Signature) -> object:
         if isinstance(sig, EvalCtx):
             return sig
@@ -105,6 +110,13 @@ class EvalCtx:
             self.parent = None
         return ret
 
+    def use_translator(self, translator):
+        """
+        Attach a translator to an EvalCtx to convert output of the function
+        into another type
+        """
+        self._translate_to = translator
+
     def resolve(self):
         """
         Process the signature and find definition for type.
@@ -116,6 +128,8 @@ class EvalCtx:
         if hasattr(self._sig, 'tparams') and self._sig.tparams is not None:
             for p in self._sig.tparams:
                 t2resolv.append(p)
+        if hasattr(self, '_translate_to'):
+            t2resolv.append(self._translate_to.target)
         for t in t2resolv:
             for c in t.components:
                 if c not in self.resolution or self.resolution[c] is None:
@@ -175,6 +189,9 @@ class EvalCtx:
         lseval.append(self._sig.to_fmt())
         if len(self.resolution) > 0:
             lsb = []
+            if hasattr(self, "_translate_to"):
+                lsb.append("use translator:")
+                lsb.append(self._translate_to.to_fmt())
             for k in sorted(self.resolution.keys()):
                 s = self.resolution[k]
                 if s is not None:

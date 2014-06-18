@@ -1,6 +1,7 @@
 import unittest
 from pyrser.type_checking import *
 from pyrser.passes.to_yml import *
+from pyrser.error import *
 
 
 class InternalType_Test(unittest.TestCase):
@@ -20,7 +21,12 @@ class InternalType_Test(unittest.TestCase):
 
         class MyFun(MySymbol, Fun):
             def internal_name(self):
-                return super().internal_name() + self.name + "." + "_".join(self.tparams) + "." + self.tret
+                return (super().internal_name()
+                        + self.name
+                        + "."
+                        + "_".join(self.tparams)
+                        + "." + self.tret
+                        )
 
         s = MyFun('funky', 'bla', ['blu'])
         self.assertEqual(s.show_name(), 'cool funky',
@@ -238,6 +244,10 @@ class InternalType_Test(unittest.TestCase):
     def test_poly_01_var(self):
         # ?1 means type placeholders for polymorphisme
         var = Scope(sig=Var('var1', '?1'))
+        self.assertTrue(
+            var.getsig_by_symbol_name("var1").is_polymorphic(),
+            "Bad Var interface"
+        )
         tenv = Scope(sig=Fun('fun1', 'int', ['char']))
         (trestf, trestp) = tenv.get_by_params([var])
         self.assertIn(Fun('fun1', 'int', ['char']), trestf,
@@ -246,6 +256,10 @@ class InternalType_Test(unittest.TestCase):
                       "Bad polymorphic in type_checking.Scope")
         var = Scope(sig=Var('var1', 'int'))
         tenv = Scope(sig=Fun('fun1', 'int', ['?1']))
+        self.assertTrue(
+            tenv.getsig_by_symbol_name("fun1").is_polymorphic(),
+            "Bad Fun interface"
+        )
         (trestf, trestp) = tenv.get_by_params([var])
         self.assertIn(Fun('fun1', 'int', ['?1']), trestf,
                       "Bad polymorphic in type_checking.Scope")
@@ -260,8 +274,12 @@ class InternalType_Test(unittest.TestCase):
         var = Scope(sig=Var('v', 'const * char'))
         val = Scope(sig=Val('666', 'int'))
         (trestf, trestp) = sel.get_by_params([var, val])
-        #print("candidat [%s]" % str(trestf))
-        #print("param [%s]" % to_yml(trestp))
+        self.assertEqual(len(trestf), len(trestp), "Bad candidates")
+        self.assertEqual(
+            int(trestp[0][1].get(val.pop()[0]).value),
+            666,
+            "Bad candidates"
+        )
 
     def test_type_name_01_pp(self):
         tn = TypeName("* const int")
@@ -295,4 +313,160 @@ class InternalType_Test(unittest.TestCase):
                 )[0].resolution['T1']()
             ),
             "Bad resolution in type_checking.EvalCtx"
+        )
+
+    def test_translator_01(self):
+        with self.assertRaises(TypeError):
+            t = Translator(1, 2)
+        with self.assertRaises(TypeError):
+            t = Translator(Fun('pouet', 't2'), 2)
+        with self.assertRaises(TypeError):
+            t = Translator(
+                Fun('pouet', 't2'),
+                Notification(Severity.INFO, "pouet", None)
+            )
+        f = Fun('newT2', 'T2', ['T1'])
+        trans = Translator(
+            f,
+            Notification(
+                Severity.INFO,
+                "Convert T1 into T2",
+                LocationInfo.from_here()
+            )
+        )
+        lines = str(trans.to_fmt()).split('\n')
+        self.assertEqual(lines[0], "T1 to T2 = fun newT2 : (T1) -> T2")
+        m = MapTargetTranslate()
+        with self.assertRaises(TypeError):
+            m[1] = 2
+        with self.assertRaises(KeyError):
+            m[1] = trans
+        with self.assertRaises(KeyError):
+            m["Z"] = trans
+        m["T2"] = trans
+        m["T3"] = Translator(
+            Fun("init", 'T3', ['T1']),
+            Notification(
+                Severity.INFO,
+                "Implicit T1 to T3",
+                LocationInfo.from_here()
+            )
+        )
+        self.assertEqual(
+            repr(m["T3"]),
+            "T1 to T3 = fun init : (T1) -> T3\ninfo : Implicit T1 to T3\n",
+            "Bad Translator pretty-printing"
+        )
+        mall = MapSourceTranslate()
+        mall["T1"] = m
+        mall.addTranslator(
+            Translator(
+                Fun("__builtin_cast", "int", ["char"]),
+                Notification(
+                    Severity.INFO,
+                    "implicit convertion",
+                    LocationInfo.from_here()
+                )
+            )
+        )
+        self.assertEqual(
+            repr(mall["char"]["int"]),
+            ("char to int = fun __builtin_cast : (char) -> int\n"
+             + "info : implicit convertion\n"),
+            "Bad Translator pretty-printing"
+        )
+        self.assertTrue(
+            ("char", "int") in mall,
+            "Bad MapSourceTranslate interface"
+        )
+        self.assertTrue(
+            ("T1", "T3") in mall,
+            "Bad MapSourceTranslate interface"
+        )
+        res = ("T1", "T3") in mall
+        self.assertTrue(res, "Bad MapSourceTranslate interface")
+        mall2 = MapSourceTranslate()
+        mall2.addTranslator(
+            Translator(
+                Fun("to_string", "string", ["int"]),
+                Notification(
+                    Severity.INFO,
+                    "cast to string",
+                    LocationInfo.from_here()
+                )
+            )
+        )
+        mall2.set_parent(mall)
+        self.assertTrue(
+            ("T1", "T3") in mall2,
+            "Bad MapSourceTranslate interface"
+        )
+        mall.addTranslator(
+            Translator(
+                Fun("to_int", "int", ["string"]),
+                Notification(
+                    Severity.INFO,
+                    "cast to int",
+                    LocationInfo.from_here()
+                )
+            )
+        )
+        self.assertTrue(
+            ("string", "int") in mall2,
+            "Bad MapSourceTranslate interface"
+        )
+        mall2.addTranslator(
+            Translator(
+                Fun("to_float", "float", ["string"]),
+                Notification(
+                    Severity.INFO,
+                    "cast to float",
+                    LocationInfo.from_here()
+                )
+            ),
+            as_global=True
+        )
+        self.assertTrue(
+            ("string", "float") in mall,
+            "Bad MapSourceTranslate interface"
+        )
+
+    def test_translator_02(self):
+        n = Notification(
+            Severity.INFO,
+            "implicit conversion",
+            LocationInfo.from_here()
+        )
+        f = Fun("to_int", "int", ["string"])
+        s = Scope(sig=[f])
+        s.mapTypeTranslate.addTranslator(Translator(f, n))
+        f = Fun("to_float", "float", ["string"])
+        s |= Scope(sig=[f])
+        s.mapTypeTranslate.addTranslator(Translator(f, n))
+        f = Fun("char2int", "int", ["char"])
+        s |= Scope(sig=[f])
+        s.mapTypeTranslate.addTranslator(Translator(f, n))
+        v1 = Var("a", "string")
+        v2 = Var("a", "float")
+        isgood = Fun("isgood", "bool", ["int"])
+        s |= Scope(sig=[isgood, v1, v2])
+        v = s.get_by_symbol_name('a')
+        (res, sig, trans) = v.findTranslationTo(isgood.tparams[0])
+        self.assertTrue(res, "Can't found the good translator")
+        self.assertEqual(sig.tret, "string", "Bad type for var a")
+        s.add(Var("b", "string"))
+        s.add(Var("b", "X"))
+        s.add(Fun("f", "int", ["int"]))
+        s.add(Fun("f", "float", ["char"]))
+        f = s.get_by_symbol_name("f")
+        v = s.get_by_symbol_name("b")
+        (fns, params) = f.get_by_params([v])
+        self.assertTrue(
+            hasattr(params[0][0].first(), '_translate_to'),
+            "Can't find translator"
+        )
+        self.assertEqual(
+            params[0][0].first()._translate_to.target,
+            "int",
+            "Can't reach the return type"
         )

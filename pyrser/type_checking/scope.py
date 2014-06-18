@@ -4,6 +4,7 @@ from pyrser import fmt
 from pyrser.type_checking.symbol import *
 from pyrser.type_checking.signature import *
 from pyrser.type_checking.evalctx import *
+from pyrser.type_checking.translator import *
 from pyrser.passes.to_yml import *
 
 
@@ -21,25 +22,33 @@ class Scope(Symbol):
 
     def __init__(self, name: str=None, sig: [Signature]=None,
                  auto_update_parent=True):
+        """Unnamed scope for global scope"""
         if name is not None and not isinstance(name, str):
             raise TypeError("name must be a str object.")
-
-        """Unnamed scope for global scope"""
         super().__init__(name)
         # during typing, this scope need or not feedback pass
         self.need_feedback = False
         # auto update parent during add of Signature
         self.auto_update_parent = auto_update_parent
+        # internal mapping for Type Conversion
+        self.mapTypeTranslate = MapSourceTranslate()
         # TODO: ...could be unusable
         self._ntypes = 0
         self._nvars = 0
         self._nfuns = 0
+        # internal store of Signature
         self._hsig = {}
         if sig is not None:
             if isinstance(sig, Signature) or isinstance(sig, Scope):
                 self.add(sig)
             elif len(sig) > 0:
                 self.update(sig)
+
+    def set_parent(self, parent: Scope) -> object:
+        Symbol.set_parent(self, parent)
+        if parent is not None:
+            self.mapTypeTranslate.set_parent(parent.mapTypeTranslate)
+        return self
 
     def to_fmt(self) -> fmt.indentable:
         """
@@ -50,8 +59,11 @@ class Scope(Symbol):
         name = self.show_name()
         if name != "":
             txt.lsdata.append(name)
-        if len(self._hsig) > 0:
+        if len(self._hsig) > 0 or len(self.mapTypeTranslate) > 0:
             lsb = []
+            if len(self.mapTypeTranslate) > 0:
+                lsb.append("translate:\n")
+                lsb.append(fmt.end("\n", self.mapTypeTranslate.to_fmt()))
             for k in sorted(self._hsig.keys()):
                 s = self._hsig[k]
                 lsb.append(fmt.end("\n", [s.to_fmt()]))
@@ -244,6 +256,20 @@ class Scope(Symbol):
         """
         return self._hsig.popitem()
 
+    def first(self) -> Signature:
+        """
+        Retrieve the first Signature ordered by mangling descendant
+        """
+        k = sorted(self._hsig.keys())
+        return self._hsig[k[0]]
+
+    def last(self) -> Signature:
+        """
+        Retrieve the last Signature ordered by mangling descendant
+        """
+        k = sorted(self._hsig.keys())
+        return self._hsig[k[-1]]
+
     def get(self, key: str, default=None) -> Signature:
         """
         Get a signature instance by its internal_name
@@ -270,7 +296,22 @@ class Scope(Symbol):
             p = self.get_parent()
             if p is not None:
                 return p.get_by_symbol_name(name)
-        return Scope(sig=lst, auto_update_parent=False)
+        rscope = Scope(sig=lst, auto_update_parent=False)
+        # inherit type/translation from parent
+        rscope.set_parent(self)
+        return rscope
+
+    def getsig_by_symbol_name(self, name: str) -> Signature:
+        """
+        Retrieve the unique Signature of a symbol.
+        Fail if the Signature is not unique
+        """
+        subscope = self.get_by_symbol_name(name)
+        if len(subscope) != 1:
+            raise KeyError("%s have multiple candidates in scope" % name)
+        v = list(subscope.values())
+        return v[0]
+
 
     def get_by_return_type(self, tname: str) -> Scope:
         """
@@ -280,7 +321,10 @@ class Scope(Symbol):
         for s in self._hsig.values():
             if s.tret == tname:
                 lst.append(EvalCtx.from_sig(s))
-        return Scope(sig=lst, auto_update_parent=False)
+        rscope = Scope(sig=lst, auto_update_parent=False)
+        # inherit type/translation from parent
+        rscope.set_parent(self)
+        return rscope
 
     def get_all_polymorphic_return(self) -> bool:
         """
@@ -293,14 +337,17 @@ class Scope(Symbol):
             if s.tret.is_polymorphic():
                 # encapsulate s into a EvalCtx for meta-var resolution
                 lst.append(EvalCtx.from_sig(s))
-        return Scope(sig=lst, auto_update_parent=False)
+        rscope = Scope(sig=lst, auto_update_parent=False)
+        # inherit type/translation from parent
+        rscope.set_parent(self)
+        return rscope
 
-    def get_by_params(self, params: [Scope]) -> (Scope, [Scope]):
+    def get_by_params(self, params: [Scope]) -> (Scope, [[Scope]]):
         """
         Retrieve a Set of all signature that match the parameter list.
         Return a pair.
             pair[0] the overloads for the functions
-            pair[1] the overloads for the parameters
+            pair[1] the overloads for the parameters (a list of candidate list of parameters)
         """
         lst = []
         scopep = []
@@ -313,7 +360,10 @@ class Scope(Symbol):
                 # temporary collect
                 nbparam_sig = len(s.tparams)
                 nbparam_candidates = len(params)
-                # don't treat signature to short
+                # don't treat signature too short
+                if nbparam_sig > nbparam_candidates:
+                    continue
+                # don't treat signature too long if not variadic
                 if nbparam_candidates > nbparam_sig and not s.variadic:
                     continue
                 tmp = [None] * nbparam_candidates
@@ -324,45 +374,76 @@ class Scope(Symbol):
                         m = params[i].get_by_return_type(s.tparams[i])
                         if len(m) > 0:
                             mcnt += 1
-                            #print("RET TYPE {{%s}}" % m)
                             tmp[i].update(m)
                         else:
-                            # TODO:???
                             # co/contra-variance
                             # we just need to search a t1->t2
                             # and add it into the tree (with/without warnings)
-                            # before polymorphic
-                            # ...
-                            if s.tparams[i].is_polymorphic():
+                            t1 = params[i]
+                            t2 = s.tparams[i]
+                            # if exist a fun (t1) -> t2
+                            (is_convertible,
+                             signature,
+                             translator
+                             ) = t1.findTranslationTo(t2)
+                            if is_convertible:
+                                # add a translator
+                                signature.use_translator(translator)
+                                mcnt += 1
+                                nscope = Scope(sig=[signature])
+                                tmp[i].update(nscope)
+                            elif s.tparams[i].is_polymorphic():
                                 # handle polymorphic parameter
                                 mcnt += 1
                                 if not isinstance(params[i], Scope):
                                     raise Exception(
                                         "params[%d] must be a Scope" % i
                                     )
-                                #print("VVV <%s>" % params[i])
                                 tmp[i].update(params[i])
                             else:
                                 # handle polymorphic return type
                                 m = params[i].get_all_polymorphic_return()
                                 if len(m) > 0:
                                     mcnt += 1
-                                    #print("RET POLY {{%s}}" % m)
                                     tmp[i].update(m)
                     # for variadic extra parameters
                     else:
                         mcnt += 1
                         if not isinstance(params[i], Scope):
                             raise Exception("params[%d] must be a Scope" % i)
-                        #print("EXTRA %s" % params[i])
                         tmp[i].update(params[i])
                 # we have match all candidates
                 if mcnt == len(params):
                     # select this signature but
-                    # encapsul for type resolution
+                    # box it (with EvalCtx) for type resolution
                     lst.append(EvalCtx.from_sig(s))
                     scopep.append(tmp)
-        return (Scope(sig=lst, auto_update_parent=False), scopep)
+        rscope = Scope(sig=lst, auto_update_parent=False)
+        # inherit type/translation from parent
+        rscope.set_parent(self)
+        return (rscope, scopep)
+
+    def findTranslationTo(self, t2: str) -> (bool, Signature, Translator):
+        """
+        Find an arrow (->) aka a function able to translate something to t2
+        """
+        if not t2.is_polymorphic():
+            collect = []
+            for s in self._hsig.values():
+                t1 = s.tret
+                if t1.is_polymorphic():
+                    continue
+                if (s.tret in self.mapTypeTranslate):
+                    if (t2 in self.mapTypeTranslate[t1]):
+                        collect.append((
+                            True,
+                            s,
+                            self.mapTypeTranslate[t1][t2]
+                        ))
+            # if len > 1 too many candidates
+            if len(collect) == 1:
+                return collect[0]
+        return (False, None, None)
 
     def values(self) -> [Signature]:
         """

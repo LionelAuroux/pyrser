@@ -25,6 +25,25 @@ class Fun(Signature):
                     p = TypeName(p)
                 self.tparams.append(p)
 
+    @property
+    def arity(self) -> int:
+        return len(self.tparams)
+
+    @property
+    def return_type(self) -> str:
+        return self.tret
+
+    @property
+    def this_type(self) -> str:
+        return self.tparams[0]
+
+    def is_polymorphic(self) -> bool:
+        if self.tret.is_polymorphic():
+            return True
+        for p in self.tparams:
+            if p.is_polymorphic():
+                return True
+
     def to_fmt(self):
         """
         Return an Fmt representation for pretty-printing

@@ -12,6 +12,9 @@ class TypeName(str):
     def __str__(self) -> str:
         return self.value
 
+    def __hash__(self) -> int:
+        return self.value.__hash__()
+
     def __lt__(self, oth) -> bool:
         if isinstance(oth, TypeName):
             return self.value < oth.value

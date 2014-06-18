@@ -7,10 +7,10 @@ class Inference:
     def type_algos(self) -> ('self.infer_algo',
                              'self.feedback_algo', ['args']):
         """
-        Sub class must return a Tuple of 4 elements:
+        Sub class must return a Tuple of 3 elements:
             - the method to use to infer type.
-            - the method to use when feedback type.
-            - the list of params to used when infer or feedback type.
+            - the method to use when feedback a type.
+            - the list of params to used when infer a type.
 
         This is useful to connect AST members to generic algo or
         to overload some specific semantic for your language.
@@ -29,6 +29,7 @@ class Inference:
         #print("Feedback type of this node: %s : %s" % (repr(self), final_type))
         # get algo
         type_algo = self.type_algos()
+        ## MAP_TYPE only used in feedback_id!?
         type_algo[1](map_type, final_type)
 
     ## INFER ALGOS
