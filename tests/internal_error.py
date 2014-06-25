@@ -46,7 +46,6 @@ class InternalError_Test(unittest.TestCase):
              + "^"),
             "Bad LocationInfo.get_content"
         )
-        os.remove(st.filepath)
 
         def intern_func():
             li = LocationInfo.from_here(2)
@@ -55,7 +54,7 @@ class InternalError_Test(unittest.TestCase):
         s = intern_func()
         self.assertEqual(
             s,
-            ("from {f} at line:55 col:9 :\n".format(f=current_file)
+            ("from {f} at line:54 col:9 :\n".format(f=current_file)
              + "{i}s = intern_func()\n".format(i=(' ' * 8))
              + "{i}^").format(i=(' ' * 8)),
             "Bad LocationInfo.get_content"
@@ -67,7 +66,7 @@ class InternalError_Test(unittest.TestCase):
             "it's just a test",
             LocationInfo(current_file, 1, 8)
         )
-        s = nfy.get_content()
+        s = nfy.get_content(with_locinfos=True)
         self.assertEqual(
             s,
             ("warning : it's just a test\n"
@@ -90,8 +89,8 @@ class InternalError_Test(unittest.TestCase):
         )
         infos = diag.get_infos()
         self.assertEqual(infos, {0: 0, 1: 1, 2: 1}, "Bad Diagnostic.get_infos")
-        self.assertTrue(diag.have_errors(), "Bad Diagnostic.have_errors")
-        s = diag.get_content()
+        self.assertTrue(diag.have_errors, "Bad Diagnostic.have_errors")
+        s = diag.get_content(with_locinfos=True)
         self.assertEqual(
             s,
             ((("=" * 79) + '\n')

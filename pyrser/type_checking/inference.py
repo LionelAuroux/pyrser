@@ -1,5 +1,7 @@
 # inference mechanisms
 from pyrser.type_checking import *
+from pyrser.error import *
+from pyrser.passes.to_yml import *
 
 
 class Inference:
@@ -19,71 +21,57 @@ class Inference:
                         " type_algos(self) method to support" +
                         " Pyrser Type Systems.") % type(self).__name__)
 
-    def infer_type(self):
-        #print("Infer type of this node: %s" % repr(self))
+    def infer_type(self, diagnostic=None):
         # get algo
         type_algo = self.type_algos()
-        type_algo[0](*type_algo[2])
+        type_algo[0](type_algo[2], diagnostic)
 
-    def feedback(self, map_type: dict, final_type: TypeName):
-        #print("Feedback type of this node: %s : %s" % (repr(self), final_type))
+    def feedback(self, diagnostic=None):
         # get algo
         type_algo = self.type_algos()
-        ## MAP_TYPE only used in feedback_id!?
-        type_algo[1](map_type, final_type)
+        type_algo[1](diagnostic)
 
     ## INFER ALGOS
 
-    def infer_block(self, body):
+    def infer_block(self, body, diagnostic=None):
         """
         Infer type on block is to type each of is sub-element
         """
         # create root type_node for RootBlock
         if not hasattr(self, 'type_node'):
             self.type_node = Scope()
-        #print("Infer Block: %s" % repr(body))
+        diagnostic.notify(Severity.INFO, "Infer Block", self.info)
         for e in body:
             e.type_node = Scope()
             e.type_node.set_parent(self.type_node)
-            e.infer_type()
+            e.infer_type(diagnostic)
 
-    def infer_subexpr(self, expr):
+    def infer_subexpr(self, expr, diagnostic=None):
         """
         Infer type on the subexpr
         """
-        #print("Infer SubExpr: %s" % repr(expr))
+        diagnostic.notify(Severity.INFO, "Infer SubExpr", self.info)
         expr.type_node = Scope()
         expr.type_node.set_parent(self.type_node)
-        expr.infer_type()
+        expr.infer_type(diagnostic)
 
-    def infer_fun(self, call_expr, params):
-        #print("Infer fun call of this node: %s" % repr(call_expr))
+    def infer_fun(self, args, diagnostic=None):
+        call_expr, arguments = args
+        diagnostic.notify(Severity.INFO, "Infer Function call '%s'" % call_expr.value, self.info)
         # 1 - fetch all possible types for the call expr
         call_expr.type_node = Scope()
         call_expr.type_node.set_parent(self.type_node)
-        call_expr.infer_type()
+        call_expr.infer_type(diagnostic=diagnostic)
         f = call_expr.type_node
         # 2 - fetch all possible types for each parameters
         tparams = []
-        for p in params:
+        for p in arguments:
             p.type_node = Scope()
             p.type_node.set_parent(self.type_node)
-            p.infer_type()
+            p.infer_type(diagnostic=diagnostic)
             tparams.append(p.type_node)
         # 3 - select overloads
-        #print("check for proto: ((%s))" % tparams[0])
-        if len(tparams) > 1:
-            #print("check for proto 2ieme: ((%s))" % tparams[1])
-            pass
         (final_call_expr, final_tparams) = f.get_by_params(tparams)
-        #print("CALL %s" % str(final_call_expr))
-        for p in final_tparams[0]:
-            #print("PP %s" % str(p))
-            pass
-        if len(final_tparams) > 1:
-            for p in final_tparams[1]:
-                #print("PP %s" % str(p))
-                pass
         # 4 - record overloads
         self.type_node = final_call_expr
         nversion = len(final_call_expr)
@@ -92,18 +80,41 @@ class Inference:
             self.type_node.need_feedback = True
             return
         elif nversion == 0:
-            # ERREUR DE TYPAGE
+            # TODO: Try type reconstruction if final_tparams[x][0].is_polymorphic
+            # ...
+            # type error
+            details = "\ndetails:\n"
+            details += "overloads:\n"
+            for fun in f.values():
+                details += str(fun.get_compute_sig()) + "\n"
+            details += "parameters:\n"
+            i = 0
+            # TODO: change by final_tparams
+            for p in tparams:
+                details += "- param[%d] type " % i
+                ptypes = []
+                for alt in p.values():
+                    ptypes.append(alt.tret)
+                details += '|'.join(ptypes)+ "\n"
+                i += 1
+            diagnostic.notify(
+                Severity.ERROR,
+                "can't match overloads with parameters for function '%s'" % str(f.first().name),
+                self.info,
+                details
+            )
             return
+        # here len(self.type_node) == 1 && len(final_tparams) == 1
         # 5 - handle polymorphism
+        # TODO: INSIDE A CLASS?
         my_map = dict()
-        my_type = list(self.type_node.values())[0]
-        if my_type.tret.is_polymorphic():
-            #print("HAVE RET POLY :%s" % type(my_type))
-            # try to get from real tret
-            sig = list(call_expr.type_node.values())[0]
-            if not sig.tret.is_polymorphic():
-                #print("HAVE R TYPE %s" % sig.tret)
-                #print("%s" % sig)
+        my_type = self.type_node.first()
+        if my_type.tret.is_polymorphic:
+            diagnostic.notify(Severity.INFO, "polymorphic return type %s" % str(my_type.get_compute_sig()), self.info)
+            # if tret is polymorphic, take type from call_expr if unique, else type come from parameter resolution
+            sig = call_expr.type_node.first()
+            if len(call_expr.type_node) == 1 and not sig.tret.is_polymorphic:
+                diagnostic.notify(Severity.INFO, "call_expr have real type '%s'" % sig.tret, self.info)
                 my_map.update(sig.resolution)
                 my_type.set_resolved_name(
                     sig.resolution,
@@ -113,34 +124,30 @@ class Inference:
         arity = len(my_type.tparams)
         for i in range(arity):
             p = my_type.tparams[i]
-            if p.is_polymorphic():
+            if p.is_polymorphic:
                 # take type in final_tparams
-                #print("HAVE P[%d] POLY" % i)
-                sig = list(final_tparams[0][i].values())[0]
-                if not sig.tret.is_polymorphic():
-                    #print("P HAVE REAL TYPE %s" % sig.tret)
-                    #print("SIG.RESOL <%s>" % sig)
+                diagnostic.notify(Severity.INFO, "- param[%d] polymorphic type" % i, arguments[i].info)
+                # here len(final_tparams) == 1, only one set for parameters
+                sig = final_tparams[0][i].first()
+                if not sig.tret.is_polymorphic:
+                    diagnostic.notify(Severity.INFO, "- argument[%d] real type '%s'" % (i, sig.tret), arguments[i].info)
                     my_map[p.value] = sig.resolution[sig.tret.value]
                     my_type.set_resolved_name(sig.resolution, p, sig.tret)
-        #print("AFTER RESOLV %s" % my_type)
-        #print("NEW SIG %s" % my_type.get_compute_sig())
+        diagnostic.notify(Severity.INFO, "after resolution %s" % str(my_type.get_compute_sig()), self.info)
         self.type_node.clear()
         self.type_node.add(my_type)
         # 6 - feedback
-        for i in range(arity):
-            p = my_type.tparams[i]
-            if params[i].type_node.need_feedback:
-                #print("FEED BACK P[%d] %s" % (i, p))
-                #print("FEED MAP %s" % my_map)
-                params[i].feedback(my_map, p)
+        self.map_type = my_map
+        self.final_type = my_type.tret
+        self.feedback(diagnostic)
+        # 7 - Are we finish? Global type reconstruction
 
-    def infer_id(self, ident):
+    def infer_id(self, ident, diagnostic=None):
         """
         Infer type from an ID!
         - check if ID is declarated in the scope
         - if no ID is polymorphic type
         """
-        #print("Infer ID of this node: %s" % repr(ident))
         # check if ID is declared
         defined = self.type_node.get_by_symbol_name(ident)
         if len(defined) > 0:
@@ -149,70 +156,78 @@ class Inference:
         else:
             self.type_node.add(Var(ident, '?1'))
             self.type_node.need_feedback = True
-            #print("NEED FEEDBACK")
-            #print(str(self.type_node))
 
-    def infer_literal(self, literal, t):
+    def infer_literal(self, args, diagnostic=None):
         """
         Infer type from an LITERAL!
         Type of literal depend of language.
         We adopt a basic convention
         """
-        #print("Infer LITERAL of this node: %s" % repr(literal))
+        literal, t = args
         self.type_node.add(EvalCtx.from_sig(Val(literal, t)))
-        #print("LITCTX [%s]" % str(self.type_node))
-        #print("RVAL %s" % repr(list(self.type_node.values())[0].resolution))
 
-    def infer_operator(self, op):
+    def infer_operator(self, op, diagnostic=None):
         """
         Infer type of OPERATOR!
         Classic (?1, ?1) -> ?1
         """
-        #print("Infer op of this node: %s" % repr(op))
         # by default all operator are polymorphic
         self.type_node.add(Fun(op, '?1', ['?1', '?1']))
         self.type_node.need_feedback = True
-        #print("NEED FEEDBACK")
 
     ## FEEDBACK ALGOS
 
-    def feedback_block(self, map_type: dict, final_type: TypeName):
+    def feedback_block(self, diagnostic=None):
         # normally nothing to do!?!?!
-        for e in body:
+        type_algo = self.type_algos()
+        # TODO: body?
+        for e in type_algo[2]:
             if e.type_node.need_feedback:
-                e.type_node.feedback(None)
+                e.type_node.feedback(diagnostic)
 
-    def feedback_subexpr(self, map_type: dict, final_type: TypeName):
-        self.type_node = self.type_node.get_by_return_type(final_type)
+    def feedback_subexpr(self, diagnostic=None):
+        self.type_node = self.type_node.get_by_return_type(self.final_type)
+        self.type_node.need_feedback = False
         if expr.type_node.need_feedback:
-            expr.type_node.feedback(final_type)
+            expr.type_node.feedback(diagnostic)
 
-    def feedback_fun(self, map_type: dict, final_type: TypeName):
-        #print("feedback FUN")
-        self.type_node = self.type_node.get_by_return_type(final_type)
-        # ...
+    def feedback_leaf(self, diagnostic=None):
+        self.type_node = self.type_node.get_by_return_type(self.final_type)
+        self.type_node.need_feedback = False
 
-    def feedback_id(self, map_type: dict, final_type: TypeName):
-        #print("feedback ID")
+    def feedback_fun(self, diagnostic=None):
+        self.type_node = self.type_node.get_by_return_type(self.final_type)
+        self.type_node.need_feedback = False
+        arguments = self.type_node.first().tparams
+        nargs = len(arguments)
+        type_algo = self.type_algos()
+        call_expr, args = type_algo[2]
+        if call_expr.type_node.need_feedback:
+            diagnostic.notify(Severity.INFO, "feed back call_expr = %s" % self.final_type, call_expr.info)
+            call_expr.map_type = self.map_type
+            call_expr.final_type = self.final_type
+            call_expr.feedback()
+        for i in range(nargs):
+            p = arguments[i]
+            if args[i].type_node.need_feedback:
+                diagnostic.notify(Severity.INFO, "feed back p[%d] = %s" % (i, p), args[i].info)
+                diagnostic.notify(Severity.INFO, "feed map %s" % self.map_type, args[i].info)
+                args[i].map_type = self.map_type
+                args[i].final_type = p
+                args[i].feedback(diagnostic)
+
+    def feedback_id(self, diagnostic=None):
         # instancie META!!!
         if len(self.type_node) > 1:
-            self.type_node = self.type_node.get_by_return_type(final_type)
+            self.type_node = self.type_node.get_by_return_type(self.final_type)
             if len(self.type_node) != 1:
                 # ERROR TYPE !!!?!?
-                pass
+                diagnostic.notify(Severity.ERROR, "Type error: too many candidates %s" % str(self.type_node), self.info)
         else:
             the_sig = list(self.type_node.values())[0]
-            if the_sig.tret.is_polymorphic():
+            if the_sig.tret.is_polymorphic:
                 self.type_node = EvalCtx.from_sig(the_sig)
-                self.type_node.set_resolved_name(map_type, the_sig.tret,
-                                                 final_type)
+                self.type_node.set_resolved_name(self.map_type, the_sig.tret,
+                                                 self.final_type)
+                # TODO: Why this fucking line... I forgot
                 #self.type_node = self.type_node.get_compute_sig()
-                #print("New EVAL CTX %s" % self.type_node)
-
-    def feedback_literal(self, map_type: dict, final_type: TypeName):
-        #print("feedback LITERAL")
-        self.type_node = self.type_node.get_by_return_type(final_type)
-
-    def feedback_operator(self, map_type: dict, final_type: TypeName):
-        #print("feedback OP")
-        self.type_node = self.type_node.get_by_return_type(final_type)

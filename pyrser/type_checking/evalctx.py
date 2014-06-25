@@ -50,9 +50,10 @@ class EvalCtx:
             return self._sig.variadic
         return None
 
+    @property
     def is_polymorphic(self) -> bool:
         if self._sig is not None and hasattr(self._sig, 'is_polymorphic'):
-            return self._sig.is_polymorphic()
+            return self._sig.is_polymorphic
         return False
 
     def from_sig(sig: Signature) -> object:
@@ -85,12 +86,18 @@ class EvalCtx:
         tret = []
         tparams = []
         for t in self.tret.components:
-            tret.append(self.resolution[t]().show_name())
+            if t in self.resolution and self.resolution[t] is not None:
+                tret.append(self.resolution[t]().show_name())
+            else:
+                tret.append(t)
         if hasattr(self, 'tparams'):
             for p in self.tparams:
                 tp = []
                 for t in p.components:
-                    tp.append(self.resolution[t]().show_name())
+                    if t in self.resolution and self.resolution[t] is not None:
+                        tp.append(self.resolution[t]().show_name())
+                    else:
+                        tp.append(t)
                 tparams.append(" ".join(tp))
         ret = Fun(self.name, " ".join(tret), tparams)
         # transform as-is into our internal Signature (Val, Var, whatever)

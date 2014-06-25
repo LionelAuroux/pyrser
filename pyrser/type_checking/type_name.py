@@ -28,6 +28,7 @@ class TypeName(str):
     def get_subcomponents(self) -> list:
         return self.components[1:]
 
+    @property
     def is_polymorphic(self) -> bool:
         """
         Check if one of composed type name is poly

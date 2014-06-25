@@ -35,7 +35,7 @@ params =
             param:p #add_param(_, p)
             [',' param:p #add_param(_, p) ]*
             [',' '...' #add_param_variadic(_) ]?
-        | '...' #add_param_variadic(_)
+        |   '...' #add_param_variadic(_)
         ]?
     ')'
 ]

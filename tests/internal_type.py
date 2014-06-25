@@ -245,7 +245,7 @@ class InternalType_Test(unittest.TestCase):
         # ?1 means type placeholders for polymorphisme
         var = Scope(sig=Var('var1', '?1'))
         self.assertTrue(
-            var.getsig_by_symbol_name("var1").is_polymorphic(),
+            var.getsig_by_symbol_name("var1").is_polymorphic,
             "Bad Var interface"
         )
         tenv = Scope(sig=Fun('fun1', 'int', ['char']))
@@ -257,7 +257,7 @@ class InternalType_Test(unittest.TestCase):
         var = Scope(sig=Var('var1', 'int'))
         tenv = Scope(sig=Fun('fun1', 'int', ['?1']))
         self.assertTrue(
-            tenv.getsig_by_symbol_name("fun1").is_polymorphic(),
+            tenv.getsig_by_symbol_name("fun1").is_polymorphic,
             "Bad Fun interface"
         )
         (trestf, trestp) = tenv.get_by_params([var])

@@ -226,7 +226,6 @@ class InternalDsl_Test(unittest.TestCase):
             "Cannot repeat a negated rule",
             "Bad message"
         )
-        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_16_lookaheadRule(self):
         bnf = dsl.EBNF("""
@@ -248,7 +247,6 @@ class InternalDsl_Test(unittest.TestCase):
             "Cannot repeat a lookahead rule",
             "Bad message"
         )
-        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_18_hookNoParam(self):
         bnf = dsl.EBNF("""

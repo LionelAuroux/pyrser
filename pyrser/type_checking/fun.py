@@ -37,11 +37,12 @@ class Fun(Signature):
     def this_type(self) -> str:
         return self.tparams[0]
 
+    @property
     def is_polymorphic(self) -> bool:
-        if self.tret.is_polymorphic():
+        if self.tret.is_polymorphic:
             return True
         for p in self.tparams:
-            if p.is_polymorphic():
+            if p.is_polymorphic:
                 return True
 
     def to_fmt(self):

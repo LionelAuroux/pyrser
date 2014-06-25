@@ -50,6 +50,56 @@ class Scope(Symbol):
             self.mapTypeTranslate.set_parent(parent.mapTypeTranslate)
         return self
 
+    def set_name(self, name: str):
+        """
+        You could set the name after construction
+        """
+        self.name = name
+        # update internal names
+        lsig = self._hsig.values()
+        self._hsig = {}
+        for s in lsig:
+            self._hsig[s.internal_name()] = s
+
+    def count_types(self) -> int:
+        """
+        Count subtypes
+        """
+        n = 0
+        for s in self._hsig.values():
+            if type(s).__name__ == 'Type':
+                n += 1
+        return n
+
+    def count_vars(self) -> int:
+        """
+        Count var define by this scope
+        """
+        n = 0
+        for s in self._hsig.values():
+            if hasattr(s, 'is_var') and s.is_var():
+                n += 1
+        return n
+
+    def count_funs(self) -> int:
+        """
+        Count function define by this scope
+        """
+        n = 0
+        for s in self._hsig.values():
+            if hasattr(s, 'is_fun') and s.is_fun():
+                n += 1
+        return n
+
+    def __update_count(self):
+        """
+        Update internal counters
+        """
+        self._ntypes = self.count_types()
+        self._nvars = self.count_vars()
+        self._nfuns = self.count_funs()
+
+    # ======== PRETTY PRINTING ========
     def to_fmt(self) -> fmt.indentable:
         """
         Return an Fmt representation for pretty-printing
@@ -83,20 +133,7 @@ class Scope(Symbol):
         """
         return str(self.to_fmt())
 
-    def __len__(self) -> int:
-        """
-        Len of the Set
-        """
-        return len(self._hsig)
-
-    def __update_count(self):
-        """
-        Update internal counters
-        """
-        self._ntypes = self.count_types()
-        self._nvars = self.count_vars()
-        self._nfuns = self.count_funs()
-
+    # ======== SET OPERATORS OVERLOADING ========
     # in
     def __contains__(self, s: Signature) -> bool:
         if isinstance(s, Signature):
@@ -213,6 +250,7 @@ class Scope(Symbol):
         new ^= sig
         return new
 
+    # ======== SCOPE MANIPULATION ========
     def add(self, it: Signature) -> bool:
         """
         Add it to the Set
@@ -256,6 +294,26 @@ class Scope(Symbol):
         """
         return self._hsig.popitem()
 
+    # ======== SCOPE ITERATION ========
+    def __len__(self) -> int:
+        """
+        Len of the Set
+        """
+        return len(self._hsig)
+
+    def values(self) -> [Signature]:
+        """
+        Retrieve all values
+        """
+        return self._hsig.values()
+
+    def keys(self) -> [str]:
+        """
+        Retrieve all keys
+        """
+        return self._hsig.keys()
+
+    # ======== SCOPE QUERY ========
     def first(self) -> Signature:
         """
         Retrieve the first Signature ordered by mangling descendant
@@ -312,7 +370,6 @@ class Scope(Symbol):
         v = list(subscope.values())
         return v[0]
 
-
     def get_by_return_type(self, tname: str) -> Scope:
         """
         Retrieve a Set of all signature by (return) type
@@ -334,7 +391,7 @@ class Scope(Symbol):
         """
         lst = []
         for s in self._hsig.values():
-            if s.tret.is_polymorphic():
+            if s.tret.is_polymorphic:
                 # encapsulate s into a EvalCtx for meta-var resolution
                 lst.append(EvalCtx.from_sig(s))
         rscope = Scope(sig=lst, auto_update_parent=False)
@@ -392,7 +449,7 @@ class Scope(Symbol):
                                 mcnt += 1
                                 nscope = Scope(sig=[signature])
                                 tmp[i].update(nscope)
-                            elif s.tparams[i].is_polymorphic():
+                            elif s.tparams[i].is_polymorphic:
                                 # handle polymorphic parameter
                                 mcnt += 1
                                 if not isinstance(params[i], Scope):
@@ -427,11 +484,11 @@ class Scope(Symbol):
         """
         Find an arrow (->) aka a function able to translate something to t2
         """
-        if not t2.is_polymorphic():
+        if not t2.is_polymorphic:
             collect = []
             for s in self._hsig.values():
                 t1 = s.tret
-                if t1.is_polymorphic():
+                if t1.is_polymorphic:
                     continue
                 if (s.tret in self.mapTypeTranslate):
                     if (t2 in self.mapTypeTranslate[t1]):
@@ -444,56 +501,3 @@ class Scope(Symbol):
             if len(collect) == 1:
                 return collect[0]
         return (False, None, None)
-
-    def values(self) -> [Signature]:
-        """
-        Retrieve all values
-        """
-        return self._hsig.values()
-
-    def keys(self) -> [str]:
-        """
-        Retrieve all keys
-        """
-        return self._hsig.keys()
-
-    def count_types(self) -> int:
-        """
-        Count subtypes
-        """
-        n = 0
-        for s in self._hsig.values():
-            if type(s).__name__ == 'Type':
-                n += 1
-        return n
-
-    def count_vars(self) -> int:
-        """
-        Count var define by this scope
-        """
-        n = 0
-        for s in self._hsig.values():
-            if hasattr(s, 'is_var') and s.is_var():
-                n += 1
-        return n
-
-    def count_funs(self) -> int:
-        """
-        Count function define by this scope
-        """
-        n = 0
-        for s in self._hsig.values():
-            if hasattr(s, 'is_fun') and s.is_fun():
-                n += 1
-        return n
-
-    def set_name(self, name: str):
-        """
-        You could set the name after construction
-        """
-        self.name = name
-        # update internal names
-        lsig = self._hsig.values()
-        self._hsig = {}
-        for s in lsig:
-            self._hsig[s.internal_name()] = s

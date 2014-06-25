@@ -1,5 +1,6 @@
 # error handling
 import os
+import atexit
 import tempfile
 import inspect
 import re
@@ -12,8 +13,6 @@ Severity = meta.enum('INFO', 'WARNING', 'ERROR')
 
 
 class LocationInfo:
-    #__slots__ = ['filepath', 'line', 'col', 'size']
-
     def __init__(self, filepath: str, line: int, col: int, size: int=1):
         self.filepath = filepath
         self.line = line
@@ -27,24 +26,28 @@ class LocationInfo:
             tmpf = os.fdopen(fh, 'w')
             tmpf.write(stream._content)
             tmpf.close()
-        return LocationInfo(
+            atexit.register(os.remove, stream._name)
+        loc = LocationInfo(
             stream._name,
             stream._cursor.lineno,
             stream._cursor.col_offset
         )
+        return loc
 
     @staticmethod
-    def from_maxstream(stream: 'Stream') -> 'LocationInfo':
+    def from_maxstream(stream: 'Stream', is_error=False) -> 'LocationInfo':
         if stream._name is None:
             (fh, stream._name) = tempfile.mkstemp()
             tmpf = os.fdopen(fh, 'w')
             tmpf.write(stream._content)
             tmpf.close()
-        return LocationInfo(
+            atexit.register(os.remove, stream._name)
+        loc = LocationInfo(
             stream._name,
             stream._cursor._maxline,
             stream._cursor._maxcol
         )
+        return loc
 
     @staticmethod
     def from_here(pos=1):
@@ -83,22 +86,22 @@ class Notification:
     Just One notification
     """
     def __init__(self, severity: Severity, msg: str,
-                 location: LocationInfo=None):
+                 location: LocationInfo=None, details: str=None):
         self.severity = severity
         self.location = location
         self.msg = msg
+        self.details = details
 
-    def get_content(self, without_locinfos=False) -> str:
+    def get_content(self, with_locinfos=False, with_details=False) -> str:
         sevtxt = ""
-        locinfos = ""
-        if self.location is not None:
-            locinfos = self.location.get_content()
         txt = "{s} : {msg}\n".format(
             s=Severity.rmap[self.severity].lower(),
             msg=self.msg
         )
-        if not without_locinfos:
-            txt += locinfos
+        if with_locinfos and self.location is not None:
+            txt += self.location.get_content()
+        if with_details and self.details is not None:
+            txt += self.details
         return txt
 
 
@@ -113,18 +116,18 @@ class Diagnostic(Exception):
         self.logs = []
 
     def __bool__(self):
-        return self.have_errors() is not True
+        return self.have_errors is not True
 
     def notify(self, severity: Severity, msg: str,
-               location: object) -> int:
-        nfy = Notification(severity, msg, location)
+               location: LocationInfo=None, details: str=None) -> int:
+        nfy = Notification(severity, msg, location, details)
         self.logs.append(nfy)
         return len(self.logs) - 1
 
-    def get_content(self) -> str:
+    def get_content(self, with_locinfos=False, with_details=False) -> str:
         ls = []
         for v in self.logs:
-            ls.append(v.get_content())
+            ls.append(v.get_content(with_locinfos, with_details))
         txt = ('=' * 79) + '\n'
         txt += ('\n' + ('-' * 79) + '\n').join(ls)
         txt += '\n' + ('-' * 79)
@@ -139,6 +142,7 @@ class Diagnostic(Exception):
             infos[s] += 1
         return infos
 
+    @property
     def have_errors(self) -> bool:
         inf = self.get_infos()
         return inf[Severity.ERROR] > 0

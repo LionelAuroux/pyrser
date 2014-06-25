@@ -35,7 +35,7 @@ class Translator:
         """
         txt = fmt.sep("\n", [
             fmt.sep(" ", [self._type_source, "to", self._type_target, '=', self._fun.to_fmt()]),
-            self._notify.get_content(not with_from)
+            self._notify.get_content(with_from)
         ])
         return txt
 

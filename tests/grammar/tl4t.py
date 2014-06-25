@@ -39,7 +39,7 @@ class BlockStmt(NodeInfo):
 
     # to connect Inference
     def type_algos(self):
-        return (self.infer_block, self.feedback_block, [self.body])
+        return (self.infer_block, self.feedback_block, self.body)
 
 
 class DeclVar(NodeInfo):
@@ -122,7 +122,7 @@ class Literal(Terminal):
     # to connect Inference
     def type_algos(self):
         return (
-            self.infer_literal, self.feedback_literal, [self.value, self.type]
+            self.infer_literal, self.feedback_leaf, (self.value, self.type)
         )
 
 
@@ -130,14 +130,14 @@ class Id(Terminal):
 
     # to connect Inference
     def type_algos(self):
-        return (self.infer_id, self.feedback_id, [self.value])
+        return (self.infer_id, self.feedback_id, self.value)
 
 
 class Operator(Terminal):
 
     # to connect Inference
     def type_algos(self):
-        return (self.infer_operator, self.feedback_operator, [self.value])
+        return (self.infer_operator, self.feedback_leaf, self.value)
 
 
 class Expr(NodeInfo):
@@ -159,7 +159,7 @@ class Expr(NodeInfo):
 
     # to connect Inference
     def type_algos(self):
-        return (self.infer_fun, self.feedback_fun, [self.call_expr, self.p])
+        return (self.infer_fun, self.feedback_fun, (self.call_expr, self.p))
 
 
 class ExprStmt(NodeInfo):
@@ -172,7 +172,7 @@ class ExprStmt(NodeInfo):
 
     # to connect Inference
     def type_algos(self):
-        return (self.infer_subexpr, self.feedback_subexpr, [self.expr])
+        return (self.infer_subexpr, self.feedback_subexpr, self.expr)
 
 
 class Binary(Expr):
@@ -212,10 +212,13 @@ class Paren(Expr):
 TL4T = grammar.from_file(os.getcwd() + "/tests/bnf/tl4t.bnf", 'source')
 
 
+# AST NODES
+
+
 @meta.hook(TL4T)
 def info(self):
     n = Node()
-    n.info = LocationInfo.from_stream(self._stream)
+    n.info = LocationInfo.from_stream(self._stream, is_error=self.from_string)
     return n
 
 

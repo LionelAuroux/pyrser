@@ -136,7 +136,6 @@ class GrammarBasic_Test(unittest.TestCase):
             19,
             "Bad line in Diagnostic"
         )
-        os.remove(res.logs[0].location.filepath)
 
     def test_05_parse_error_dsl(self):
         """
@@ -151,7 +150,6 @@ class GrammarBasic_Test(unittest.TestCase):
                          "failed to get the correct message")
         self.assertEqual(pe.exception.logs[0].location.col, 37,
                          "failed to get the correct position")
-        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_06_parse_error_dsl(self):
         """
@@ -166,7 +164,6 @@ class GrammarBasic_Test(unittest.TestCase):
                          "failed to get the correct message")
         self.assertEqual(pe.exception.logs[0].location.col, 48,
                          "failed to get the correct position")
-        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_07_parse_error_dsl(self):
         """
@@ -181,7 +178,6 @@ class GrammarBasic_Test(unittest.TestCase):
                          "failed to get the correct message")
         self.assertEqual(pe.exception.logs[0].location.col, 49,
                          "failed to get the correct position")
-        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_08_parse_error_dsl(self):
         """
@@ -196,7 +192,6 @@ class GrammarBasic_Test(unittest.TestCase):
                          "failed to get the correct message")
         self.assertEqual(pe.exception.logs[0].location.col, 49,
                          "failed to get the correct position")
-        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_09_parse_error_dsl(self):
         """
@@ -211,7 +206,6 @@ class GrammarBasic_Test(unittest.TestCase):
                          "failed to get the correct message")
         self.assertEqual(pe.exception.logs[0].location.col, 50,
                          "failed to get the correct position")
-        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_10_parse_error_dsl(self):
         """
@@ -226,7 +220,6 @@ class GrammarBasic_Test(unittest.TestCase):
                          "failed to get the correct message")
         self.assertEqual(pe.exception.logs[0].location.col, 47,
                          "failed to get the correct position")
-        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_11_parse_error_dsl(self):
         """
@@ -241,7 +234,6 @@ class GrammarBasic_Test(unittest.TestCase):
                          "failed to get the correct message")
         self.assertEqual(pe.exception.logs[0].location.col, 49,
                          "failed to get the correct position")
-        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_12_parse_error_dsl(self):
         """
@@ -256,7 +248,6 @@ class GrammarBasic_Test(unittest.TestCase):
                          "failed to get the correct message")
         self.assertEqual(pe.exception.logs[0].location.col, 46,
                          "failed to get the correct position")
-        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_13_parse_error_dsl(self):
         """
@@ -271,7 +262,6 @@ class GrammarBasic_Test(unittest.TestCase):
                          "failed to get the correct message")
         self.assertEqual(pe.exception.logs[0].location.col, 43,
                          "failed to get the correct position")
-        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_14_parse_error_dsl(self):
         """
@@ -286,7 +276,6 @@ class GrammarBasic_Test(unittest.TestCase):
                          "failed to get the correct message")
         self.assertEqual(pe.exception.logs[0].location.col, 42,
                          "failed to get the correct position")
-        os.remove(pe.exception.logs[0].location.filepath)
 
     def test_15_ignore_cpp(self):
         """

@@ -16,7 +16,9 @@ class GrammarType_Test(unittest.TestCase):
         res.type_node = Scope(sig=Fun('a', 'void', ['int']))
         res.type_node.add(Type("void"))
         res.type_node.add(Type("int"))
-        res.infer_type()
+        res.infer_type(res.diagnostic)
+        self.assertFalse(res.diagnostic.have_errors, "Bad inference")
+        #print(res.diagnostic.get_content(with_locinfos=True, with_details=True))
         # expr
         test = TL4T()
         res = test.parse("""
@@ -25,7 +27,9 @@ class GrammarType_Test(unittest.TestCase):
         txt = res.to_tl4t()
         self.assertEqual(str(txt), "a = 42;\n")
         res.type_node = Scope(sig=Type('int'))
-        res.infer_type()
+        res.infer_type(res.diagnostic)
+        self.assertFalse(res.diagnostic.have_errors, "Bad inference")
+        print(res.diagnostic.get_content(with_locinfos=True, with_details=True))
         # funcvariadic
         test = TL4T()
         res = test.parse("""
@@ -40,5 +44,15 @@ class GrammarType_Test(unittest.TestCase):
         res.type_node.add(Type("string"))
         res.type_node.add(Type("int"))
         res.type_node.add(Var("a", "int"))
-        res.infer_type()
-        print(to_yml(res))
+        res.infer_type(res.diagnostic)
+        self.assertFalse(res.diagnostic.have_errors, "Bad inference")
+        print(res.diagnostic.get_content(with_locinfos=True, with_details=True))
+
+    def test_02_typerror(self):
+        test = TL4T()
+        res = test.parse("""
+            a(42);
+        """)
+        res.type_node = Scope(sig=Fun('a', 'void', ['char']))
+        res.infer_type(res.diagnostic)
+        self.assertTrue(res.diagnostic.have_errors, "Bad error detection")

@@ -48,7 +48,6 @@ class GrammarDecorator_Test(unittest.TestCase):
                          + "[word] Entering\n"
                          + "[word] Failed\n",
                          "Trace doesn't match expected result.")
-        os.remove(res.logs[0].location.filepath)
 
     def test_02_trace_success(self):
         """

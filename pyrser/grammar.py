@@ -106,22 +106,25 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
                 self.diagnostic.notify(
                     error.Severity.ERROR,
                     "Parse error in '%s'" % self._lastRule,
-                    error.LocationInfo.from_maxstream(self._stream)
+                    error.LocationInfo.from_maxstream(self._stream, is_error=self.from_string)
                 )
                 return self.diagnostic
             self.rule_nodes.clear()
+            # create a new Diagnostic object for the node result
+            res.diagnostic = error.Diagnostic()
         except error.Diagnostic as d:
             # User put an error rule
             d.notify(
                 error.Severity.ERROR,
-                "Exception during the evaluation '%s'" % self._lastRule,
-                error.LocationInfo.from_stream(self._stream, is_error=True)
+                "Exception during the evaluation of '%s'" % self._lastRule,
+                error.LocationInfo.from_stream(self._stream, is_error=self.from_string)
             )
             return d
         return self.after_parse(res)
 
     def parse(self, source=None, entry=None):
         """Parse source using the grammar"""
+        self.from_string = True
         if source is not None:
             self.parsed_stream(source)
         if entry is None:
@@ -133,6 +136,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
 
     def parse_file(self, filename: str, entry=None):
         """Parse filename using the grammar"""
+        self.from_string = False
         import os.path
         if os.path.exists(filename):
             f = open(filename, 'r')
