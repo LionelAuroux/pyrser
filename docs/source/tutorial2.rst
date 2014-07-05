@@ -38,8 +38,8 @@ And produce the following output:
 
 .. program-output:: python3 splice.py 'python3 tutorial2_scripts/minimal_scope.py' 0,7
 
-We're actually generating the signatures of one variable and three functions to
-add to an unnamed :py:class:`pyerser.type_checking.Scope`, thus creating an
+We're actually generating the signatures of one variable and three functions and
+add them to an unnamed :py:class:`pyerser.type_checking.Scope`, thus creating an
 anonymous scope that could be our language's global scope. This is the reason
 why we instantiate the :class:`pyrser.type_checking.Scope` object using the
 keyword ``sig`` (also second positionnal argument): by not giving a first
@@ -260,8 +260,8 @@ contain a litteral, the following set of
     :end-line: 17
 
 Now, we have a user input, where the written code is a function call to
-``fun``, with ``var`` as the first parameter, and a number litteral as a second
-parameter, that we could translate to the following typing code:
+``fun``, with a number litteral as a parameter, that we could translate to the
+following typing code:
 
 .. include:: tutorial2_scripts/type_disambiguation.py
     :code: python
@@ -270,7 +270,7 @@ parameter, that we could translate to the following typing code:
 
 Now, we display the following scope:
 
-.. program-output:: python3 splice.py 'python3 tutorial2_scripts/type_disambiguation.py' 0,19
+.. program-output:: python3 splice.py 'python3 tutorial2_scripts/type_disambiguation.py' 0,24
 
 Here, since the overloads list contains more than one item, it may be easily
 resolvable by using the get_by_params (returning a tuple of a scope and a list
@@ -291,7 +291,7 @@ If we only got one signature in the resulting ``fun`` scope, then the typing
 system would have validated the types of the input, and we could go on and fiddle
 with the generation. Let us see what an unresolved func and param look like:
 
-.. program-output:: python3 splice.py 'python3 tutorial2_scripts/type_disambiguation.py' 21,35
+.. program-output:: python3 splice.py 'python3 tutorial2_scripts/type_disambiguation.py' 27,41
 
 In this case, we can see that using the literal as parameter was not enough to
 resolve the type of the function we want to use, but we can see a difference
@@ -300,11 +300,11 @@ type:
 
 .. include:: tutorial2_scripts/type_disambiguation.py
     :code: python
-    :start-line: 23
+    :start-line: 25
 
 and we then get the following output:
 
-.. program-output:: python3 splice.py 'python3 tutorial2_scripts/type_disambiguation.py' 36,44
+.. program-output:: python3 splice.py 'python3 tutorial2_scripts/type_disambiguation.py' 42,47
 
 As we can see, by using this last filter, we could identify an unique function
 signature matching our user input. Alas, in some cases, it's not as easy.
