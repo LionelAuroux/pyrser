@@ -568,7 +568,7 @@ class Scope(Symbol):
             raise TypeError("Already define a translator injector")
         self.astTranslatorInjector = ast_method
 
-    def callInjector(self, old: Node, trans: Translator, d: Diagnostic, li: LocationInfo) -> Node:
+    def callInjector(self, old: Node, trans: Translator) -> Node:
         """
         If don't have injector call from parent
         """
@@ -576,10 +576,10 @@ class Scope(Symbol):
             if self.parent is not None:
                 # TODO: think if we forward for all StateScope
                 # forward to parent scope
-                return self.parent().callInjector(old, trans, d, li)
+                return self.parent().callInjector(old, trans)
             else:
                 raise TypeError("Must define an Translator Injector")
-        return self.astTranslatorInjector(old, trans, d, li)
+        return self.astTranslatorInjector(old, trans)
 
     def findTranslationTo(self, t2: str) -> (bool, Signature, Translator):
         """

@@ -146,7 +146,9 @@ class Inference:
             if hasattr(final_tparams[0][i].first(), '_translate_to'):
                 t = final_tparams[0][i].first()._translate_to
                 old = arguments[i]
-                arguments[i] = self.type_node.callInjector(old, t, diagnostic, arguments[i].info)
+                n = t.notify
+                diagnostic.notify(n.severity, n.msg, old.info, details=n.details)
+                arguments[i] = self.type_node.callInjector(old, t)
                 scope = Scope(is_namespace=False)
                 scope.need_feedback = False
                 scope.add(t.fun)

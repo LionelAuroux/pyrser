@@ -1,8 +1,8 @@
 Tutorial III: Handling Type Checking (part 2) Toy Language For Typing:
 =======================================================================
 
-1 - Implicit type conversions
------------------------------
+1 - Using inference with a Toy Language
+---------------------------------------
 
 To go further with type checking, we need a little toy language to implement
 different kinds of typing strategy.
@@ -212,4 +212,51 @@ require any additional parameter, since all the information it needs access to
 is contained within the typing AST.
 
 
+3 - Implicit type conversions
+-----------------------------
 
+To continue our first objective, we could plug all component together Parser, AST, Type semantics, Inference module.
+As previously shown, we could explain to inference to use some function to one type to another but at this point the final AST wasn't modify.
+To do so, we must write as customer of pyrser an Injector function and provide it to a scope to be used by inference system.
+Injector functions must respect the following signature::
+
+    def myInjectionFunction(old: Node, trans: Translator) -> Node
+
+Our function receive the old AST node, and the Translator. We must build a function call AST node in our language dialect and return it. i.e.::
+
+    
+    def createFunWithTranslator(old: Node, trans: Translator) -> Node:
+        f = trans.fun
+        n = trans.notify
+        return Expr(Id(f.name), [old])
+
+Our function could be add to our global scope with the ``addTranslatorInjector`` function.
+Finally, we write::
+
+        test = TL4T()
+        res = test.parse("""
+            s = "toto" + 42;
+        """)
+        txt = res.to_tl4t()
+        res.type_node = Scope(is_namespace=False)
+        res.type_node.add(Type("string"))
+        res.type_node.add(Type("int"))
+        res.type_node.add(Var("s", "string"))
+        res.type_node.add(Fun("=", "string", ["string", "string"]))
+        res.type_node.add(Fun("+", "string", ["string", "string"]))
+        f = Fun("tostr", "string", ["int"])
+        res.type_node.add(f)
+        n = Notification(
+            Severity.WARNING,
+            "implicit conversion of int to string"
+        )
+        res.type_node.addTranslator(Translator(f, n))
+        res.type_node.addTranslatorInjector(createFunWithTranslator)
+        res.infer_type(res.diagnostic)
+        print(res.to_tl4t())
+
+Will show us::
+
+        s = "toto" + tostr(42);
+
+Notice that we could control the severity of the notification from INFO to ERROR. That's an easy to allow or to forbid things.

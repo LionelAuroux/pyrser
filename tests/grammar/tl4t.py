@@ -169,10 +169,9 @@ class Operator(Terminal):
         return (self.infer_id, self.value, self.feedback_leaf)
 
 
-def createFunWithTranslator(old: Node, trans: Translator, d: Diagnostic, li: LocationInfo) -> Node:
+def createFunWithTranslator(old: Node, trans: Translator) -> Node:
     f = trans.fun
     n = trans.notify
-    d.notify(n.severity, n.msg, li, details=n.details)
     return Expr(Id(f.name), [old])
 
 
