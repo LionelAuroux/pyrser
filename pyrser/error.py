@@ -124,6 +124,12 @@ class Diagnostic(Exception):
         self.logs.append(nfy)
         return len(self.logs) - 1
 
+    def add(self, n: Notification) -> int:
+        if not isinstance(n, Notification):
+            raise TypeError("Must be a notification")
+        self.logs.append(n)
+        return len(self.logs) - 1
+
     def get_content(self, with_locinfos=False, with_details=False) -> str:
         ls = []
         for v in self.logs:

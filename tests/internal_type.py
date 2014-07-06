@@ -218,6 +218,54 @@ class InternalType_Test(unittest.TestCase):
         self.assertEqual(sc.tret, "char",
                          "Bad get_by_params in type_checking.Scope")
 
+    def test_scope_04_links_embedded(self):
+        # if scope is not a namespace, don't auto-prefix signature
+        s1 = Scope("coucou", is_namespace=True)
+        s1.add(Fun("f1", "t1"))
+        t = Type("t1")
+        s1.add(t)
+        f = Fun("f2", "t2")
+        s1.add(f)
+        self.assertEqual(s1.state, StateScope.FREE, "Bad state of Scope")
+        self.assertIn(f, s1, "Can't found function in Scope")
+        # TODO: fix namespace to a better way
+        #self.assertIn(t, s1, "Can't found type in Scope")
+        # if scope is a namespace, auto-prefix signature
+        s1 = Scope("coucou", is_namespace=True)
+        s1.add(Fun("f1", "t1"))
+        s1.add(Type("t1"))
+        f = Fun("f2", "t2")
+        s1.add(f)
+        self.assertEqual(f.internal_name(), "coucou_f2_t2", "Internal name of function without prefix")
+        self.assertEqual(s1.state, StateScope.FREE, "Bad state of Scope")
+        self.assertIn(f, s1, "Can't found function with prefix")
+        self.assertNotIn(Fun("f2", "t2"), s1, "Shouldn't found function without prefix")
+        # links between 2 scope
+        s1 = Scope(sig=[Var('a', 't1'), Fun('f', 't2'), Type("t4")])
+        s2 = Scope("namespace2", sig=[Var('a', 't3'), Fun('f', 't4')])
+        s2.set_parent(s1)
+        self.assertEqual(s2.state, StateScope.LINKED, "Bad state of Scope")
+        f = Fun('f2', 't5')
+        s1.add(f)
+        self.assertNotIn(f, s2, "Bad query __contains__ for StateScope.LINKED")
+        # linked scope forward type query
+        self.assertIn(Type("t4"), s2, "Bad query __contains__ for StateScope.LINKED")
+        # embedded scopes
+        s1 = Scope(sig=[Var('a', 't1'), Fun('f', 't2')])
+        s2 = Scope("n2", sig=[Var('a', 't3'), Fun('f', 't4')])
+        s1.add(s2)
+        self.assertEqual(s2.state, StateScope.EMBEDDED, "Bad state of Scope")
+        f = Fun('f2', 't5')
+        s1.add(f)
+        # embedded scope forward signature query
+        self.assertIn(f, s2, "Bad query __contains__ for StateScope.EMBEDDED")
+
+    def test_scope_05_save_restore(self):
+        import pickle
+        s1 = Scope("namespace1", sig=[Var('a', 't1'), Fun('f', 't2')])
+        # TODO: works on Scope serialization !!!
+        #print(pickle.dumps(s1))
+
     def test_val_01_pp(self):
         val1 = Val(12, "int")
         val2 = Val(12, "byte")
@@ -305,6 +353,7 @@ class InternalType_Test(unittest.TestCase):
         typ.add(Fun("f", "int", ["int"]))
         tenv = Scope("test", sig=typ)
         tenv.add(EvalCtx(Fun("f", "T1")))
+        fs = tenv.get_by_symbol_name("f")
         self.assertEqual(
             id(typ),
             id(

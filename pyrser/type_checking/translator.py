@@ -29,6 +29,14 @@ class Translator:
     def target(self) -> str:
         return self._type_target
 
+    @property
+    def fun(self) -> Fun:
+        return self._fun
+
+    @property
+    def notify(self) -> Notification:
+        return self._notify
+
     def to_fmt(self, with_from=False) -> fmt.indentable:
         """
         Return a Fmt representation of Translator for pretty-printing

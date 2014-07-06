@@ -7,6 +7,7 @@ from pyrser.parsing.node import *
 from pyrser.hooks.echo import *
 from pyrser.hooks.vars import *
 from pyrser.hooks.set import *
+from pyrser.hooks.dump_nodes import *
 from pyrser.type_checking.inference import *
 from pyrser.error import *
 from pyrser.passes.to_yml import *
@@ -39,14 +40,17 @@ class BlockStmt(NodeInfo):
 
     # to connect Inference
     def type_algos(self):
-        return (self.infer_block, self.feedback_block, self.body)
+        return (self.infer_block, self.body, self.feedback_block)
 
 
 class DeclVar(NodeInfo):
     def __init__(self, name: str, t: str, expr=None):
         super().__init__()
         self.name = name
-        self.t = t
+        self.t = None
+        self.expr = None
+        if t is not None:
+            self.t = t
         if expr is not None:
             self.expr = expr
 
@@ -54,13 +58,39 @@ class DeclVar(NodeInfo):
         lsdecl = [
             "var",
             self.name,
-            ":",
-            self.t
         ]
-        if hasattr(self, 'expr'):
+        if self.t is not None:
+            lsdecl.append(":")
+            lsdecl.append(self.t)
+        if self.expr is not None:
             lsdecl.append("=")
             lsdecl.append(self.expr.to_tl4t())
-        return fmt.end(';\n', [fmt.sep(" ", lsdecl)])
+        else:
+            lsdecl[-1] += ";\n"
+        return fmt.sep(" ", lsdecl)
+
+    def declare_var(self, args, diagnostic=None):
+        parent_scope = self.type_node.parent()
+        typ = self.t
+        if self.t is None:
+            #typ = '?' + self.name
+            typ = '?1'
+        parent_scope.add(Var(self.name, typ))
+        self.type_node = Scope(sig=[Fun('=', typ, [typ, typ])])
+        self.type_node.set_parent(parent_scope)
+        # try to infer type or check type
+        if self.expr is not None:
+            # create a fake Expr Node to infer expression with var type
+            rhs = Expr(Id('='), [Id(self.name), self.expr])
+            rhs.type_node = Scope()
+            self.type_node.add(rhs.type_node)
+            rhs.infer_type(diagnostic)
+            #print("In declVar %s" % rhs.type_node)
+
+
+    # to connect Inference
+    def type_algos(self):
+        return (self.declare_var, None)
 
 
 class DeclFun(DeclVar):
@@ -122,7 +152,7 @@ class Literal(Terminal):
     # to connect Inference
     def type_algos(self):
         return (
-            self.infer_literal, self.feedback_leaf, (self.value, self.type)
+            self.infer_literal, (self.value, self.type), self.feedback_leaf
         )
 
 
@@ -130,14 +160,20 @@ class Id(Terminal):
 
     # to connect Inference
     def type_algos(self):
-        return (self.infer_id, self.feedback_id, self.value)
+        return (self.infer_id, self.value, self.feedback_id)
 
 
 class Operator(Terminal):
-
     # to connect Inference
     def type_algos(self):
-        return (self.infer_operator, self.feedback_leaf, self.value)
+        return (self.infer_id, self.value, self.feedback_leaf)
+
+
+def createFunWithTranslator(old: Node, trans: Translator, d: Diagnostic, li: LocationInfo) -> Node:
+    f = trans.fun
+    n = trans.notify
+    d.notify(n.severity, n.msg, li, details=n.details)
+    return Expr(Id(f.name), [old])
 
 
 class Expr(NodeInfo):
@@ -159,7 +195,7 @@ class Expr(NodeInfo):
 
     # to connect Inference
     def type_algos(self):
-        return (self.infer_fun, self.feedback_fun, (self.call_expr, self.p))
+        return (self.infer_fun, (self.call_expr, self.p), self.feedback_fun)
 
 
 class ExprStmt(NodeInfo):
@@ -168,11 +204,11 @@ class ExprStmt(NodeInfo):
         self.expr = e
 
     def to_tl4t(self):
-        return fmt.end(";\n", self.expr.to_tl4t())
+        return fmt.end(";\n", [self.expr.to_tl4t()])
 
     # to connect Inference
     def type_algos(self):
-        return (self.infer_subexpr, self.feedback_subexpr, self.expr)
+        return (self.infer_subexpr, self.expr, self.feedback_subexpr)
 
 
 class Binary(Expr):
@@ -224,10 +260,14 @@ def info(self):
 
 @meta.hook(TL4T)
 def new_declvar(self, ast, n, t, e, i):
+    typ = None
+    txt = self.value(t)
+    if txt != "":
+        typ = txt
     expr = None
-    if e is not None and hasattr(e, 'node'):
-        expr = e.node
-    ast.set(DeclVar(self.value(n), self.value(t), expr))
+    if type(e) is not Node:
+        expr = e
+    ast.set(DeclVar(self.value(n), typ, expr))
     ast.info = i.info
     return True
 

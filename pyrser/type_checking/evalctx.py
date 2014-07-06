@@ -180,8 +180,6 @@ class EvalCtx:
         """
         Warning!!! Need to rethink it when global poly type
         """
-        #print("RESOLVE Use %s" % ref)
-        #print("RESOLVE To %s" % self.resolution)
         if self.resolution[type_name2solve.value] is None:
             self.resolution[type_name2solve.value] = ref[type_name_ref.value]
 

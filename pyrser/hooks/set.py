@@ -23,4 +23,14 @@ def set_node(self, dst, src):
         dst.value = src
     else:
         dst.set(src)
+        idsrc = id(src)
+        iddst = id(dst)
+        if iddst not in self.id_cache:
+            print("DST: %s" % repr(dst))
+            print("RULE_NODES %s" % repr(self.rule_nodes))
+        if idsrc in self.id_cache:
+            k = self.id_cache[idsrc]
+            k2 = self.id_cache[iddst]
+            if k in self.rule_nodes:
+                self.tag_cache[k2] = self.tag_cache[k]
     return True

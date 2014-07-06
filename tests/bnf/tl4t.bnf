@@ -18,9 +18,10 @@ stmt =
 
 decl_var =
 [
+    __scope__:t
     __scope__:e
     #info:i
-    "var" name:n ':' type:t [';' | '=' expr:>e ]? #new_declvar(_, n, t, e, i)
+    "var" name:n [ ':' type:t ]? [';' | '=' expr:>e ]? #new_declvar(_, n, t, e, i)
 ]
 
 decl_fun =

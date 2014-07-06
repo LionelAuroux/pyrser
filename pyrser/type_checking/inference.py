@@ -11,8 +11,8 @@ class Inference:
         """
         Sub class must return a Tuple of 3 elements:
             - the method to use to infer type.
-            - the method to use when feedback a type.
             - the list of params to used when infer a type.
+            - the method to use when feedback a type.
 
         This is useful to connect AST members to generic algo or
         to overload some specific semantic for your language.
@@ -24,12 +24,12 @@ class Inference:
     def infer_type(self, diagnostic=None):
         # get algo
         type_algo = self.type_algos()
-        type_algo[0](type_algo[2], diagnostic)
+        type_algo[0](type_algo[1], diagnostic)
 
     def feedback(self, diagnostic=None):
         # get algo
         type_algo = self.type_algos()
-        type_algo[1](diagnostic)
+        type_algo[2](diagnostic)
 
     ## INFER ALGOS
 
@@ -39,10 +39,13 @@ class Inference:
         """
         # create root type_node for RootBlock
         if not hasattr(self, 'type_node'):
-            self.type_node = Scope()
+            self.type_node = Scope(is_namespace=False)
         diagnostic.notify(Severity.INFO, "Infer Block", self.info)
         for e in body:
-            e.type_node = Scope()
+            e.type_node = Scope(is_namespace=False)
+            # embedded scope
+            #self.type_node.add(e.type_node)
+            # linked scope
             e.type_node.set_parent(self.type_node)
             e.infer_type(diagnostic)
 
@@ -51,29 +54,43 @@ class Inference:
         Infer type on the subexpr
         """
         diagnostic.notify(Severity.INFO, "Infer SubExpr", self.info)
-        expr.type_node = Scope()
+        expr.type_node = Scope(is_namespace=False)
+        # embedded scope
+        #self.type_node.add(expr.type_node)
+        # linked scope
         expr.type_node.set_parent(self.type_node)
         expr.infer_type(diagnostic)
+        self.type_node.clear()
+        self.type_node.update(expr.type_node)
 
     def infer_fun(self, args, diagnostic=None):
         call_expr, arguments = args
         diagnostic.notify(Severity.INFO, "Infer Function call '%s'" % call_expr.value, self.info)
         # 1 - fetch all possible types for the call expr
-        call_expr.type_node = Scope()
+        call_expr.type_node = Scope(is_namespace=False)
+        # embedded scope
+        #self.type_node.add(call_expr.type_node)
+        # linked scope
         call_expr.type_node.set_parent(self.type_node)
         call_expr.infer_type(diagnostic=diagnostic)
         f = call_expr.type_node
         # 2 - fetch all possible types for each parameters
         tparams = []
+        i = 0
         for p in arguments:
-            p.type_node = Scope()
+            p.type_node = Scope(is_namespace=False)
+            # embedded scope
+            #self.type_node.add(p.type_node)
+            # linked scope
             p.type_node.set_parent(self.type_node)
             p.infer_type(diagnostic=diagnostic)
+            i += 1
             tparams.append(p.type_node)
         # 3 - select overloads
         (final_call_expr, final_tparams) = f.get_by_params(tparams)
         # 4 - record overloads
-        self.type_node = final_call_expr
+        self.type_node.clear()
+        self.type_node.update(final_call_expr)
         nversion = len(final_call_expr)
         if nversion > 1:
             # too many choice
@@ -97,6 +114,7 @@ class Inference:
                     ptypes.append(alt.tret)
                 details += '|'.join(ptypes)+ "\n"
                 i += 1
+            # TODO: when f are empty
             diagnostic.notify(
                 Severity.ERROR,
                 "can't match overloads with parameters for function '%s'" % str(f.first().name),
@@ -124,6 +142,17 @@ class Inference:
         arity = len(my_type.tparams)
         for i in range(arity):
             p = my_type.tparams[i]
+            # use AST Injector
+            if hasattr(final_tparams[0][i].first(), '_translate_to'):
+                t = final_tparams[0][i].first()._translate_to
+                old = arguments[i]
+                arguments[i] = self.type_node.callInjector(old, t, diagnostic, arguments[i].info)
+                scope = Scope(is_namespace=False)
+                scope.need_feedback = False
+                scope.add(t.fun)
+                scope.set_parent(self.type_node)
+                old.type_node.set_parent(scope)
+                arguments[i].type_node = scope
             if p.is_polymorphic:
                 # take type in final_tparams
                 diagnostic.notify(Severity.INFO, "- param[%d] polymorphic type" % i, arguments[i].info)
@@ -134,8 +163,6 @@ class Inference:
                     my_map[p.value] = sig.resolution[sig.tret.value]
                     my_type.set_resolved_name(sig.resolution, p, sig.tret)
         diagnostic.notify(Severity.INFO, "after resolution %s" % str(my_type.get_compute_sig()), self.info)
-        self.type_node.clear()
-        self.type_node.add(my_type)
         # 6 - feedback
         self.map_type = my_map
         self.final_type = my_type.tret
@@ -154,8 +181,25 @@ class Inference:
             # set from matchings declarations
             self.type_node.update(defined)
         else:
-            self.type_node.add(Var(ident, '?1'))
-            self.type_node.need_feedback = True
+            diagnostic.notify(Severity.ERROR, "%s never declared" % self.value, self.info)
+
+    #def infer_id_self_type(self, ident, diagnostic=None):
+    #    """
+    #    Infer type from an ID!
+    #    - check if ID is declarated in the scope
+    #    - if no ID is polymorphic type
+    #    """
+    #    # check if ID is declared
+    #    defined = self.type_node.get_by_symbol_name(ident)
+    #    if len(defined) > 0:
+    #        # set from matchings declarations
+    #        self.type_node.update(defined)
+    #    else:
+    #        # TODO: est de type polymorphique local ... pas tout le temps ?1
+    #        # a faire dans une declaration ... ou a l'affectation
+    #        # mais pas la
+    #        self.type_node.add(Var(ident, '?1'))
+    #        self.type_node.need_feedback = True
 
     def infer_literal(self, args, diagnostic=None):
         """
@@ -166,14 +210,15 @@ class Inference:
         literal, t = args
         self.type_node.add(EvalCtx.from_sig(Val(literal, t)))
 
-    def infer_operator(self, op, diagnostic=None):
-        """
-        Infer type of OPERATOR!
-        Classic (?1, ?1) -> ?1
-        """
-        # by default all operator are polymorphic
-        self.type_node.add(Fun(op, '?1', ['?1', '?1']))
-        self.type_node.need_feedback = True
+    #def infer_operator(self, op, diagnostic=None):
+    #    """
+    #    Infer type of OPERATOR!
+    #    Classic (?1, ?1) -> ?1
+    #    """
+    #    # by default all operator are polymorphic
+    #    # TODO: search proto from scope and need operators in scope
+    #    self.type_node.add(Fun(op, '?1', ['?1', '?1']))
+    #    self.type_node.need_feedback = True
 
     ## FEEDBACK ALGOS
 
@@ -181,7 +226,7 @@ class Inference:
         # normally nothing to do!?!?!
         type_algo = self.type_algos()
         # TODO: body?
-        for e in type_algo[2]:
+        for e in type_algo[1]:
             if e.type_node.need_feedback:
                 e.type_node.feedback(diagnostic)
 
@@ -201,7 +246,7 @@ class Inference:
         arguments = self.type_node.first().tparams
         nargs = len(arguments)
         type_algo = self.type_algos()
-        call_expr, args = type_algo[2]
+        call_expr, args = type_algo[1]
         if call_expr.type_node.need_feedback:
             diagnostic.notify(Severity.INFO, "feed back call_expr = %s" % self.final_type, call_expr.info)
             call_expr.map_type = self.map_type

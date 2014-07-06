@@ -1,19 +1,20 @@
 # type for type checking
 from pyrser import fmt
 from pyrser.type_checking.scope import *
+from pyrser.type_checking.type_name import *
 
 
 class Type(Scope):
     """
     A Type is a named scope similar to ADT (Abstract Data Type).
-    So we have an member variables (ordered) that represent internal state.
+    So we have member variables (ordered) that represent internal state.
     Member functions (work on an instance of type,
     depend of the language ref/or not).
-    Non member variables/functions/valuess as in a scope.
+    Non member variables/functions/values as in a scope.
     """
 
     def __init__(self, name: str, sig: [Signature]=None):
-        super().__init__(name)
+        super().__init__(TypeName(name))
 
     def to_fmt(self) -> fmt.indentable:
         """
@@ -30,3 +31,7 @@ class Type(Scope):
             block = fmt.block(":\n", "", fmt.tab(lsb))
             txt.lsdata.append(block)
         return txt
+
+    @property
+    def type_name(self) -> TypeName:
+        return self.name

@@ -196,7 +196,7 @@ class BasicParser(metaclass=MetaBasicParser):
 
     def eval_rule(self, name: str) -> Node:
         """Evaluate a rule by name."""
-        # context not created by parents (not captured or called directly)
+        # context created by caller
         self.rule_nodes['_'] = Node()
         # TODO: other behavior for  empty rules?
         if name not in self.__class__._rules:

@@ -13,6 +13,14 @@ class Symbol:
         self.name = name
         self.set_parent(parent)
 
+    def __getstate__(self):
+        """
+        For pickle don't handle weakrefs...
+        """
+        state = self.__dict__.copy()
+        del state['parent']
+        return state
+
     def set_parent(self, parent) -> object:
         if parent is not None:
             self.parent = weakref.ref(parent)

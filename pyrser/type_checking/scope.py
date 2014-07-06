@@ -1,12 +1,16 @@
 # scope for type checking
 import weakref
-from pyrser import fmt
+from collections import *
+from pyrser import fmt, meta
 from pyrser.type_checking.symbol import *
 from pyrser.type_checking.signature import *
 from pyrser.type_checking.evalctx import *
 from pyrser.type_checking.translator import *
+from pyrser.parsing.node import *
 from pyrser.passes.to_yml import *
 
+
+StateScope = meta.enum('FREE', 'LINKED', 'EMBEDDED')
 
 # forward just for annotation (not the same id that final type)
 class Scope:
@@ -21,33 +25,55 @@ class Scope(Symbol):
     """
 
     def __init__(self, name: str=None, sig: [Signature]=None,
-                 auto_update_parent=True):
-        """Unnamed scope for global scope"""
+                 state=StateScope.FREE, is_namespace=True):
+        """Unnamed scope for global scope
+        
+        A Scope have basically 3 possibles states:
+        FREE: it's a standalone Scope, generally the global Scope
+        LINKED: the Scope is related to another Scope for type resolution
+        EMBEDDED: the Scope was added into another Scope, it forwards all 'in' calls...
+
+        A Scope could or couldn't act like a namespace.
+        All Signature added into a 'namespaced' Scope was prefixed by the Scope name.
+        """
         if name is not None and not isinstance(name, str):
             raise TypeError("name must be a str object.")
         super().__init__(name)
         # during typing, this scope need or not feedback pass
         self.need_feedback = False
-        # auto update parent during add of Signature
-        self.auto_update_parent = auto_update_parent
+        # state of the scope
+        self.state = state
+        self.is_namespace = is_namespace
         # internal mapping for Type Conversion
         self.mapTypeTranslate = MapSourceTranslate()
+        # AST Translator Injector use to add Translator in AST
+        # def astTranslatorInjector(old: Node, trans: Translator, d: Diagnostic, li: LocationInfo) -> Node
+        self.astTranslatorInjector = None
         # TODO: ...could be unusable
         self._ntypes = 0
         self._nvars = 0
         self._nfuns = 0
         # internal store of Signature
         self._hsig = {}
+        #self._hsig = ChainMap()
         if sig is not None:
             if isinstance(sig, Signature) or isinstance(sig, Scope):
                 self.add(sig)
             elif len(sig) > 0:
                 self.update(sig)
 
+    #def _inheritHsig(self, othscope: Scope):
+    #    tmp = self._hsig.maps[0]
+    #    self._hsig = othscope._hsig.new_child()
+    #    self._hsig.maps[0].update(tmp)
+
     def set_parent(self, parent: Scope) -> object:
         Symbol.set_parent(self, parent)
         if parent is not None:
+            #self._inheritHsig(parent)
             self.mapTypeTranslate.set_parent(parent.mapTypeTranslate)
+        if hasattr(self, 'state') and self.state == StateScope.FREE:
+            self.state = StateScope.LINKED
         return self
 
     def set_name(self, name: str):
@@ -58,6 +84,7 @@ class Scope(Symbol):
         # update internal names
         lsig = self._hsig.values()
         self._hsig = {}
+        #self._hsig.maps[0] = {}
         for s in lsig:
             self._hsig[s.internal_name()] = s
 
@@ -133,14 +160,39 @@ class Scope(Symbol):
         """
         return str(self.to_fmt())
 
+    def __getstate__(self):
+        """
+        For pickle don't handle weakrefs...
+        """
+        state = self.__dict__.copy()
+        del state['parent']
+        return state
+
+    ## todo __get__, __set__, __delete__
+
     # ======== SET OPERATORS OVERLOADING ========
     # in
     def __contains__(self, s: Signature) -> bool:
+        """
+        check if a Signature or a Type is declared in a Scope
+        """
+        # fail if in global
+        from pyrser.type_checking.type import Type
+        found = False
+        txt = ""
         if isinstance(s, Signature):
-            return s.internal_name() in self._hsig
+            txt = s.internal_name()
+        elif isinstance(s, Type):
+            txt = s.type_name
         elif isinstance(s, str):
-            return s in self._hsig
-        return False
+            txt = s
+        found = (txt in self._hsig)
+        if not found and self.parent is not None:
+            if self.state != StateScope.FREE and isinstance(s, Type):
+                found = (s.type_name in self.parent())
+            if self.state == StateScope.EMBEDDED:
+                found = (txt in self.parent())
+        return found
 
     # |=
     def __ior__(self, sig: list or Scope) -> Scope:
@@ -153,9 +205,11 @@ class Scope(Symbol):
         if hasattr(sig, 'values'):
             values = sig.values()
         for s in values:
-            self._hsig[s.internal_name()] = s
-            if self.auto_update_parent:
+            if self.is_namespace:
                 s.set_parent(self)
+            if isinstance(s, Scope):
+                s.state = StateScope.EMBEDDED
+            self._hsig[s.internal_name()] = s
         self.__update_count()
         return self
 
@@ -166,7 +220,7 @@ class Scope(Symbol):
 
     def union(self, sig: Scope) -> Scope:
         """Create a new Set produce by the union of 2 Set"""
-        new = Scope(sig=self._hsig.values())
+        new = Scope(sig=self._hsig.values(), state=self.state)
         new |= sig
         return new
 
@@ -192,7 +246,7 @@ class Scope(Symbol):
 
     def intersection(self, sig: Scope) -> Scope:
         """Create a new Set produce by the intersection of 2 Set"""
-        new = Scope(sig=self._hsig.values())
+        new = Scope(sig=self._hsig.values(), state=self.state)
         new &= sig
         return new
 
@@ -216,7 +270,7 @@ class Scope(Symbol):
 
     def difference(self, sig: Scope) -> Scope:
         """Create a new Set produce by a Set subtracted by another Set"""
-        new = Scope(sig=self._hsig.values())
+        new = Scope(sig=self._hsig.values(), state=self.state)
         new -= sig
         return new
 
@@ -246,7 +300,7 @@ class Scope(Symbol):
 
     def symmetric_difference(self, sig: Scope) -> Scope:
         """Create a new Set with values present in only one Set"""
-        new = Scope(sig=self._hsig.values())
+        new = Scope(sig=self._hsig.values(), state=self.state)
         new ^= sig
         return new
 
@@ -255,11 +309,17 @@ class Scope(Symbol):
         """
         Add it to the Set
         """
-        if it.internal_name() in self._hsig:
-            return False
-        self._hsig[it.internal_name()] = it
-        if self.auto_update_parent:
-            it.set_parent(self)
+        if isinstance(it, Scope):
+            it.state = StateScope.EMBEDDED
+        txt = it.internal_name()
+        it.set_parent(self)
+        if self.is_namespace:
+            txt =  it.internal_name()
+        if txt == "":
+            txt = '_' + str(len(self._hsig))
+        if txt in self._hsig:
+            raise KeyError("Already exists %s" % txt)
+        self._hsig[txt] = it
         self.__update_count()
         return True
 
@@ -267,17 +327,25 @@ class Scope(Symbol):
         """
         Remove it but raise KeyError if not found
         """
-        if it.internal_name() not in self._hsig:
+        txt = it.internal_name()
+        if txt not in self._hsig:
             raise KeyError(it.show_name() + ' not in Set')
-        del self._hsig[it.internal_name()]
+        sig = self._hsig[txt]
+        if isinstance(sig, Scope):
+            sig.state = StateScope.LINKED
+        del self._hsig[txt]
         return True
 
     def discard(self, it: Signature) -> bool:
         """
         Remove it only if present
         """
-        if it.internal_name() in self._hsig:
-            del self._hsig[it.internal_name()]
+        txt = it.internal_name()
+        if txt in self._hsig:
+            sig = self._hsig[txt]
+            if isinstance(sig, Scope):
+                sig.state = StateScope.LINKED
+            del self._hsig[txt]
             return True
         return False
 
@@ -305,7 +373,10 @@ class Scope(Symbol):
         """
         Retrieve all values
         """
-        return self._hsig.values()
+        if self.state == StateScope.EMBEDDED and self.parent is not None:
+            return list(self._hsig.values()) + list(self.parent().values())
+        else:
+            return self._hsig.values()
 
     def keys(self) -> [str]:
         """
@@ -342,7 +413,7 @@ class Scope(Symbol):
         Retrieve a Set of all signature by symbol name
         """
         lst = []
-        for s in self._hsig.values():
+        for s in self.values():
             if s.name == name:
                 # create an EvalCtx only when necessary
                 lst.append(EvalCtx.from_sig(s))
@@ -354,7 +425,7 @@ class Scope(Symbol):
             p = self.get_parent()
             if p is not None:
                 return p.get_by_symbol_name(name)
-        rscope = Scope(sig=lst, auto_update_parent=False)
+        rscope = Scope(sig=lst, state=StateScope.LINKED, is_namespace=False)
         # inherit type/translation from parent
         rscope.set_parent(self)
         return rscope
@@ -375,10 +446,10 @@ class Scope(Symbol):
         Retrieve a Set of all signature by (return) type
         """
         lst = []
-        for s in self._hsig.values():
-            if s.tret == tname:
+        for s in self.values():
+            if hasattr(s, 'tret') and s.tret == tname:
                 lst.append(EvalCtx.from_sig(s))
-        rscope = Scope(sig=lst, auto_update_parent=False)
+        rscope = Scope(sig=lst, state=StateScope.LINKED, is_namespace=False)
         # inherit type/translation from parent
         rscope.set_parent(self)
         return rscope
@@ -390,11 +461,11 @@ class Scope(Symbol):
         --> possible multi-polymorphic but with different constraint attached!
         """
         lst = []
-        for s in self._hsig.values():
-            if s.tret.is_polymorphic:
+        for s in self.values():
+            if hasattr(s, 'tret') and s.tret.is_polymorphic:
                 # encapsulate s into a EvalCtx for meta-var resolution
                 lst.append(EvalCtx.from_sig(s))
-        rscope = Scope(sig=lst, auto_update_parent=False)
+        rscope = Scope(sig=lst, state=StateScope.LINKED, is_namespace=False)
         # inherit type/translation from parent
         rscope.set_parent(self)
         return rscope
@@ -409,7 +480,7 @@ class Scope(Symbol):
         lst = []
         scopep = []
         # for each of our signatures
-        for s in self._hsig.values():
+        for s in self.values():
             # for each params of this signature
             if hasattr(s, 'tparams'):
                 # number of matched params
@@ -425,7 +496,8 @@ class Scope(Symbol):
                     continue
                 tmp = [None] * nbparam_candidates
                 for i in range(nbparam_candidates):
-                    tmp[i] = Scope()
+                    tmp[i] = Scope(state=StateScope.LINKED)
+                    tmp[i].set_parent(self)
                     # match param of the expr
                     if i < nbparam_sig:
                         m = params[i].get_by_return_type(s.tparams[i])
@@ -447,7 +519,12 @@ class Scope(Symbol):
                                 # add a translator
                                 signature.use_translator(translator)
                                 mcnt += 1
-                                nscope = Scope(sig=[signature])
+                                nscope = Scope(
+                                    sig=[signature],
+                                    state=StateScope.LINKED,
+                                    is_namespace=False
+                                    )
+                                nscope.set_parent(self)
                                 tmp[i].update(nscope)
                             elif s.tparams[i].is_polymorphic:
                                 # handle polymorphic parameter
@@ -475,10 +552,34 @@ class Scope(Symbol):
                     # box it (with EvalCtx) for type resolution
                     lst.append(EvalCtx.from_sig(s))
                     scopep.append(tmp)
-        rscope = Scope(sig=lst, auto_update_parent=False)
+        rscope = Scope(sig=lst, state=StateScope.LINKED, is_namespace=False)
         # inherit type/translation from parent
         rscope.set_parent(self)
         return (rscope, scopep)
+
+    def addTranslator(self, val: Translator, as_global=False):
+        return self.mapTypeTranslate.addTranslator(val, as_global=as_global)
+
+    def addTranslatorInjector(self, ast_method):
+        """
+        Could be redefine in a subscope
+        """
+        if self.astTranslatorInjector is not None:
+            raise TypeError("Already define a translator injector")
+        self.astTranslatorInjector = ast_method
+
+    def callInjector(self, old: Node, trans: Translator, d: Diagnostic, li: LocationInfo) -> Node:
+        """
+        If don't have injector call from parent
+        """
+        if self.astTranslatorInjector is None:
+            if self.parent is not None:
+                # TODO: think if we forward for all StateScope
+                # forward to parent scope
+                return self.parent().callInjector(old, trans, d, li)
+            else:
+                raise TypeError("Must define an Translator Injector")
+        return self.astTranslatorInjector(old, trans, d, li)
 
     def findTranslationTo(self, t2: str) -> (bool, Signature, Translator):
         """
@@ -486,7 +587,7 @@ class Scope(Symbol):
         """
         if not t2.is_polymorphic:
             collect = []
-            for s in self._hsig.values():
+            for s in self.values():
                 t1 = s.tret
                 if t1.is_polymorphic:
                     continue
