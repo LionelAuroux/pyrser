@@ -1,4 +1,4 @@
-from pyrser.type_checking import *
+from pyrser.type_system import *
 
 scope = Scope(sig=[Fun('f', 'void', ['int']), Fun('f', 'int', ['int', 'double', 'char']), Fun('f', 'double', ['int', 'juju'])])
 scope |= Scope(sig=[Fun('f', 'double', ['char', 'double', 'double'])])

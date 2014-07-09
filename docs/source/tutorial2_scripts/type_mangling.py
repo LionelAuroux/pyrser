@@ -1,4 +1,4 @@
-from pyrser.type_checking import *
+from pyrser.type_system import *
 
 class MySymbol(Symbol):
 

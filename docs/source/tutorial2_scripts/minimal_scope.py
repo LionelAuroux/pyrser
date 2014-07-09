@@ -1,4 +1,4 @@
-from pyrser.type_checking import *
+from pyrser.type_system import *
 
 t1 = Type('int')
 t2 = Type('double')

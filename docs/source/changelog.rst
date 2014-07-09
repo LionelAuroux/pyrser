@@ -4,17 +4,18 @@ What's new in |release|
 TODO:
 
     * bootstrap from DSL to cythonised python/C grammar
-    * backend to cython
+    * packrat cache on rules
 
 WIP:
 
     * improving stream with location
-    * packrat cache on rules
+    * A Type System module for type checking
     * YML format for Node (and subclasses) pretty-printing
+    * backend to cython (need to finish stub for nodes,hooks,directives,rules)
 
 
-version 0.0.2
-~~~~~~~~~~~~~
+version 0.0.2: 2014-02-12
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
     * syntax change (could be the last) "::= ... ;" into "= [ ... ]"
     * no more ._bool in node
@@ -29,8 +30,8 @@ version 0.0.2
     * no more following of rule (global node rewritten by a local capture)
     * use the ``set`` method from Node to modify a node in a hook.
 
-version 0.0.1
-~~~~~~~~~~~~~
+version 0.0.1: 2013-09-26
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
     * initial version
     * usable grammar composition
