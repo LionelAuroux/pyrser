@@ -1,4 +1,4 @@
-Tutorial III: Handling Type Checking (part 2) Toy Language For Typing:
+Tutorial III: Handling Type System (part 2) Toy Language For Typing:
 =======================================================================
 
 1 - Using inference with a Toy Language
@@ -66,7 +66,7 @@ the type or our literal does not allow us to resolve the ambiguity.
 
 Pyrser offers the facilities to define subtyping relations, but to be more
 generic, we could define some implicit conversion rules between types.
-Indeed, Pyrser offers another API: :class:`pyrser.type_checking.Translator`.
+Indeed, Pyrser offers another API: :class:`pyrser.type_system.Translator`.
 
 To implement a ``Translator``, we have to use the method ``addTranslator`` of
 the ``Scope`` as follows, assuming ``glob`` is our global scope::
@@ -161,7 +161,7 @@ types, which is a ``Scope`` containing one or more types. Then, the biggest
 part of the Inference module's work is to resolve the types of the function
 calls, by identifying the best match within all the possibilities. This is done
 through the function call inference: the ``infer_fun`` method from the
-:class:`pyrser.type_checking.Inference` class.
+:class:`pyrser.type_system.Inference` class.
 
 It is important to understand that the function call inference is not about
 names but about the whole call expression. A function call is composed of a

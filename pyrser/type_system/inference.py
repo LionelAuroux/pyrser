@@ -1,5 +1,5 @@
 # inference mechanisms
-from pyrser.type_checking import *
+from pyrser.type_system import *
 from pyrser.error import *
 from pyrser.passes.to_yml import *
 

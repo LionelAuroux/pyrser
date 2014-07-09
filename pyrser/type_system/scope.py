@@ -2,10 +2,10 @@
 import weakref
 from collections import *
 from pyrser import fmt, meta
-from pyrser.type_checking.symbol import *
-from pyrser.type_checking.signature import *
-from pyrser.type_checking.evalctx import *
-from pyrser.type_checking.translator import *
+from pyrser.type_system.symbol import *
+from pyrser.type_system.signature import *
+from pyrser.type_system.evalctx import *
+from pyrser.type_system.translator import *
 from pyrser.parsing.node import *
 from pyrser.passes.to_yml import *
 
@@ -177,7 +177,7 @@ class Scope(Symbol):
         check if a Signature or a Type is declared in a Scope
         """
         # fail if in global
-        from pyrser.type_checking.type import Type
+        from pyrser.type_system.type import Type
         found = False
         txt = ""
         if isinstance(s, Signature):

@@ -1,31 +1,31 @@
-Tutorial II: Handling Type Checking (part 1):
+Tutorial II: Handling Type System (part 1):
 =============================================
 
 Parsing files are useful, but we quickly need to do some type checking on our input to do some advanced DSL.
-To handle this problem, the package ``pyrser.type_checking`` provide what we need.
+To handle this problem, the package ``pyrser.type_system`` provide what we need.
 
 1- Type semantics
 -----------------
 
 We provide some classes to describe types.
 
-:class:`pyrser.type_checking.Symbol`: A Symbol represents a thing in our
+:class:`pyrser.type_system.Symbol`: A Symbol represents a thing in our
 language.
 
-:class:`pyrser.type_checking.Signature`: A Signature is an abstract type common
+:class:`pyrser.type_system.Signature`: A Signature is an abstract type common
 to ``Val``, ``Var`` and ``Fun``. It is the common denominator of the typing
 system and provides the capability to get a string representation of a symbol.
 
-:class:`pyrser.type_checking.Val`: A Val represents a litteral value in our
+:class:`pyrser.type_system.Val`: A Val represents a litteral value in our
 language.
 
-:class:`pyrser.type_checking.Var`: A Var represents a named variable in our
+:class:`pyrser.type_system.Var`: A Var represents a named variable in our
 language.
 
-:class:`pyrser.type_checking.Fun`: A Val represents a named function in our
+:class:`pyrser.type_system.Fun`: A Val represents a named function in our
 language.
 
-:class:`pyrser.type_checking.Scope`: A Scope represents a scope or a type (ADT
+:class:`pyrser.type_system.Scope`: A Scope represents a scope or a type (ADT
 or Abstract Data Type).
 
 Basically we could use the package like this:
@@ -39,9 +39,9 @@ And produce the following output:
 .. program-output:: python3 splice.py 'python3 tutorial2_scripts/minimal_scope.py' 0,7
 
 We're actually generating the signatures of one variable and three functions and
-add them to an unnamed :py:class:`pyerser.type_checking.Scope`, thus creating an
+add them to an unnamed :py:class:`pyerser.type_system.Scope`, thus creating an
 anonymous scope that could be our language's global scope. This is the reason
-why we instantiate the :class:`pyrser.type_checking.Scope` object using the
+why we instantiate the :class:`pyrser.type_system.Scope` object using the
 keyword ``sig`` (also second positionnal argument): by not giving a first
 parameter which is an identifier naming the scope, we anonymize it.  If we
 wanted to name it, we could have created it as follows:
@@ -79,7 +79,7 @@ We get all internal names of our signatures:
 
 With the previous classes, we got the basic abstraction to implement a name-based type system with functions/variables overloads.
 
-In fact, the class :class:`pyrser.type_checking.Scope` provides what we need for basic type operations.
+In fact, the class :class:`pyrser.type_system.Scope` provides what we need for basic type operations.
 
 Let's take a classical scope with few overloads of a function ``f``:
 
@@ -119,7 +119,7 @@ We get:
 .. program-output:: python3 splice.py 'python3 tutorial2_scripts/type_operations.py' 17,27
 
 As you may have understood,
-:py:meth:`pyrser.type_checking.Scope.get_symbol_by_name` returns a sub-set of
+:py:meth:`pyrser.type_system.Scope.get_symbol_by_name` returns a sub-set of
 the Scope instance itself. Thus, we get another Scope, on which we can operate
 further.
 
@@ -136,12 +136,12 @@ And we only got:
 .. program-output:: python3 splice.py 'python3 tutorial2_scripts/type_operations.py' 29,36
 
 As we can see, some types (``int`` and ``double``) are resolved to a
-:py:class:`pyrser.type_checking.Type` , while ``char`` is left unresolved. This
+:py:class:`pyrser.type_system.Type` , while ``char`` is left unresolved. This
 is because no declaration exists for the type ``char`` within our scope.
 Indeed, the type system tried to retrieve the types associated to the different
 parameters of a resolved function.
 
-On another note, :py:meth:`pyrser.type_checking.Scope.get_by_symbol_name`
+On another note, :py:meth:`pyrser.type_system.Scope.get_by_symbol_name`
 also returns the Scope containing the different sets of parameters that must be
 used for each overload:
 
@@ -171,24 +171,24 @@ which displayed the signatures as a list:
 .. program-output:: python3 splice.py 'python3 tutorial2_scripts/minimal_scope.py' 16,17
 
 It is actually the Symbol class that controls how those unique signature
-identifiers are generated. The :py:class:`pyrser.type_checking.Symbol` class
+identifiers are generated. The :py:class:`pyrser.type_system.Symbol` class
 actually looks like this:
 
-.. literalinclude:: ../../pyrser/type_checking/symbol.py
+.. literalinclude:: ../../pyrser/type_system/symbol.py
     :pyobject: Symbol.show_name
 
-.. literalinclude:: ../../pyrser/type_checking/symbol.py
+.. literalinclude:: ../../pyrser/type_system/symbol.py
     :pyobject: Symbol.internal_name
 
-And the implementation of the :py:class:`pyrser.type_checking.Fun` class is the
+And the implementation of the :py:class:`pyrser.type_system.Fun` class is the
 following:
 
-.. literalinclude:: ../../pyrser/type_checking/fun.py
+.. literalinclude:: ../../pyrser/type_system/fun.py
     :pyobject: Fun.internal_name
 
 If we follow properly how the ``internal_name`` method of the
-:class:`pyrser.type_checking.Fun` class works, we can see that the higher level
-class (:class:`pyrser.type_checking.Fun` in our case) can use internally it's
+:class:`pyrser.type_system.Fun` class works, we can see that the higher level
+class (:class:`pyrser.type_system.Fun` in our case) can use internally it's
 parent class's ``internal_name`` method. That part is actually up to the
 implementor, as it could also define a wholly different mangling method.
 
@@ -197,8 +197,8 @@ account when trying to generate unique signature identifiers. Those are the
 concepts of Value, Variable and Function, which classes are respectively the
 classes Val, Var and Fun. So in order to re-define the mangling for your own
 language, you may need to redefine up to four classes:
-:class:`pyrser.type_checking.Symbol`, :class:`pyrser.type_checking.Val`,
-:class:`pyrser.type_checking.Var` and :class:`pyrser.type_checking.Fun`.
+:class:`pyrser.type_system.Symbol`, :class:`pyrser.type_system.Val`,
+:class:`pyrser.type_system.Var` and :class:`pyrser.type_system.Fun`.
 
 Now, let us try to define a mangling fit for a language that would not
 support any overloading for a given symbol, meaning that a variable could not
@@ -252,7 +252,7 @@ As a pre-requisite, let us assume that a number litteral in our language can be
 typed in multiple ways. For instance, a number litteral can be typed as a
 character, an integer, or as a big number. Then, when some parsed code will
 contain a litteral, the following set of
-:class:`pyrser.type_checking.Val` will be built:
+:class:`pyrser.type_system.Val` will be built:
 
 .. include:: tutorial2_scripts/type_disambiguation.py
     :code: python
@@ -274,14 +274,14 @@ Now, we display the following scope:
 
 Here, since the overloads list contains more than one item, it may be easily
 resolvable by using the get_by_params (returning a tuple of a scope and a list
-of scopes) on the overloads :class:`pyrser.type_checking.Scope`:
+of scopes) on the overloads :class:`pyrser.type_system.Scope`:
 
 .. include:: tutorial2_scripts/type_disambiguation.py
     :code: python
     :start-line: 20
     :end-line: 23
 
-Indeed, :py:meth:`pyrser.type_checking.Scope.get_by_params` takes care of
+Indeed, :py:meth:`pyrser.type_system.Scope.get_by_params` takes care of
 matching the available signatures with the multiple sets for each parameter.
 Now, if the ``fun`` scope contains more than one signature, it means that we
 have an unresolved type.  That could mean a lot of differents things, but for
@@ -310,7 +310,7 @@ As we can see, by using this last filter, we could identify an unique function
 signature matching our user input. Alas, in some cases, it's not as easy.
 Indeed, in some languages you might have polymorphic types, that the Scope
 class cannot resolve itself. It requires the help of another typing module: the
-:py:mod:`pyrser.type_checking.Inference.py`. Sometimes, even the inference
+:py:mod:`pyrser.type_system.Inference.py`. Sometimes, even the inference
 module cannot resolve something, and then we fall in the case of an error, that
 will be up to us to notify to the user.
 

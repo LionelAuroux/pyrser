@@ -1,6 +1,6 @@
 # tuple handling
 from pyrser import fmt
-from pyrser.type_checking.signature import *
+from pyrser.type_system.signature import *
 
 
 class Tuple(list):

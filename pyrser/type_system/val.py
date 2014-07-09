@@ -1,7 +1,7 @@
 # val for type checking (literal or ENUM style)
 from pyrser import fmt
-from pyrser.type_checking.signature import *
-from pyrser.type_checking.type_name import *
+from pyrser.type_system.signature import *
+from pyrser.type_system.type_name import *
 
 
 class Val(Signature):

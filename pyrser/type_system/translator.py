@@ -1,6 +1,6 @@
 from collections import *
 from pyrser import fmt
-from pyrser.type_checking.fun import *
+from pyrser.type_system.fun import *
 from pyrser.error import *
 
 
@@ -8,11 +8,11 @@ from pyrser.error import *
 class Translator:
     def __init__(self, fun: Fun, notify: Notification=None):
         if not isinstance(fun, Fun):
-            raise TypeError("1st parameter must be a type_checking.Fun")
+            raise TypeError("1st parameter must be a type_system.Fun")
         if not isinstance(notify, Notification):
             raise TypeError("2nd parameter must be a error.Notification")
         if fun.arity < 1:
-            raise TypeError("type_checking.Fun in 1st parameter must have an arity >= 1 (here %d)" % fun.arity)
+            raise TypeError("type_system.Fun in 1st parameter must have an arity >= 1 (here %d)" % fun.arity)
         self._type_source = fun.this_type
         self._type_target = fun.return_type
         self._fun = fun

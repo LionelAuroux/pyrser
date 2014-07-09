@@ -1,7 +1,7 @@
 # type for type checking
 from pyrser import fmt
-from pyrser.type_checking.scope import *
-from pyrser.type_checking.type_name import *
+from pyrser.type_system.scope import *
+from pyrser.type_system.type_name import *
 
 
 class Type(Scope):

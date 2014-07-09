@@ -8,7 +8,7 @@ from pyrser.hooks.echo import *
 from pyrser.hooks.vars import *
 from pyrser.hooks.set import *
 from pyrser.hooks.dump_nodes import *
-from pyrser.type_checking.inference import *
+from pyrser.type_system.inference import *
 from pyrser.error import *
 from pyrser.passes.to_yml import *
 

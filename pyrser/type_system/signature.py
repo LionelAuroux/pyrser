@@ -1,5 +1,5 @@
 # basically variables/functions signatures, but base class for many features
-from pyrser.type_checking.symbol import *
+from pyrser.type_system.symbol import *
 
 
 class Signature(Symbol):

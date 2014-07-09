@@ -1,10 +1,10 @@
 # around a signature store type resolution for monomorphic or polymorphic call
 import inspect
 from pyrser import fmt
-from pyrser.type_checking.type_name import *
-from pyrser.type_checking.signature import *
-from pyrser.type_checking.fun import *
-from pyrser.type_checking.symbol import *
+from pyrser.type_system.type_name import *
+from pyrser.type_system.signature import *
+from pyrser.type_system.fun import *
+from pyrser.type_system.symbol import *
 
 
 class EvalCtx:

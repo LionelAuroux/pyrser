@@ -1,5 +1,5 @@
 import unittest
-from pyrser.type_checking import *
+from pyrser.type_system import *
 from pyrser.passes.to_yml import *
 from pyrser.error import *
 
@@ -30,9 +30,9 @@ class InternalType_Test(unittest.TestCase):
 
         s = MyFun('funky', 'bla', ['blu'])
         self.assertEqual(s.show_name(), 'cool funky',
-                         "Bad symbol patching in type_checking")
+                         "Bad symbol patching in type_system")
         self.assertEqual(s.internal_name(), 'tjrs funky.blu.bla',
-                         "Bad symbol patching in type_checking")
+                         "Bad symbol patching in type_system")
 
     def test_scope_01_pp(self):
         """
@@ -71,40 +71,40 @@ class InternalType_Test(unittest.TestCase):
         var = Var('var1', 'int')
         tenv = Scope(sig=var)
         self.assertIn(Var('var1', 'int'), tenv,
-                      "Bad __contains__ in type_checking.Scope")
+                      "Bad __contains__ in type_system.Scope")
         tenv.add(Fun('fun1', 'int', ['float', 'char']))
         self.assertIn(Fun('fun1', 'int', ['float', 'char']), tenv,
-                      "Bad __contains__ in type_checking.Scope")
+                      "Bad __contains__ in type_system.Scope")
         ## inplace modification
         # work with any iterable
         tenv |= [Fun('fun2', 'int', ['int'])]
         self.assertIn(Fun('fun2', 'int', ['int']), tenv,
-                      "Bad __contains__ in type_checking.Scope")
+                      "Bad __contains__ in type_system.Scope")
         # work with any iterable
         tenv |= {Fun('fun3', 'int', ['int'])}
         self.assertIn(Fun('fun3', 'int', ['int']), tenv,
-                      "Bad __contains__ in type_checking.Scope")
+                      "Bad __contains__ in type_system.Scope")
         # retrieves past signature
         v = tenv.get(var.internal_name())
-        self.assertEqual(id(v), id(var), "Bad get in type_checking.Scope")
+        self.assertEqual(id(v), id(var), "Bad get in type_system.Scope")
         # intersection_update, only with Scope
         tenv &= Scope(sig=Var('var1', 'int'))
         v = tenv.get(var.internal_name())
-        self.assertNotEqual(id(v), id(var), "Bad &= in type_checking.Scope")
+        self.assertNotEqual(id(v), id(var), "Bad &= in type_system.Scope")
         # difference_update, only with Scope
         tenv |= [Fun('fun2', 'int', ['int']),
                  Fun('fun3', 'char', ['double', 'float'])]
         tenv -= Scope(sig=Var('var1', 'int'))
         self.assertNotIn(Var('var1', 'int'), tenv,
-                         "Bad -= in type_checking.Scope")
+                         "Bad -= in type_system.Scope")
         # symmetric_difference_update, only with Scope
         tenv ^= Scope(sig=[Var('var2', 'double'),
                       Fun('fun2', 'int', ['int']),
                       Fun('fun4', 'plop', ['plip', 'ploum'])])
         self.assertIn(Fun('fun4', 'plop', ['plip', 'ploum']), tenv,
-                      "Bad ^= in type_checking.Scope")
+                      "Bad ^= in type_system.Scope")
         self.assertNotIn(Fun('fun2', 'int', ['int']), tenv,
-                         "Bad ^= in type_checking.Scope")
+                         "Bad ^= in type_system.Scope")
         ## binary operation
         # |
         tenv = Scope(sig=[Fun('tutu', 'toto', ['tata']),
@@ -112,24 +112,24 @@ class InternalType_Test(unittest.TestCase):
             Scope(sig=Fun('blam', 'blim', [])) |\
             Scope(sig=Fun('gra', 'gri', ['gru']))
         self.assertIn(Fun('tutu', 'toto', ['tata']), tenv,
-                      "Bad | in type_checking.Scope")
+                      "Bad | in type_system.Scope")
         self.assertIn(Fun('gra', 'gri', ['gru']), tenv,
-                      "Bad | in type_checking.Scope")
+                      "Bad | in type_system.Scope")
         # &
         tenv = Scope(sig=[Fun('tutu', 'toto', ['tata']),
                      Fun('tutu', 'int', ['char'])]) &\
             Scope(sig=[Fun('blam', 'blim', []),
                   Fun('tutu', 'toto', ['tata'])])
         self.assertIn(Fun('tutu', 'toto', ['tata']), tenv,
-                      "Bad & in type_checking.Scope")
-        self.assertEqual(len(tenv), 1, "Bad & in type_checking.Scope")
+                      "Bad & in type_system.Scope")
+        self.assertEqual(len(tenv), 1, "Bad & in type_system.Scope")
         # -
         tenv = Scope(sig=[Fun('tutu', 'toto', ['tata']),
                      Fun('tutu', 'int', ['char'])]) -\
             Scope(sig=Fun('tutu', 'int', ['char']))
         self.assertIn(Fun('tutu', 'toto', ['tata']), tenv,
-                      "Bad - in type_checking.Scope")
-        self.assertEqual(len(tenv), 1, "Bad - in type_checking.Scope")
+                      "Bad - in type_system.Scope")
+        self.assertEqual(len(tenv), 1, "Bad - in type_system.Scope")
         # ^
         tenv1 = Scope(sig=[Fun('tutu', 'toto', ['tata']),
                       Fun('tutu', 'int', ['char']),
@@ -139,11 +139,11 @@ class InternalType_Test(unittest.TestCase):
                       Fun('gra', 'gru', []),
                       Fun('v', 'd', [])])
         tenv = tenv1 ^ tenv2
-        self.assertEqual(len(tenv), 5, "Bad ^ in type_checking.Scope")
+        self.assertEqual(len(tenv), 5, "Bad ^ in type_system.Scope")
         self.assertIn(Fun('tutu', 'toto', ['tata']), tenv,
-                      "Bad ^ in type_checking.Scope")
+                      "Bad ^ in type_system.Scope")
         self.assertNotIn(Fun('gra', 'gru', []), tenv,
-                         "Bad ^ in type_checking.Scope")
+                         "Bad ^ in type_system.Scope")
 
     def test_scope_03_overload(self):
         # test get by symbol name
@@ -154,13 +154,13 @@ class InternalType_Test(unittest.TestCase):
                       Fun('tutu', 'int', ['double'])])
         trest = tenv.get_by_symbol_name('tutu')
         self.assertIn(Fun('tutu', 'tata'), trest,
-                      "get_by_symbol_name in type_checking.Scope")
+                      "get_by_symbol_name in type_system.Scope")
         self.assertIn(Fun('tutu', 'lolo'), trest,
-                      "get_by_symbol_name in type_checking.Scope")
+                      "get_by_symbol_name in type_system.Scope")
         self.assertIn(Fun('tutu', 'int', ['double']), trest,
-                      "get_by_symbol_name in type_checking.Scope")
+                      "get_by_symbol_name in type_system.Scope")
         self.assertNotIn(Fun('plop', 'gnagna'), trest,
-                         "get_by_symbol_name in type_checking.Scope")
+                         "get_by_symbol_name in type_system.Scope")
         # test get by return type
         tenv = Scope(sig=[Fun('tutu', 'int'),
                      Fun('plop', 'plip'),
@@ -169,12 +169,12 @@ class InternalType_Test(unittest.TestCase):
                       Fun('tutu', 'int', ['double', 'int'])])
         trest = tenv.get_by_return_type('int')
         self.assertIn(Fun('tutu', 'int'), trest,
-                      "Bad get_by_return_type in type_checking.Scope")
+                      "Bad get_by_return_type in type_system.Scope")
         self.assertIn(Fun('plop', 'int'), trest,
-                      "Bad get_by_return_type in type_checking.Scope")
+                      "Bad get_by_return_type in type_system.Scope")
         trest = tenv.get_by_return_type('int').get_by_symbol_name('tutu')
         self.assertNotIn(Fun('plop', 'int'), trest,
-                         "Bad get_by_return_type in type_checking.Scope")
+                         "Bad get_by_return_type in type_system.Scope")
         # test get by params
         f = Scope(sig=[Fun('f', 'void', ['int']),
                   Fun('f', 'int', ['int', 'double', 'char']),
@@ -186,37 +186,37 @@ class InternalType_Test(unittest.TestCase):
                    Fun('c', 'char')])
         (trestf, trestp) = f.get_by_params([p1, p2, p3])
         self.assertIn(Fun('f', 'int', ['int', 'double', 'char']), trestf,
-                      "Bad get_by_params in type_checking.Scope")
+                      "Bad get_by_params in type_system.Scope")
         self.assertEqual(len(trestf), 1,
-                         "Bad get_by_params in type_checking.Scope")
+                         "Bad get_by_params in type_system.Scope")
         self.assertEqual(len(trestp), 1,
-                         "Bad get_by_params in type_checking.Scope")
+                         "Bad get_by_params in type_system.Scope")
         self.assertEqual(len(trestp[0]), 3,
-                         "Bad get_by_params in type_checking.Scope")
+                         "Bad get_by_params in type_system.Scope")
         self.assertEqual(len(trestp[0][0]), 1,
-                         "Bad get_by_params in type_checking.Scope")
+                         "Bad get_by_params in type_system.Scope")
         self.assertEqual(len(trestp[0][1]), 1,
-                         "Bad get_by_params in type_checking.Scope")
+                         "Bad get_by_params in type_system.Scope")
         self.assertEqual(len(trestp[0][2]), 1,
-                         "Bad get_by_params in type_checking.Scope")
+                         "Bad get_by_params in type_system.Scope")
         a = trestp[0][0].get_by_symbol_name('a')
         self.assertEqual(len(a), 1,
-                         "Bad get_by_params in type_checking.Scope")
+                         "Bad get_by_params in type_system.Scope")
         sa = next(iter(a.values()))
         self.assertEqual(sa.tret, "int",
-                         "Bad get_by_params in type_checking.Scope")
+                         "Bad get_by_params in type_system.Scope")
         b = trestp[0][1].get_by_symbol_name('b')
         self.assertEqual(len(b), 1,
-                         "Bad get_by_params in type_checking.Scope")
+                         "Bad get_by_params in type_system.Scope")
         sb = next(iter(b.values()))
         self.assertEqual(sb.tret, "double",
-                         "Bad get_by_params in type_checking.Scope")
+                         "Bad get_by_params in type_system.Scope")
         c = trestp[0][2].get_by_symbol_name('c')
         self.assertEqual(len(c), 1,
-                         "Bad get_by_params in type_checking.Scope")
+                         "Bad get_by_params in type_system.Scope")
         sc = next(iter(c.values()))
         self.assertEqual(sc.tret, "char",
-                         "Bad get_by_params in type_checking.Scope")
+                         "Bad get_by_params in type_system.Scope")
 
     def test_scope_04_links_embedded(self):
         # if scope is not a namespace, don't auto-prefix signature
@@ -275,19 +275,19 @@ class InternalType_Test(unittest.TestCase):
         val6 = Val('a', "char")
         val7 = Val('"toto"', "string")
         self.assertEqual(str(val1), "val $1 (12) : int",
-                         "Bad pretty-print in type_checking.Val")
+                         "Bad pretty-print in type_system.Val")
         self.assertEqual(str(val2), "val $2 (12) : byte",
-                         "Bad pretty-print in type_checking.Val")
+                         "Bad pretty-print in type_system.Val")
         self.assertEqual(str(val3), "val $3 (12) : char",
-                         "Bad pretty-print in type_checking.Val")
+                         "Bad pretty-print in type_system.Val")
         self.assertEqual(str(val4), "val $4 (12) : short",
-                         "Bad pretty-print in type_checking.Val")
+                         "Bad pretty-print in type_system.Val")
         self.assertEqual(str(val5), "val $4 (12) : short",
-                         "Bad pretty-print in type_checking.Val")
+                         "Bad pretty-print in type_system.Val")
         self.assertEqual(str(val6), "val $5 (a) : char",
-                         "Bad pretty-print in type_checking.Val")
+                         "Bad pretty-print in type_system.Val")
         self.assertEqual(str(val7), 'val $6 ("toto") : string',
-                         "Bad pretty-print in type_checking.Val")
+                         "Bad pretty-print in type_system.Val")
 
     def test_poly_01_var(self):
         # ?1 means type placeholders for polymorphisme
@@ -299,9 +299,9 @@ class InternalType_Test(unittest.TestCase):
         tenv = Scope(sig=Fun('fun1', 'int', ['char']))
         (trestf, trestp) = tenv.get_by_params([var])
         self.assertIn(Fun('fun1', 'int', ['char']), trestf,
-                      "Bad polymorphic in type_checking.Scope")
+                      "Bad polymorphic in type_system.Scope")
         self.assertIn(Var('var1', '?1'), trestp[0][0],
-                      "Bad polymorphic in type_checking.Scope")
+                      "Bad polymorphic in type_system.Scope")
         var = Scope(sig=Var('var1', 'int'))
         tenv = Scope(sig=Fun('fun1', 'int', ['?1']))
         self.assertTrue(
@@ -310,9 +310,9 @@ class InternalType_Test(unittest.TestCase):
         )
         (trestf, trestp) = tenv.get_by_params([var])
         self.assertIn(Fun('fun1', 'int', ['?1']), trestf,
-                      "Bad polymorphic in type_checking.Scope")
+                      "Bad polymorphic in type_system.Scope")
         self.assertIn(Var('var1', 'int'), trestp[0][0],
-                      "Bad polymorphic in type_checking.Scope")
+                      "Bad polymorphic in type_system.Scope")
 
     def test_variadic_01(self):
         tenv = Scope(sig=[Fun('printf', 'void', ['const * char'],
@@ -333,12 +333,12 @@ class InternalType_Test(unittest.TestCase):
         tn = TypeName("* const int")
         var = Var('var1', tn)
         self.assertEqual(str(var), "var var1 : * const int",
-                         "Bad TypeName in type_checking.Var")
+                         "Bad TypeName in type_system.Var")
 
     def test_tuple_01_pp(self):
         tp = Tuple([Fun(None, 'X'), Var(None, 'U'), Var(None, 'T')])
         self.assertEqual(str(tp), "tuple(fun : () -> X, var : U, var : T)",
-                         "Bad pretty-printing in type_checking.Tuple")
+                         "Bad pretty-printing in type_system.Tuple")
 
     def test_eval_ctx_01(self):
         ectx = EvalCtx(Fun("f", "int", ["double"]))
@@ -348,7 +348,7 @@ class InternalType_Test(unittest.TestCase):
         'double': Unresolved
         'int': Unresolved
 """,
-                         "Bad TypeName in type_checking.EvalCtx")
+                         "Bad TypeName in type_system.EvalCtx")
         typ = Type("T1")
         typ.add(Fun("f", "int", ["int"]))
         tenv = Scope("test", sig=typ)
@@ -361,7 +361,7 @@ class InternalType_Test(unittest.TestCase):
                     tenv.get_by_symbol_name("f").values()
                 )[0].resolution['T1']()
             ),
-            "Bad resolution in type_checking.EvalCtx"
+            "Bad resolution in type_system.EvalCtx"
         )
 
     def test_translator_01(self):

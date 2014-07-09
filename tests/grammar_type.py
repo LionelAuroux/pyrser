@@ -1,6 +1,6 @@
 import unittest
 from pyrser.passes.to_yml import *
-from pyrser.type_checking.fun import *
+from pyrser.type_system.fun import *
 from pyrser.error import *
 from tests.grammar.tl4t import *
 
@@ -118,4 +118,4 @@ class GrammarType_Test(unittest.TestCase):
         res.type_node.addTranslatorInjector(createFunWithTranslator)
         res.infer_type(res.diagnostic)
         self.assertTrue(res.diagnostic.have_errors, "Bad inference")
-        print(res.diagnostic.get_content(with_locinfos=True))
+        self.assertEqual(res.diagnostic.get_infos()[Severity.ERROR], 1)
