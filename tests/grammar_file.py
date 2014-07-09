@@ -246,7 +246,7 @@ class GrammarFile_Test(unittest.TestCase):
         self.assertFalse(pe.exception, "Can't detect error in BNF")
         self.assertEqual(
             pe.exception.logs[0].msg,
-            "Parse error in 'directive'",
+            "Parse error in 'directive' in EBNF bnf",
             "Bad message in Error"
         )
         self.assertEqual(pe.exception.logs[0].location.line, 1, "Bad line")

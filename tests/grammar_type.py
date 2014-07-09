@@ -64,9 +64,8 @@ class GrammarType_Test(unittest.TestCase):
         res = test.parse("""
             s = "toto" + 42;
         """)
-        txt = res.to_tl4t()
-        # TODO: caractère sur-numeraire apres toto
-        #self.assertEqual(str(txt), 's = "toto" + 42;\n')
+        txt = str(res.to_tl4t())
+        self.assertEqual(txt, 's = "toto" + 42;\n')
         res.type_node = Scope(is_namespace=False)
         res.type_node.add(Type("string"))
         res.type_node.add(Type("int"))
@@ -86,9 +85,7 @@ class GrammarType_Test(unittest.TestCase):
         #print(
         #    res.diagnostic.get_content(with_locinfos=True, with_details=True)
         #)
-        #print("final : %s" % res.to_tl4t())
-        # TODO: fix space bug after "toto"
-        #self.assertEqual(res.to_tl4t(), 's = "toto" + to_str(42);', "Bad pretty print")
+        self.assertEqual(str(res.to_tl4t()), 's = "toto" + to_str(42);\n', "Bad pretty print")
 
     def test_02_typerror(self):
         test = TL4T()
@@ -96,5 +93,29 @@ class GrammarType_Test(unittest.TestCase):
             a(42);
         """)
         res.type_node = Scope(sig=Fun('a', 'void', ['char']))
-        #res.infer_type(res.diagnostic)
-        #self.assertTrue(res.diagnostic.have_errors, "Bad error detection")
+        res.infer_type(res.diagnostic)
+        self.assertTrue(res.diagnostic.have_errors, "Bad error detection")
+        # Automatically add a translation
+        test = TL4T()
+        res = test.parse("""
+            s = "toto" + 42;
+        """)
+        txt = str(res.to_tl4t())
+        self.assertEqual(txt, 's = "toto" + 42;\n')
+        res.type_node = Scope(is_namespace=False)
+        res.type_node.add(Type("string"))
+        res.type_node.add(Type("int"))
+        res.type_node.add(Var("s", "string"))
+        res.type_node.add(Fun("=", "string", ["string", "string"]))
+        res.type_node.add(Fun("+", "string", ["string", "string"]))
+        f = Fun("to_str", "string", ["int"])
+        res.type_node.add(f)
+        n = Notification(
+            Severity.ERROR,
+            "implicit conversion of int to string"
+        )
+        res.type_node.addTranslator(Translator(f, n))
+        res.type_node.addTranslatorInjector(createFunWithTranslator)
+        res.infer_type(res.diagnostic)
+        self.assertTrue(res.diagnostic.have_errors, "Bad inference")
+        print(res.diagnostic.get_content(with_locinfos=True))

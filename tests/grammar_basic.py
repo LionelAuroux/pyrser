@@ -4,6 +4,7 @@ from pyrser import grammar
 from pyrser import meta
 from pyrser import parsing
 from pyrser import error
+from pyrser.passes.to_yml import *
 from pyrser.directives import ignore
 
 from tests.grammar.csv import *
@@ -69,16 +70,18 @@ class GrammarBasic_Test(unittest.TestCase):
             return True
 
         csv = CSV()
-        res = csv.parse("""
-        1;a;3;b;5
-        l;r
-        o
-        4;1
-        7;u;p
-        """)
-        self.assertTrue(res, "failed to parse CSV")
-        self.assertEqual(res.tab[2][0], "o", "failed to reach tab[2][0]")
-        self.assertEqual(res.tab[4][1], "u", "failed to reach tab[4][1]")
+        if csv:
+            txt = """
+            1;a;3;b;5
+            l;r
+            o
+            4;1
+            7;u;p
+            """
+            res = csv.parse(txt)
+            self.assertTrue(res, "failed to parse CSV")
+            self.assertEqual(res.tab[2][0], "o", "failed to reach tab[2][0]")
+            self.assertEqual(res.tab[4][1], "u", "failed to reach tab[4][1]")
 
     def test_03_inherit_csv(self):
         """

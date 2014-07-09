@@ -30,19 +30,14 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Seq,
                               "failed in ParserTree type for node Seq")
-        self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule,
+        self.assertIsInstance(res['the_rule'][0], parsing.Rule,
                               "failed in ParserTree type for node Rule")
-        self.assertTrue(res['the_rule'].ptlist[0].name == "a",
+        self.assertTrue(res['the_rule'][0].name == "a",
                         "failed in name of rule 'a'")
-        self.assertIsInstance(res['the_rule'].ptlist[1], parsing.Rule,
+        self.assertIsInstance(res['the_rule'][1], parsing.Rule,
                               "failed in ParserTree type for node Rule")
-        self.assertTrue(res['the_rule'].ptlist[1].name == "b",
+        self.assertTrue(res['the_rule'][1].name == "b",
                         "failed in name of rule 'b'")
-        self.assertIsInstance(res['the_rule'], parsing.Seq)
-        self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule)
-        self.assertTrue(res['the_rule'].ptlist[0].name == "a")
-        self.assertIsInstance(res['the_rule'].ptlist[1], parsing.Rule)
-        self.assertTrue(res['the_rule'].ptlist[1].name == "b")
 
     def test_03_more_rules(self):
         """
@@ -54,12 +49,12 @@ class InternalDsl_Test(unittest.TestCase):
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
         self.assertIsInstance(res['the_rule'], parsing.Seq)
-        self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule)
-        self.assertTrue(res['the_rule'].ptlist[0].name == "a")
-        self.assertIsInstance(res['the_rule'].ptlist[1], parsing.Rule)
-        self.assertTrue(res['the_rule'].ptlist[1].name == "b")
-        self.assertIsInstance(res['the_rule'].ptlist[2], parsing.Rule)
-        self.assertTrue(res['the_rule'].ptlist[2].name == "c")
+        self.assertIsInstance(res['the_rule'][0], parsing.Rule)
+        self.assertTrue(res['the_rule'][0].name == "a")
+        self.assertIsInstance(res['the_rule'][1], parsing.Rule)
+        self.assertTrue(res['the_rule'][1].name == "b")
+        self.assertIsInstance(res['the_rule'][2], parsing.Rule)
+        self.assertTrue(res['the_rule'][2].name == "c")
 
     def test_04_one_alt(self):
         """
@@ -71,10 +66,10 @@ class InternalDsl_Test(unittest.TestCase):
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
         self.assertIsInstance(res['the_rule'], parsing.Alt)
-        self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule)
-        self.assertTrue(res['the_rule'].ptlist[0].name == "a")
-        self.assertIsInstance(res['the_rule'].ptlist[1], parsing.Rule)
-        self.assertTrue(res['the_rule'].ptlist[1].name == "b")
+        self.assertIsInstance(res['the_rule'][0], parsing.Rule)
+        self.assertTrue(res['the_rule'][0].name == "a")
+        self.assertIsInstance(res['the_rule'][1], parsing.Rule)
+        self.assertTrue(res['the_rule'][1].name == "b")
 
     def test_05_two_alt(self):
         """
@@ -86,12 +81,12 @@ class InternalDsl_Test(unittest.TestCase):
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
         self.assertIsInstance(res['the_rule'], parsing.Alt)
-        self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Rule)
-        self.assertTrue(res['the_rule'].ptlist[0].name == "a")
-        self.assertIsInstance(res['the_rule'].ptlist[1], parsing.Rule)
-        self.assertTrue(res['the_rule'].ptlist[1].name == "b")
-        self.assertIsInstance(res['the_rule'].ptlist[2], parsing.Rule)
-        self.assertTrue(res['the_rule'].ptlist[2].name == "c")
+        self.assertIsInstance(res['the_rule'][0], parsing.Rule)
+        self.assertTrue(res['the_rule'][0].name == "a")
+        self.assertIsInstance(res['the_rule'][1], parsing.Rule)
+        self.assertTrue(res['the_rule'][1].name == "b")
+        self.assertIsInstance(res['the_rule'][2], parsing.Rule)
+        self.assertTrue(res['the_rule'][2].name == "c")
 
     def test_06_char(self):
         """
@@ -140,24 +135,24 @@ class InternalDsl_Test(unittest.TestCase):
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
         self.assertIsInstance(res['the_rule'], parsing.Alt)
-        self.assertIsInstance(res['the_rule'].ptlist[0], parsing.Seq)
-        self.assertIsInstance(res['the_rule'].ptlist[0].ptlist[0],
+        self.assertIsInstance(res['the_rule'][0], parsing.Seq)
+        self.assertIsInstance(res['the_rule'][0][0],
                               parsing.Range)
-        self.assertTrue(res['the_rule'].ptlist[0].ptlist[0].begin == 'a')
-        self.assertTrue(res['the_rule'].ptlist[0].ptlist[0].end == 'z')
-        self.assertIsInstance(res['the_rule'].ptlist[0].ptlist[1],
+        self.assertTrue(res['the_rule'][0][0].begin == 'a')
+        self.assertTrue(res['the_rule'][0][0].end == 'z')
+        self.assertIsInstance(res['the_rule'][0][1],
                               parsing.Text)
-        self.assertEqual(res['the_rule'].ptlist[0].ptlist[1].text, "tutu")
-        self.assertIsInstance(res['the_rule'].ptlist[0].ptlist[2],
+        self.assertEqual(res['the_rule'][0][1].text, "tutu")
+        self.assertIsInstance(res['the_rule'][0][2],
                               parsing.Char)
-        self.assertTrue(res['the_rule'].ptlist[0].ptlist[2].char == 'a')
-        self.assertIsInstance(res['the_rule'].ptlist[1], parsing.Seq)
-        self.assertIsInstance(res['the_rule'].ptlist[1].ptlist[0],
+        self.assertTrue(res['the_rule'][0][2].char == 'a')
+        self.assertIsInstance(res['the_rule'][1], parsing.Seq)
+        self.assertIsInstance(res['the_rule'][1][0],
                               parsing.Rule)
-        self.assertTrue(res['the_rule'].ptlist[1].ptlist[0].name == "a")
-        self.assertTrue(res['the_rule'].ptlist[1].ptlist[1].name == "b")
-        self.assertIsInstance(res['the_rule'].ptlist[2], parsing.Rule)
-        self.assertTrue(res['the_rule'].ptlist[2].name == "z")
+        self.assertTrue(res['the_rule'][1][0].name == "a")
+        self.assertTrue(res['the_rule'][1][1].name == "b")
+        self.assertIsInstance(res['the_rule'][2], parsing.Rule)
+        self.assertTrue(res['the_rule'][2].name == "z")
 
     def test_10_repoption(self):
         """
@@ -176,11 +171,12 @@ class InternalDsl_Test(unittest.TestCase):
         Test default
         """
         bnf = dsl.EBNF("""
-            the_rule = [ [a]* ]
+            the_rule = [ a* ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res, "failed to fetch the rule name")
         self.assertIsInstance(res['the_rule'], parsing.Rep0N)
+        self.assertIsInstance(res['the_rule'].pt, parsing.Rule)
         self.assertTrue(res['the_rule'].pt.name == 'a')
 
     def test_12_rep1N(self):
@@ -193,8 +189,8 @@ class InternalDsl_Test(unittest.TestCase):
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
         self.assertIsInstance(res['the_rule'], parsing.Rep1N)
-        self.assertTrue(res['the_rule'].pt.ptlist[0].name == 'a')
-        self.assertTrue(res['the_rule'].pt.ptlist[1].text == "toto")
+        self.assertTrue(res['the_rule'].pt[0].name == 'a')
+        self.assertTrue(res['the_rule'].pt[1].text == "toto")
 
     def test_13_complementedRepeatedRule(self):
         bnf = dsl.EBNF("""
@@ -385,7 +381,7 @@ class InternalDsl_Test(unittest.TestCase):
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
         self.assertIsInstance(res['the_rule'], parsing.Seq)
-        self.assertTrue(res['the_rule'].ptlist[-1].name == "my_hook_multi")
+        self.assertTrue(res['the_rule'][-1].name == "my_hook_multi")
         dummyData = parsing.Parser("""
             456    "toto"        blabla
             """)

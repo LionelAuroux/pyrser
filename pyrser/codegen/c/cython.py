@@ -229,6 +229,13 @@ def to_cython(self, ctype_name: str) -> CStub:
     ))
     return cstub
 
+@meta.add_method(functors.SkipIgnore)
+def to_cython(self, genstate) -> fmt.indentable:
+    """
+    TODO: A quite important part of C transform... rethink directive/decoration/etc...
+    """
+    return '\n'
+
 @meta.add_method(functors.Rule)
 def to_cython(self, genstate) -> fmt.indentable:
     return '\n'

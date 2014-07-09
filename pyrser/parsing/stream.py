@@ -75,8 +75,9 @@ class Cursor:
     def step_prev_line(self):
         """Sets cursor as end of previous line."""
         #TODO(bps): raise explicit error for unregistered eol
-        assert self._eol[-1].index == self._index
-        self.position = self._eol.pop()
+        #assert self._eol[-1].index == self._index
+        if len(self._eol) > 0:
+            self.position = self._eol.pop()
 
 
 class Tag:
@@ -183,13 +184,16 @@ class Stream:
     def decpos(self, length: int=1) -> int:
         if length < 0:
             raise ValueError("length must be positive")
+        if (self._cursor.index - length) < 0:
+            raise ValueError("can't go before first byte")
         i = 0
         while (i < length):
-            if 0 < self._cursor.index:
+            if self.peek_char == '\n':
+                self._cursor.step_prev_line()
+                i += 1
+            else:
                 self._cursor.step_prev_char()
-                if self.peek_char == '\n':
-                    self._cursor.step_prev_line()
-            i += 0
+            i += 1
         return self._cursor.index
 
     def save_context(self) -> bool:

@@ -22,18 +22,29 @@ class Functor:
 
     def __call__(self, parser: BasicParser) -> Node:
         global _decorators
-
         # call the begin methods in order
         for i in range(0, len(_decorators)):
             _decorators[i].begin(parser, self)
-
+        # forward the call to the functor
         res = self.do_call(parser)
-
         # call the end methods in reverse order
         for i in range(len(_decorators) - 1, -1, -1):
             _decorators[i].end(res, parser, self)
-
         return res
+
+
+class SkipIgnore(Functor):
+    """Call Ignore Convention primitive functor."""
+
+    def __init__(self, convention: str=""):
+        """TODO: Could be better to implement Directive thru functors???"""
+        self.convention = convention
+
+    def do_call(self, parser: BasicParser) -> bool:
+        #if len(parser._ignores) > 0:
+        #    parser._ignores[-1](parser)
+        parser.skip_ignore()
+        return True
 
 
 class PeekChar(Functor):
@@ -104,12 +115,25 @@ class Seq(Functor):
         Functor.__init__(self)
         if len(ptlist) == 0:
             raise TypeError("Expected Functor")
-        self.ptlist = ptlist
+        self.ptlist = []
+        for it in ptlist:
+            if not isinstance(it, SkipIgnore):
+                self.ptlist.append(it)
+                self.ptlist.append(SkipIgnore())
+        if not isinstance(self.ptlist[0], SkipIgnore):
+            self.ptlist.insert(0, SkipIgnore())
+
+    def __getitem__(self, idx) -> Functor:
+        """Hide SkipIgnore object from outside"""
+        if idx >= 0:
+            idx = (idx * 2) + 1
+        else:
+            idx = len(self.ptlist) - ((idx + 1) * 2) - 2
+        return self.ptlist[idx]
 
     def do_call(self, parser: BasicParser) -> bool:
         parser._stream.save_context()
         for pt in self.ptlist:
-            parser.skip_ignore()
             if not pt(parser):
                 return parser._stream.restore_context()
         return parser._stream.validate_context()
@@ -138,6 +162,11 @@ class LookAhead(Functor):
     def __init__(self, pt: Functor):
         Functor.__init__(self)
         self.pt = pt
+        if isinstance(self.pt, Seq):
+            if isinstance(self.pt.ptlist[0], SkipIgnore):
+                self.pt.ptlist.pop(0)
+            if isinstance(self.pt.ptlist[-1], SkipIgnore):
+                self.pt.ptlist.pop()
 
     def do_call(self, parser: BasicParser) -> bool:
         parser._stream.save_context()
@@ -152,6 +181,11 @@ class Neg(Functor):
     def __init__(self, pt: Functor):
         Functor.__init__(self)
         self.pt = pt
+        if isinstance(self.pt, Seq):
+            if isinstance(self.pt.ptlist[0], SkipIgnore):
+                self.pt.ptlist.pop(0)
+            if isinstance(self.pt.ptlist[-1], SkipIgnore):
+                self.pt.ptlist.pop()
 
     def do_call(self, parser: BasicParser):
         parser._stream.save_context()
@@ -167,19 +201,22 @@ class Complement(Functor):
     def __init__(self, pt: Functor):
         Functor.__init__(self)
         self.pt = pt
+        if isinstance(self.pt, Seq):
+            if isinstance(self.pt.ptlist[0], SkipIgnore):
+                self.pt.ptlist.pop(0)
+            if isinstance(self.pt.ptlist[-1], SkipIgnore):
+                self.pt.ptlist.pop()
 
     def do_call(self, parser: BasicParser) -> bool:
         if parser.read_eof():
             return False
-        ## skip/undo?
-        parser.skip_ignore()
         parser._stream.save_context()
         res = self.pt(parser)
         if not res:
             parser._stream.incpos()
             return parser._stream.validate_context()
         parser._stream.restore_context()
-        parser.undo_ignore()
+        parser.undo_last_ignore()
         return False
 
 
@@ -189,10 +226,13 @@ class Until(Functor):
     def __init__(self, pt: Functor):
         Functor.__init__(self)
         self.pt = pt
+        if isinstance(self.pt, Seq):
+            if isinstance(self.pt.ptlist[0], SkipIgnore):
+                self.pt.ptlist.pop(0)
+            if isinstance(self.pt.ptlist[-1], SkipIgnore):
+                self.pt.ptlist.pop()
 
     def do_call(self, parser: BasicParser) -> bool:
-        ## skip/undo?
-        parser.skip_ignore()
         parser._stream.save_context()
         while not parser.read_eof():
             res = self.pt(parser)
@@ -200,7 +240,7 @@ class Until(Functor):
                 return parser._stream.validate_context()
             parser._stream.incpos()
         parser._stream.restore_context()
-        parser.undo_ignore()
+        parser.undo_last_ignore()
         return False
 
 
@@ -233,6 +273,9 @@ class Capture(Functor):
             raise TypeError("Illegal tagname for capture")
         self.tagname = tagname
         self.pt = pt
+        if isinstance(self.pt, Seq):
+            if isinstance(self.pt.ptlist[-1], SkipIgnore):
+                self.pt.ptlist.pop()
 
     def do_call(self, parser: BasicParser) -> Node:
         if parser.begin_tag(self.tagname):
@@ -294,12 +337,14 @@ class Alt(Functor):
         Functor.__init__(self)
         self.ptlist = ptlist
 
+    def __getitem__(self, idx) -> Functor:
+        return self.ptlist[idx]
+
     def do_call(self, parser: BasicParser) -> Node:
         # save result of current rule
         parser.push_rule_nodes()
         for pt in self.ptlist:
             parser._stream.save_context()
-            parser.skip_ignore()
             parser.push_rule_nodes()
             res = pt(parser)
             if res:
@@ -318,9 +363,10 @@ class RepOptional(Functor):
     def __init__(self, pt: Seq):
         Functor.__init__(self)
         self.pt = pt
+        if isinstance(self.pt, Directive):
+            self.pt = Seq(self.pt)
 
     def do_call(self, parser: BasicParser) -> bool:
-        parser.skip_ignore()
         res = self.pt(parser)
         if res:
             return res
@@ -333,12 +379,13 @@ class Rep0N(Functor):
     def __init__(self, pt: Seq):
         Functor.__init__(self)
         self.pt = pt
+        if isinstance(self.pt, Directive):
+            self.pt = Seq(self.pt)
 
     def do_call(self, parser: BasicParser) -> bool:
-        parser.skip_ignore()
         parser.push_rule_nodes()
         while self.pt(parser):
-            parser.skip_ignore()
+            pass
         parser.pop_rule_nodes()
         return True
 
@@ -349,16 +396,15 @@ class Rep1N(Functor):
     def __init__(self, pt: Seq):
         Functor.__init__(self)
         self.pt = pt
+        if isinstance(self.pt, Directive):
+            self.pt = Seq(self.pt)
 
     def do_call(self, parser: BasicParser) -> bool:
         parser._stream.save_context()
-        # skip/undo
-        parser.skip_ignore()
         parser.push_rule_nodes()
         if self.pt(parser):
-            parser.skip_ignore()
             while self.pt(parser):
-                parser.skip_ignore()
+                pass
             parser.pop_rule_nodes()
             return parser._stream.validate_context()
         parser.pop_rule_nodes()

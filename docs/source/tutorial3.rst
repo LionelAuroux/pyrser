@@ -230,6 +230,7 @@ Our function receive the old AST node, and the Translator. We must build a funct
         n = trans.notify
         return Expr(Id(f.name), [old])
 
+Here ``Expr`` is just the AST node that represent all expressions as function calls.
 Our function could be add to our global scope with the ``addTranslatorInjector`` function.
 Finally, we write::
 
@@ -259,4 +260,26 @@ Will show us::
 
         s = "toto" + tostr(42);
 
-Notice that we could control the severity of the notification from INFO to ERROR. That's an easy to allow or to forbid things.
+Our AST is correctly modify by the Injector function.
+Notice that we could control the severity of the notification from INFO to ERROR. That's an easy way to allow or to forbid things.
+Let's modify ``Severity.WARNING`` by ``Severity.ERROR``::
+        
+        n = Notification(
+            Severity.WARNING,
+            "implicit conversion of int to string"
+        )
+        res.type_node.addTranslator(Translator(f, n))
+        res.type_node.addTranslatorInjector(createFunWithTranslator)
+        res.infer_type(res.diagnostic)
+        if res.diagnostic.have_errors:
+            print(res.diagnostic.get_content(with_locinfos=True))
+
+Now we got an error in our Diagnostic object::
+
+        -------------------------------------------------------------------------------
+        error : implicit conversion of int to string
+        from test.tl4t at line:2 col:26 :
+                    s = "toto" + 42;
+                                 ^
+
+It's up to you to decide how you manage errors logged in the Diagnostic object.

@@ -341,17 +341,18 @@ class BasicParser(metaclass=MetaBasicParser):
         return True
 
     def skip_ignore(self) -> bool:
-        self._lastIgnoreIndex = self._stream.index
         if len(self._ignores) > 0:
             self._ignores[-1](self)
         self._lastIgnore = (self._stream.index != self._lastIgnoreIndex)
+        self._lastIgnoreIndex = self._stream.index
         return True
 
-    def undo_ignore(self) -> bool:
+    def undo_last_ignore(self) -> bool:
         # TODO(iopi): wrong don't work in all case
-        if self._lastIgnore:
+        if (self._stream.index > self._lastIgnoreIndex):
             self._stream.decpos(self._stream.index - self._lastIgnoreIndex)
             self._lastIgnoreIndex = self._stream.index
+            #self._lastIgnore = False
         return True
 
 

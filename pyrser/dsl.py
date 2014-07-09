@@ -25,12 +25,15 @@ class EBNF(parsing.Parser):
                 # we fail to parse, but error is not set
                 self.diagnostic.notify(
                     error.Severity.ERROR,
-                    "Parse error in '%s'" % self._lastRule,
+                    "Parse error in '%s' in EBNF bnf" % self._lastRule,
                     error.LocationInfo.from_maxstream(self._stream)
                 )
                 raise self.diagnostic
         except error.Diagnostic as d:
-            # forward Exception when parsing DSL
+            d.notify(
+                error.Severity.ERROR,
+                "Parse error in '%s' in EBNF bnf" % self._lastRule
+            )
             raise d
         return res
 
