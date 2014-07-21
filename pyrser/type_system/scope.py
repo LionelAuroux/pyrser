@@ -30,8 +30,8 @@ class Scope(Symbol):
         
         A Scope have basically 3 possibles states:
         FREE: it's a standalone Scope, generally the global Scope
-        LINKED: the Scope is related to another Scope for type resolution
-        EMBEDDED: the Scope was added into another Scope, it forwards all 'in' calls...
+        LINKED: the Scope is related to another Scope for type resolution, like compound statement
+        EMBEDDED: the Scope was added into another Scope, it forwards all 'in' calls...like namespacing
 
         A Scope could or couldn't act like a namespace.
         All Signature added into a 'namespaced' Scope was prefixed by the Scope name.
@@ -55,22 +55,15 @@ class Scope(Symbol):
         self._nfuns = 0
         # internal store of Signature
         self._hsig = {}
-        #self._hsig = ChainMap()
         if sig is not None:
             if isinstance(sig, Signature) or isinstance(sig, Scope):
                 self.add(sig)
             elif len(sig) > 0:
                 self.update(sig)
 
-    #def _inheritHsig(self, othscope: Scope):
-    #    tmp = self._hsig.maps[0]
-    #    self._hsig = othscope._hsig.new_child()
-    #    self._hsig.maps[0].update(tmp)
-
     def set_parent(self, parent: Scope) -> object:
         Symbol.set_parent(self, parent)
         if parent is not None:
-            #self._inheritHsig(parent)
             self.mapTypeTranslate.set_parent(parent.mapTypeTranslate)
         if hasattr(self, 'state') and self.state == StateScope.FREE:
             self.state = StateScope.LINKED
@@ -84,7 +77,6 @@ class Scope(Symbol):
         # update internal names
         lsig = self._hsig.values()
         self._hsig = {}
-        #self._hsig.maps[0] = {}
         for s in lsig:
             self._hsig[s.internal_name()] = s
 
@@ -168,7 +160,7 @@ class Scope(Symbol):
         del state['parent']
         return state
 
-    ## todo __get__, __set__, __delete__
+    ## TODO: __getitem__, __setitem__, __delete__??
 
     # ======== SET OPERATORS OVERLOADING ========
     # in
@@ -491,10 +483,11 @@ class Scope(Symbol):
                 # don't treat signature too short
                 if nbparam_sig > nbparam_candidates:
                     continue
-                # don't treat signature too long if not variadic
+                # don't treat call signature too long if not variadic
                 if nbparam_candidates > nbparam_sig and not s.variadic:
                     continue
                 tmp = [None] * nbparam_candidates
+                variadic_types = []
                 for i in range(nbparam_candidates):
                     tmp[i] = Scope(state=StateScope.LINKED)
                     tmp[i].set_parent(self)
@@ -516,7 +509,7 @@ class Scope(Symbol):
                              translator
                              ) = t1.findTranslationTo(t2)
                             if is_convertible:
-                                # add a translator
+                                # add a translator in the EvalCtx
                                 signature.use_translator(translator)
                                 mcnt += 1
                                 nscope = Scope(
@@ -545,12 +538,16 @@ class Scope(Symbol):
                         mcnt += 1
                         if not isinstance(params[i], Scope):
                             raise Exception("params[%d] must be a Scope" % i)
+                        variadic_types.append(params[i].first().tret)
                         tmp[i].update(params[i])
                 # we have match all candidates
                 if mcnt == len(params):
                     # select this signature but
                     # box it (with EvalCtx) for type resolution
                     lst.append(EvalCtx.from_sig(s))
+                    lastentry = lst[-1]
+                    if lastentry.variadic:
+                        lastentry.use_variadic_types(variadic_types)
                     scopep.append(tmp)
         rscope = Scope(sig=lst, state=StateScope.LINKED, is_namespace=False)
         # inherit type/translation from parent

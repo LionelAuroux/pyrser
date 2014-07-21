@@ -76,16 +76,17 @@ class DeclVar(NodeInfo):
             #typ = '?' + self.name
             typ = '?1'
         parent_scope.add(Var(self.name, typ))
-        self.type_node = Scope(sig=[Fun('=', typ, [typ, typ])])
-        self.type_node.set_parent(parent_scope)
+        tn = Scope(sig=[Fun('=', typ, [typ, typ])])
+        tn.set_parent(parent_scope)
         # try to infer type or check type
         if self.expr is not None:
             # create a fake Expr Node to infer expression with var type
             rhs = Expr(Id('='), [Id(self.name), self.expr])
             rhs.type_node = Scope()
-            self.type_node.add(rhs.type_node)
+            rhs.type_node.set_parent(tn)
             rhs.infer_type(diagnostic)
-            #print("In declVar %s" % rhs.type_node)
+            print("In declVar %s" % to_yml(rhs))
+            self.type_node = rhs.type_node
 
 
     # to connect Inference

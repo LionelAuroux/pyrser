@@ -22,9 +22,11 @@ class GrammarType_Test(unittest.TestCase):
         res.type_node.add(Type("int"))
         res.infer_type(res.diagnostic)
         self.assertFalse(res.diagnostic.have_errors, "Bad inference")
-        #print("RES FINAL: %s" %
-        #    res.diagnostic.get_content(with_locinfos=True, with_details=True)
-        #)
+        self.assertEqual(
+            str(res.body[0].type_node.first().get_compute_sig()),
+            "fun a : (int) -> void",
+            "Bad computing of signature"
+        )
         # expr
         test = TL4T()
         res = test.parse("""
@@ -35,10 +37,8 @@ class GrammarType_Test(unittest.TestCase):
         res.type_node = Scope(sig=Type('int'))
         res.infer_type(res.diagnostic)
         self.assertFalse(res.diagnostic.have_errors, "Bad inference")
-        #print("RES FINAL: %s" %
-        #    res.diagnostic.get_content(with_locinfos=True, with_details=True)
-        #)
-        # funcvariadic
+        print(to_yml(res.body[0].type_node))
+        # funcvariadic complex
         test = TL4T()
         res = test.parse("""
             printf("tutu %d", 42, a);
@@ -48,7 +48,6 @@ class GrammarType_Test(unittest.TestCase):
         res.type_node = Scope(
             sig=Fun('printf', 'void', ['string'], variadic=True)
         )
-        #print(str(res.type_node))
         res.type_node.add(Type("void"))
         res.type_node.add(Type("string"))
         res.type_node.add(Type("int"))
@@ -56,9 +55,31 @@ class GrammarType_Test(unittest.TestCase):
         # TODO: on veut aussi la liste de type reel des types variadiques
         res.infer_type(res.diagnostic)
         self.assertFalse(res.diagnostic.have_errors, "Bad inference")
-        #print(
-        #    res.diagnostic.get_content(with_locinfos=True, with_details=True)
-        #)
+        self.assertEqual(
+            str(res.body[0].type_node.first().get_compute_sig()),
+            "fun printf : (string, int, int) -> void",
+            "Bad computing of signature"
+        )
+        # funcvariadic simple
+        test = TL4T()
+        res = test.parse(r"""
+            printf("cool\n");
+        """)
+        txt = res.to_tl4t()
+        self.assertEqual(str(txt), 'printf("cool\\n");\n')
+        res.type_node = Scope(
+            sig=Fun('printf', 'void', ['string'], variadic=True)
+        )
+        res.type_node.add(Type("void"))
+        res.type_node.add(Type("string"))
+        # TODO: on veut aussi la liste de type reel des types variadiques
+        res.infer_type(res.diagnostic)
+        self.assertFalse(res.diagnostic.have_errors, "Bad inference")
+        self.assertEqual(
+            str(res.body[0].type_node.first().get_compute_sig()),
+            "fun printf : (string) -> void",
+            "Bad computing of signature"
+        )
         # Automatically add a translation
         test = TL4T()
         res = test.parse("""
@@ -82,9 +103,6 @@ class GrammarType_Test(unittest.TestCase):
         res.type_node.addTranslatorInjector(createFunWithTranslator)
         res.infer_type(res.diagnostic)
         self.assertFalse(res.diagnostic.have_errors, "Bad inference")
-        #print(
-        #    res.diagnostic.get_content(with_locinfos=True, with_details=True)
-        #)
         self.assertEqual(str(res.to_tl4t()), 's = "toto" + to_str(42);\n', "Bad pretty print")
 
     def test_02_typerror(self):

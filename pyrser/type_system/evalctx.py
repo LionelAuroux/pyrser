@@ -15,6 +15,8 @@ class EvalCtx:
     def __init__(self, sig: Signature):
         self._sig = sig
         self.resolution = dict()
+        self._translate_to = None
+        self._variadic_types = None
         self.resolve()
 
     def get_parent(self):
@@ -99,6 +101,17 @@ class EvalCtx:
                     else:
                         tp.append(t)
                 tparams.append(" ".join(tp))
+            if self.variadic:
+                if self._variadic_types is None:
+                    raise ValueError("Can't compute the sig with unresolved variadic argument")
+                for p in self._variadic_types:
+                    tp = []
+                    for t in p.components:
+                        if t in self.resolution and self.resolution[t] is not None:
+                            tp.append(self.resolution[t]().show_name())
+                        else:
+                            tp.append(t)
+                    tparams.append(" ".join(tp))
         ret = Fun(self.name, " ".join(tret), tparams)
         # transform as-is into our internal Signature (Val, Var, whatever)
         ret.__class__ = self._sig.__class__
@@ -123,6 +136,14 @@ class EvalCtx:
         into another type
         """
         self._translate_to = translator
+        self.resolve()
+
+    def use_variadic_types(self, list_type: [TypeName]):
+        """
+        Attach a list of types for extra variadic argument of a call
+        """
+        self._variadic_types = list_type
+        self.resolve()
 
     def resolve(self):
         """
@@ -135,8 +156,11 @@ class EvalCtx:
         if hasattr(self._sig, 'tparams') and self._sig.tparams is not None:
             for p in self._sig.tparams:
                 t2resolv.append(p)
-        if hasattr(self, '_translate_to'):
+        if self._translate_to is not None:
             t2resolv.append(self._translate_to.target)
+        if self._variadic_types is not None:
+            for t in self._variadic_types:
+                t2resolv.append(t)
         for t in t2resolv:
             for c in t.components:
                 if c not in self.resolution or self.resolution[c] is None:
@@ -194,9 +218,6 @@ class EvalCtx:
         lseval.append(self._sig.to_fmt())
         if len(self.resolution) > 0:
             lsb = []
-            if hasattr(self, "_translate_to"):
-                lsb.append("use translator:")
-                lsb.append(self._translate_to.to_fmt())
             for k in sorted(self.resolution.keys()):
                 s = self.resolution[k]
                 if s is not None:
@@ -208,6 +229,15 @@ class EvalCtx:
                     )
                 else:
                     lsb.append(fmt.end("\n", ["'%s': Unresolved" % (k)]))
+            if self._translate_to is not None:
+                lsb.append("use translator:")
+                lsb.append(self._translate_to.to_fmt())
+            if self._variadic_types is not None:
+                lsb.append("variadic types:\n")
+                arity = self._sig.arity
+                for t in self._variadic_types:
+                    lsb.append("[%d] : %s\n" % (arity, t))
+                    arity += 1
             lseval.append(fmt.block("\nresolution :\n", "", fmt.tab(lsb)))
         return txt
 

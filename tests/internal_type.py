@@ -511,7 +511,7 @@ class InternalType_Test(unittest.TestCase):
         v = s.get_by_symbol_name("b")
         (fns, params) = f.get_by_params([v])
         self.assertTrue(
-            hasattr(params[0][0].first(), '_translate_to'),
+            params[0][0].first()._translate_to is not None,
             "Can't find translator"
         )
         self.assertEqual(

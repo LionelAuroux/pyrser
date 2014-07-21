@@ -40,7 +40,7 @@ class Inference:
         # create root type_node for RootBlock
         if not hasattr(self, 'type_node'):
             self.type_node = Scope(is_namespace=False)
-        diagnostic.notify(Severity.INFO, "Infer Block", self.info)
+        #diagnostic.notify(Severity.INFO, "Infer Block", self.info)
         for e in body:
             e.type_node = Scope(is_namespace=False)
             # embedded scope
@@ -53,7 +53,7 @@ class Inference:
         """
         Infer type on the subexpr
         """
-        diagnostic.notify(Severity.INFO, "Infer SubExpr", self.info)
+        #diagnostic.notify(Severity.INFO, "Infer SubExpr", self.info)
         expr.type_node = Scope(is_namespace=False)
         # embedded scope
         #self.type_node.add(expr.type_node)
@@ -143,7 +143,7 @@ class Inference:
         for i in range(arity):
             p = my_type.tparams[i]
             # use AST Injector
-            if hasattr(final_tparams[0][i].first(), '_translate_to'):
+            if final_tparams[0][i].first()._translate_to is not None:
                 t = final_tparams[0][i].first()._translate_to
                 old = arguments[i]
                 n = t.notify
