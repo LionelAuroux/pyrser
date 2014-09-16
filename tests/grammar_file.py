@@ -181,6 +181,18 @@ class GrammarFile_Test(unittest.TestCase):
         self.assertTrue(isinstance(res.body[0], ExprStmt))
         txt = res.to_tl4t()
         self.assertEqual(str(txt), """a = (7 - 8) * 43;\n""")
+        res = test.parse("""
+            a = (7 - 8) * 43 - 5;
+        """, "expr")
+        self.assertTrue(res)
+        res = test.parse("""
+            a = 1 < 2 || 3;
+        """, "expr")
+        self.assertTrue(res)
+        res = test.parse("""
+            a = 1 < 2 << 3;
+        """, "expr")
+        self.assertTrue(res)
 
     def test_04_file_error(self):
         """
@@ -191,7 +203,7 @@ class GrammarFile_Test(unittest.TestCase):
                 os.getcwd() + "/tests/bnf/error_bracket.bnf",
                 'source'
             )
-        self.assertFalse(pe.exception, "Can't detect error in BNF")
+        self.assertTrue(pe.exception, "Can't detect error in BNF")
         self.assertEqual(
             pe.exception.logs[0].msg,
             "Expected ']'",
@@ -204,7 +216,7 @@ class GrammarFile_Test(unittest.TestCase):
                 os.getcwd() + "/tests/bnf/error_bracket2.bnf",
                 'source'
             )
-        self.assertFalse(pe.exception, "Can't detect error in BNF")
+        self.assertTrue(pe.exception, "Can't detect error in BNF")
         self.assertEqual(
             pe.exception.logs[0].msg,
             "Expected '['",
@@ -217,7 +229,7 @@ class GrammarFile_Test(unittest.TestCase):
                 os.getcwd() + "/tests/bnf/error_rule.bnf",
                 'source'
             )
-        self.assertFalse(pe.exception, "Can't detect error in BNF")
+        self.assertTrue(pe.exception, "Can't detect error in BNF")
         self.assertEqual(
             pe.exception.logs[0].msg,
             "Expected '='",
@@ -230,7 +242,7 @@ class GrammarFile_Test(unittest.TestCase):
                 os.getcwd() + "/tests/bnf/error_bracket3.bnf",
                 'source'
             )
-        self.assertFalse(pe.exception, "Can't detect error in BNF")
+        self.assertTrue(pe.exception, "Can't detect error in BNF")
         self.assertEqual(
             pe.exception.logs[0].msg,
             "Expected sequences",
@@ -243,7 +255,7 @@ class GrammarFile_Test(unittest.TestCase):
                 os.getcwd() + "/tests/bnf/error_empty.bnf",
                 'source'
             )
-        self.assertFalse(pe.exception, "Can't detect error in BNF")
+        self.assertTrue(pe.exception, "Can't detect error in BNF")
         self.assertEqual(
             pe.exception.logs[0].msg,
             "Parse error in 'directive' in EBNF bnf",

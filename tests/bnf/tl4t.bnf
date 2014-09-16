@@ -62,152 +62,74 @@ block =
     '{' [ #info:i stmt:s #new_stmt(_, s, i) ]+ '}'
 ]
 
-expr = [ #info:i assignement_expression:e ';' #new_expr_stmt(_, e, i) ]
-
-assign_op = [
+operators = [
     @ignore('null')
     [ #info:i
+    __scope__:priority
+    __scope__:assoc
         [
-            '=' !'='
-            | "+="
-            | "-="
-            | "*="
-            | "/="
-            | "%="
-            | "<<="
-            | ">>="
-            | "&="
-            | "^="
-            | "|="
+            // assignement
+            '=' !'=' #setint(priority, 10) #setstr(assoc, 'right')
+            | "+=" #setint(priority, 10) #setstr(assoc, 'right')
+            | "-=" #setint(priority, 10) #setstr(assoc, 'right')
+            | "*=" #setint(priority, 10) #setstr(assoc, 'right')
+            | "/=" #setint(priority, 10) #setstr(assoc, 'right')
+            | "%=" #setint(priority, 10) #setstr(assoc, 'right')
+            | "<<=" #setint(priority, 10) #setstr(assoc, 'right')
+            | ">>=" #setint(priority, 10) #setstr(assoc, 'right')
+            | "&=" #setint(priority, 10) #setstr(assoc, 'right')
+            | "^=" #setint(priority, 10) #setstr(assoc, 'right')
+            | "|=" #setint(priority, 10) #setstr(assoc, 'right')
+            // or
+            | "||" #setint(priority, 20) #setstr(assoc, 'left')
+            // and
+            | "&&" #setint(priority, 30) #setstr(assoc, 'left')
+            // bor
+            | "|" !["|"|"="] #setint(priority, 40) #setstr(assoc, 'left')
+            // bxor
+            | "^" !"=" #setint(priority, 50) #setstr(assoc, 'left')
+            // band
+            | "&" !["&"|"="] #setint(priority, 60) #setstr(assoc, 'left')
+            // eq/neq
+            ["==" | "!="] #setint(priority, 70) #setstr(assoc, 'left')
+            // cmp
+            | "<=" #setint(priority, 80) #setstr(assoc, 'left')
+            | ">=" #setint(priority, 80) #setstr(assoc, 'left')
+            | '<' !'<' #setint(priority, 80) #setstr(assoc, 'left')
+            | '>' !'>' #setint(priority, 80) #setstr(assoc, 'left')
+            // shift
+            | "<<" !"=" #setint(priority, 90) #setstr(assoc, 'left')
+            | ">>" !"=" #setint(priority, 90) #setstr(assoc, 'left')
+            // add
+            | '+' !['+'|'='] #setint(priority, 100) #setstr(assoc, 'left')
+            | '-' !['-'|'='|'>'] #setint(priority, 100) #setstr(assoc, 'left')
+            // mul
+            | '*' #setint(priority, 110) #setstr(assoc, 'left')
+            | '/' #setint(priority, 110) #setstr(assoc, 'left')
+            | '%' #setint(priority, 110) #setstr(assoc, 'left')
         ]:op
-        #new_operator(_, op, i)
+        #new_prio_operator(_, op, priority, assoc, i)
     ]
 ]
-assignement_expression =
-[
+
+expr = [
     #info:i
-    or_expression:>_
-    [
-        assign_op:op
-        assignement_expression:param
-        #new_binary(_, op, param, i)
-    ]*
+    expr_tree:e ';'
+    #new_expr_stmt(_, e, i)
 ]
 
-or_op = [ @ignore('null') #info:i [["|" !["|"|"="]]:op #new_operator(_, op, i)] ]
-or_expression =
-[
-    #info:i
-    xor_expression:>_
-    [   
-        or_op:op
-        xor_expression:param
-        #new_binary(_, op, param, i)
-    ]*
-]
-
-xor_op = [ @ignore('null') #info:i [ ["^" !"="]:op #new_operator(_, op, i) ] ]
-xor_expression =
-[
-    #info:i
-    and_expression:>_
-    [   
-        xor_op:op
-        and_expression:param
-        #new_binary(_, op, param, i)
-    ]*
-]
-
-and_op = [ @ignore('null') #info:i [ ["&" !["&"|"="]]:op #new_operator(_, op, i) ] ]
-and_expression =
-[
-    #info:i
-    equality_expression:>_
-    [   
-        and_op:op
-        equality_expression:param
-        #new_binary(_, op, param, i)
-    ]*
-]
-
-eqneq_op = [ @ignore('null') #info:i [ ["==" | "!="]:op #new_operator(_, op, i) ] ]
-equality_expression =
-[
-    #info:i
-    relational_expression:>_
-    [   
-        eqneq_op:op
-        relational_expression:param
-        #new_binary(_, op, param, i)
-    ]*
-]
-
-cmp_op = [
-    @ignore('null')
-    #info:i
-    [
-        "<="
-        | ">="
-        | '<' !'<'
-        | '>' !'>'
-    ]:op
-    #new_operator(_, op, i)
-]
-relational_expression =
-[
-    #info:i
-    shift_expression:>_
-    [   
-        cmp_op:op
-        shift_expression:param
-        #new_binary(_, op, param, i)
-    ]*
-]
-
-shift_op = [
-    @ignore('null') #info:i ["<<" !"=" | ">>" !"="]:op 
-    #new_operator(_, op, i) 
-]
-shift_expression =
-[
-    #info:i
-    additive_expression:>_
-    [   
-        shift_op:op
-        additive_expression:param
-        #new_binary(_, op, param, i)
-    ]*
-]
-
-add_op = [
-    @ignore('null')
-    #info:i
-    [
-        '+' !['+'|'=']
-        | '-' !['-'|'='|'>']
-    ]:op
-    #new_operator(_, op, i)
-]
-additive_expression =
-[
-    #info:i
-    multiplicative_expression:>_
-    [   
-        add_op:op
-        multiplicative_expression:param
-        #new_binary(_, op, param, i)
-    ]*
-]
-
-mul_op = [ @ignore('null') #info:i [['*'|'/'|'%']:op !'='] #new_operator(_, op, i) ]
-multiplicative_expression =
-[
+expr_tree = [
     #info:i
     unary_expression:>_
-    [   
-        mul_op:op
-        unary_expression:param
-        #new_binary(_, op, param, i)
+    [
+        operators:op
+        __scope__:param
+        __scope__:case
+        #get(case, op, '.assoc')
+        [ #eq(case, 'left') unary_expression:>param
+        | #eq(case, 'right') expr_tree:>param
+        ]
+        #new_lhs_rhs(_, op, param, i)
     ]*
 ]
 
@@ -258,16 +180,16 @@ postfix_expression =
 
 func_arg_list =
 [
-    assignement_expression:a #new_arg(_, a)
+    expr_tree:a #new_arg(_, a)
     [
         ','
-        assignement_expression:a #new_arg(_, a)
+        expr_tree:a #new_arg(_, a)
     ]*
 ]
 
 primary_expression =
 [
-    #info:i '(' or_expression:expr ')' #new_paren(_, expr, i)
+    #info:i '(' expr_tree:expr ')' #new_paren(_, expr, i)
     |[ literal | identifier]:>_
 ]
 
@@ -277,7 +199,6 @@ identifier =
     [
         #info:i
         rootidentifier:id
-/*        #check_is_id(id) */
         #new_id(_, id, i)
     ]
 ]

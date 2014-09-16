@@ -9,6 +9,15 @@ composed = {'list': list, 'dict': dict, 'set': set}
 
 @meta.add_method(node.Node)
 def to_yml(self):
+    """
+    Allow to get the YML string representation of a Node.::
+
+        from pyrser.passes import to_yml
+        
+        t = Node()
+        ...
+        print(str(t.to_yml()))
+    """
     pp = fmt.tab([])
     to_yml_item(self, pp.lsdata, "")
     return str(pp)

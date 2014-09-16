@@ -37,7 +37,7 @@ class GrammarType_Test(unittest.TestCase):
         res.type_node = Scope(sig=Type('int'))
         res.infer_type(res.diagnostic)
         self.assertFalse(res.diagnostic.have_errors, "Bad inference")
-        print(to_yml(res.body[0].type_node))
+        #print(to_yml(res.body[0].type_node))
         # funcvariadic complex
         test = TL4T()
         res = test.parse("""
@@ -104,6 +104,20 @@ class GrammarType_Test(unittest.TestCase):
         res.infer_type(res.diagnostic)
         self.assertFalse(res.diagnostic.have_errors, "Bad inference")
         self.assertEqual(str(res.to_tl4t()), 's = "toto" + to_str(42);\n', "Bad pretty print")
+        # poly-poly
+        test = TL4T()
+        res = test.parse("""
+            f(a);
+        """)
+        txt = str(res.to_tl4t())
+        self.assertEqual(txt, 'f(a);\n')
+        res.type_node = Scope(is_namespace=False)
+        res.type_node.add(Type("?a"))
+        res.type_node.add(Var("a", "?a"))
+        res.type_node.add(Fun("f", "?", ["?"]))
+        res.infer_type(res.diagnostic)
+        #print(res.diagnostic.get_content())
+        self.assertFalse(res.diagnostic.have_errors, "Bad inference")
 
     def test_02_typerror(self):
         test = TL4T()

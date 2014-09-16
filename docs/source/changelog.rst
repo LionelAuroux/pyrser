@@ -8,11 +8,15 @@ TODO:
 
 WIP:
 
-    * improving stream with location
-    * A Type System module for type checking
-    * YML format for Node (and subclasses) pretty-printing
-    * backend to cython (need to finish stub for nodes,hooks,directives,rules)
+    * Need to improve Type System
 
+version 0.0.4: 2014-09-15
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    * A Diagnostic object for error handling
+    * A Begin of Type System module for type checking
+    * YML format for Node (and subclasses) pretty-printing
+    * begins of backend to cython (need to finish stub for nodes,hooks,directives,rules)
 
 version 0.0.2: 2014-02-12
 ~~~~~~~~~~~~~~~~~~~~~~~~~

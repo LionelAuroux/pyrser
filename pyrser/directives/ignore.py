@@ -34,7 +34,7 @@ class Ignore(parsing.DirectiveWrapper):
         if convention == "C/C++":
             parser.push_ignore(parsing.Parser.ignore_cxx)
         if convention == "blanks":
-            parsing.push_ignore(parsing.Parser.ignore_blanks)
+            parser.push_ignore(parsing.Parser.ignore_blanks)
         return True
 
     def end(self, parser, convention: str):

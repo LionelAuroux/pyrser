@@ -7,6 +7,7 @@ from pyrser.parsing.node import *
 from pyrser.hooks.echo import *
 from pyrser.hooks.vars import *
 from pyrser.hooks.set import *
+from pyrser.hooks.predicate import *
 from pyrser.hooks.dump_nodes import *
 from pyrser.type_system.inference import *
 from pyrser.error import *
@@ -85,7 +86,7 @@ class DeclVar(NodeInfo):
             rhs.type_node = Scope()
             rhs.type_node.set_parent(tn)
             rhs.infer_type(diagnostic)
-            print("In declVar %s" % to_yml(rhs))
+            #print("In declVar %s" % to_yml(rhs))
             self.type_node = rhs.type_node
 
 
@@ -171,6 +172,9 @@ class Operator(Terminal):
 
 
 def createFunWithTranslator(old: Node, trans: Translator) -> Node:
+    """
+    To alter AST when apply a translator
+    """
     f = trans.fun
     n = trans.notify
     return Expr(Id(f.name), [old])
@@ -335,6 +339,21 @@ def new_expr_stmt(self, ast, e, i):
 
 
 @meta.hook(TL4T)
+def new_lhs_rhs(self, ast, op, right, i):
+    if not hasattr(ast, 'priority') or ast.priority > op.priority:
+        left = Node()
+        left.set(ast)
+        ast.set(Binary(left, op, right))
+        ast.info = i.info
+        ast.priority = op.priority
+    elif ast.priority < op.priority:
+        left = ast.p[-1]
+        ast.p[-1] = Binary(left, op, right)
+        ast.p[-1].info = i.info
+        ast.p[-1].priority = op.priority
+    return True
+
+@meta.hook(TL4T)
 def new_binary(self, ast, op, right, i):
     left = Node()
     left.set(ast)
@@ -392,5 +411,13 @@ def new_id(self, ast, ident, i):
 @meta.hook(TL4T)
 def new_operator(self, ast, op, i):
     ast.set(Operator(self.value(op)))
+    ast.info = i.info
+    return True
+
+@meta.hook(TL4T)
+def new_prio_operator(self, ast, op, p, a, i):
+    ast.set(Operator(self.value(op)))
+    ast.priority = p.value
+    ast.assoc = a.value
     ast.info = i.info
     return True

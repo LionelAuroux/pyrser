@@ -67,6 +67,8 @@ class BasicParser(metaclass=MetaBasicParser):
         self.diagnostic = error.Diagnostic()
 
 ### READ ONLY @property
+    def __bool__(self):
+        return self.diagnostic is False
 
     @property
     def _stream(self) -> Stream:
@@ -469,12 +471,12 @@ def read_cstring(self) -> bool:
     """
     Read following BNF rule else return False::
 
-        '"' -> ['/'| '"']
+        '"' -> ['\\' #char | ~'\\'] '"'
 
     """
     self._stream.save_context()
     idx = self._stream.index
-    if self.read_char('\"') and self.read_until('\"', '\\'):
+    if self.read_char("\"") and self.read_until("\"", "\\"):
         txt = self._stream[idx:self._stream.index]
         return self._stream.validate_context()
     return self._stream.restore_context()
@@ -486,12 +488,12 @@ def read_cchar(self) -> bool:
     """
     Read following BNF rule else return False::
 
-        "'" -> [~"/" "'"]
+        "'" -> ['\\' #char | ~'\\'] "'"
 
     """
     self._stream.save_context()
     idx = self._stream.index
-    if self.read_char('\'') and self.read_until('\'', '\\'):
+    if self.read_char("\'") and self.read_until("\'", "\\"):
         txt = self._stream[idx:self._stream.index]
         return self._stream.validate_context()
     return self._stream.restore_context()

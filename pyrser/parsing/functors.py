@@ -363,7 +363,7 @@ class RepOptional(Functor):
     def __init__(self, pt: Seq):
         Functor.__init__(self)
         self.pt = pt
-        if isinstance(self.pt, Directive):
+        if isinstance(self.pt, Text) or isinstance(self.pt, Char) or isinstance(self.pt, Range) or isinstance(self.pt, Directive):
             self.pt = Seq(self.pt)
 
     def do_call(self, parser: BasicParser) -> bool:
@@ -379,7 +379,7 @@ class Rep0N(Functor):
     def __init__(self, pt: Seq):
         Functor.__init__(self)
         self.pt = pt
-        if isinstance(self.pt, Directive):
+        if isinstance(self.pt, Text) or isinstance(self.pt, Char) or isinstance(self.pt, Range) or isinstance(self.pt, Directive):
             self.pt = Seq(self.pt)
 
     def do_call(self, parser: BasicParser) -> bool:
@@ -396,7 +396,7 @@ class Rep1N(Functor):
     def __init__(self, pt: Seq):
         Functor.__init__(self)
         self.pt = pt
-        if isinstance(self.pt, Directive):
+        if isinstance(self.pt, Text) or isinstance(self.pt, Char) or isinstance(self.pt, Range) or isinstance(self.pt, Directive):
             self.pt = Seq(self.pt)
 
     def do_call(self, parser: BasicParser) -> bool:

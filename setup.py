@@ -3,7 +3,7 @@
 import setuptools
 
 version = '0.0'
-release = '0.0.3'
+release = '0.0.4'
 
 setuptools.setup(
     name='pyrser',
@@ -33,7 +33,7 @@ setuptools.setup(
         'Topic :: Text Processing :: General',
     ],
     packages=['pyrser', 'pyrser.directives', 'pyrser.hooks', 'pyrser.parsing',
-              'pyrser.passes', 'pyrser.type_module']
+              'pyrser.passes', 'pyrser.type_system']
     #    test_loader='unittest:TestLoader',
     #    test_suite='tests'
 )

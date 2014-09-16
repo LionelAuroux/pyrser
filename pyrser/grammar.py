@@ -99,6 +99,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
 
     def _do_parse(self, entry):
         res = None
+        self.diagnostic = error.Diagnostic()
         try:
             res = self.eval_rule(entry)
             if not res:
@@ -108,7 +109,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
                     "Parse error in '%s'" % self._lastRule,
                     error.LocationInfo.from_maxstream(self._stream, is_error=self.from_string)
                 )
-                return self.diagnostic
+                return self
             self.rule_nodes.clear()
             # create a new Diagnostic object for the node result
             res.diagnostic = error.Diagnostic()
@@ -119,7 +120,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
                 "Exception during the evaluation of '%s'" % self._lastRule,
                 error.LocationInfo.from_stream(self._stream, is_error=self.from_string)
             )
-            return d
+            return self
         return self.after_parse(res)
 
     def parse(self, source=None, entry=None):

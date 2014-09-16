@@ -43,8 +43,6 @@ class Inference:
         #diagnostic.notify(Severity.INFO, "Infer Block", self.info)
         for e in body:
             e.type_node = Scope(is_namespace=False)
-            # embedded scope
-            #self.type_node.add(e.type_node)
             # linked scope
             e.type_node.set_parent(self.type_node)
             e.infer_type(diagnostic)
@@ -55,8 +53,6 @@ class Inference:
         """
         #diagnostic.notify(Severity.INFO, "Infer SubExpr", self.info)
         expr.type_node = Scope(is_namespace=False)
-        # embedded scope
-        #self.type_node.add(expr.type_node)
         # linked scope
         expr.type_node.set_parent(self.type_node)
         expr.infer_type(diagnostic)
@@ -68,8 +64,6 @@ class Inference:
         diagnostic.notify(Severity.INFO, "Infer Function call '%s'" % call_expr.value, self.info)
         # 1 - fetch all possible types for the call expr
         call_expr.type_node = Scope(is_namespace=False)
-        # embedded scope
-        #self.type_node.add(call_expr.type_node)
         # linked scope
         call_expr.type_node.set_parent(self.type_node)
         call_expr.infer_type(diagnostic=diagnostic)
@@ -79,8 +73,6 @@ class Inference:
         i = 0
         for p in arguments:
             p.type_node = Scope(is_namespace=False)
-            # embedded scope
-            #self.type_node.add(p.type_node)
             # linked scope
             p.type_node.set_parent(self.type_node)
             p.infer_type(diagnostic=diagnostic)

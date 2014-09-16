@@ -123,19 +123,19 @@ class GrammarBasic_Test(unittest.TestCase):
             o;l;p
         """)
         self.assertFalse(res, "Failed to detect the error")
-        s = res.get_content()
+        s = res.diagnostic.get_content()
         self.assertEqual(
-            res.logs[0].msg,
+            res.diagnostic.logs[0].msg,
             "Parse error in 'eof'",
             "Bad message in Diagnostic"
         )
         self.assertEqual(
-            res.logs[0].location.line,
+            res.diagnostic.logs[0].location.line,
             4,
             "Bad line in Diagnostic"
         )
         self.assertEqual(
-            res.logs[0].location.col,
+            res.diagnostic.logs[0].location.col,
             19,
             "Bad line in Diagnostic"
         )

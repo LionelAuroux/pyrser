@@ -66,6 +66,8 @@ class LocationInfo:
         lines = list(f)
         f.close()
         txtline = lines[self.line - 1]
+        if txtline[-1] != '\n':
+            txtline += '\n'
         indent = ' ' * (self.col - 1)
         if self.size != 1:
             indent += '~' * (self.size)
@@ -116,7 +118,7 @@ class Diagnostic(Exception):
         self.logs = []
 
     def __bool__(self):
-        return self.have_errors is not True
+        return self.have_errors
 
     def notify(self, severity: Severity, msg: str,
                location: LocationInfo=None, details: str=None) -> int:
@@ -130,7 +132,7 @@ class Diagnostic(Exception):
         self.logs.append(n)
         return len(self.logs) - 1
 
-    def get_content(self, with_locinfos=False, with_details=False) -> str:
+    def get_content(self, with_locinfos=True, with_details=False) -> str:
         ls = []
         for v in self.logs:
             ls.append(v.get_content(with_locinfos, with_details))
@@ -150,5 +152,6 @@ class Diagnostic(Exception):
 
     @property
     def have_errors(self) -> bool:
-        inf = self.get_infos()
-        return inf[Severity.ERROR] > 0
+        for v in self.logs:
+            if v.severity == Severity.ERROR:
+                return True
