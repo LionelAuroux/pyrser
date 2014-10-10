@@ -32,6 +32,7 @@ setuptools.setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Text Processing :: General',
     ],
+    install_requires=['cython']
     # TODO: need some tests
     extras_require={
         'DOC': ['Sphinx', 'sphinxcontrib-programoutput'],
