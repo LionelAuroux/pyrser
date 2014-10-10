@@ -47,7 +47,7 @@ Pyrser provide 2 ways to fill nodes:
 
 
 Life Cycle and Visibility:
-~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Nodes lives and is visible thru rules in a logical way::
 
