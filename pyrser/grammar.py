@@ -94,25 +94,17 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
     # DSL parsing class
     dsl_parser = dsl.EBNF
 
-    def after_parse(self, node):
+    def after_parse(self, node: parsing.Node) -> parsing.Node:
+        """
+        If you want to do some stuff after parsing, overload this...
+        """
         return node
 
-    def _do_parse(self, entry):
+    def _do_parse(self, entry: str) -> parsing.Node:
         res = None
         self.diagnostic = error.Diagnostic()
         try:
             res = self.eval_rule(entry)
-            if not res:
-                # we fail to parse, but error is not set
-                self.diagnostic.notify(
-                    error.Severity.ERROR,
-                    "Parse error in '%s'" % self._lastRule,
-                    error.LocationInfo.from_maxstream(self._stream, is_error=self.from_string)
-                )
-                return self
-            self.rule_nodes.clear()
-            # create a new Diagnostic object for the node result
-            res.diagnostic = error.Diagnostic()
         except error.Diagnostic as d:
             # User put an error rule
             d.notify(
@@ -120,10 +112,26 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
                 "Exception during the evaluation of '%s'" % self._lastRule,
                 error.LocationInfo.from_stream(self._stream, is_error=self.from_string)
             )
-            return self
+            self.diagnostic = d
+        if not res:
+            # we fail to parse, but error is not set on the last rule
+            self.diagnostic.notify(
+                error.Severity.ERROR,
+                "Parse error in '%s'" % self._lastRule,
+                error.LocationInfo.from_maxstream(self._stream, is_error=self.from_string)
+            )
+            if self.raise_diagnostic:
+                raise self.diagnostic
+            else:
+                return self
+        # clear contexted variables
+        self.rule_nodes.clear()
+        # create a new Diagnostic object for the node result
+        res.diagnostic = error.Diagnostic()
+        # all is ok
         return self.after_parse(res)
 
-    def parse(self, source=None, entry=None):
+    def parse(self, source: str =None, entry: str =None) -> parsing.Node:
         """Parse source using the grammar"""
         self.from_string = True
         if source is not None:
@@ -135,7 +143,7 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
                 self.__class__.__name__))
         return self._do_parse(entry)
 
-    def parse_file(self, filename: str, entry=None):
+    def parse_file(self, filename: str, entry: str =None) -> parsing.Node:
         """Parse filename using the grammar"""
         self.from_string = False
         import os.path

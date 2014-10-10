@@ -65,4 +65,5 @@ So the namespace Base provide a lot of basic rules.
 
 Python API: class parserBase
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. automodule:: pyrser.parsing.base

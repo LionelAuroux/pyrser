@@ -115,13 +115,14 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test parser error in CSV
         """
-        csv = CSV()
-        res = csv.parse("""
+        content = """
             1;2;3;4
             8;9;10;11
             a;b;c;';4;5
             o;l;p
-        """)
+        """
+        csv = CSV(raise_diagnostic=False)
+        res = csv.parse(content)
         self.assertFalse(res, "Failed to detect the error")
         s = res.diagnostic.get_content()
         self.assertEqual(
@@ -138,6 +139,19 @@ class GrammarBasic_Test(unittest.TestCase):
             res.diagnostic.logs[0].location.col,
             19,
             "Bad line in Diagnostic"
+        )
+        csv = CSV()
+        with self.assertRaises(error.Diagnostic) as e:
+            res = csv.parse(content)
+        exp = ''
+        try:
+            res = csv.parse(content)
+        except error.Diagnostic as e:
+            exp = e.logs[0].msg
+        self.assertEqual(
+            exp,
+            "Parse error in 'eof'",
+            "Bad message in Diagnostic"
         )
 
     def test_05_parse_error_dsl(self):

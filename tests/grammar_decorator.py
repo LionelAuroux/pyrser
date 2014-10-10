@@ -31,7 +31,7 @@ class GrammarDecorator_Test(unittest.TestCase):
         Test @trace decorator directive
         """
         source = "word"
-        l = TraceSimple(source)
+        l = TraceSimple(source, raise_diagnostic=False)
         res = l.parse()
 
         trace = ""

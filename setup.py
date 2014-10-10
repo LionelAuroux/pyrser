@@ -1,9 +1,9 @@
-#!/usr/bin/env python3.3
+#!/usr/bin/env python3
 
 import setuptools
 
 version = '0.0'
-release = '0.0.5'
+release = '0.0.6'
 
 setuptools.setup(
     name='pyrser',
@@ -32,8 +32,18 @@ setuptools.setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Text Processing :: General',
     ],
-    packages=['pyrser', 'pyrser.directives', 'pyrser.hooks', 'pyrser.parsing',
-              'pyrser.passes', 'pyrser.type_system']
+    # TODO: need some tests
+    extras_require={
+        'DOC': ['Sphinx', 'sphinxcontrib-programoutput'],
+    },
+    packages=[
+        'pyrser',
+        'pyrser.directives',
+        'pyrser.hooks',
+        'pyrser.parsing',
+        'pyrser.passes',
+        'pyrser.type_system'
+    ],
     #    test_loader='unittest:TestLoader',
     #    test_suite='tests'
 )

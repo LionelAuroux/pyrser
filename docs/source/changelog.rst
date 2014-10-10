@@ -1,16 +1,25 @@
 What's new in |release|
 =======================
 
-TODO:
+Goals for 1.0:
 
+    * Effect System
     * bootstrap from DSL to cythonised python/C grammar
     * packrat cache on rules
+    * C stub
+    * other languages stubs (Go, javascript...)
 
 WIP:
 
-    * Need to improve Type System
+    * Improvement of Type System
+    * Documentation and Tutorials
 
-version 0.0.4: 2014-09-15
+version 0.0.6: 2014-XX-XX
+~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    * Extra dependencies for Doc generation with Sphinx
+
+version 0.0.5: 2014-09-15
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
     * A Diagnostic object for error handling

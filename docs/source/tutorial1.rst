@@ -68,7 +68,7 @@ In the JSON spec, a common pattern is used to describe list of items. example:
         value
         value , elements
 
-This kind of parser uses right recursivity to create list of item. Pyrser parsing engine uses LL(k) mechanism.
+This kind of parser uses right recursivity to create list of item. Pyrser parsing engine uses PEG (Parsing Expression Grammar) mechanism.
 It's better to use repeater ``+`` or ``*`` to describe the list.
 
 4- Basic JSON Parser
@@ -138,12 +138,13 @@ See :doc:`directives` for more informations about directives.
 
 note 2: We don't provide the ``string`` and ``eof`` rules because these rules are default rules provided by inheritance from the grammar ``Grammar``.
 
-See :doc:`base` for more informations about what is provided by default.
+See :doc:`base` for more informations about what is provided by default and how composition work.
 
 5- Building an AST
 ------------------
 
-The aim of parsing is to translate a textual representation of information into data structures representation.
+The aim of parsing is to translate a textual representation of information into data structures representation or AST(for Abstract Syntax Tree).
+A tree constructs to represent all abstractions provided by the syntax.
 Here we need to translate JSON into python objects.
 To do this, we want to fetch data during the parsing process and create objects on the fly by calling some
 python chunks of code.
@@ -255,16 +256,16 @@ Let's focus on a more complex case, the ``array`` rule::
 
             elements = [ value [',' value]* ]
 
-These kind of rules are not really optimized for a LL(k) parser. It's better to have in the same rule
+These kind of rules are not really optimized for a PEG parser. It's better to have, in the same rule,
 the resulting node (``array``) and the list of items (list of ``value``). We could merge this two rules into
 one::
 
-        array = [ '[' [value [',' value] *]? ']' ]
+        array = [ '[' [value [',' value]* ]? ']' ]
 
 In this form, it's easier to identify where to put a hook to create a python array, and where to put a hook
 to add item into this array::
 
-        array = [ '[' #is_array(_) [value:v #add_item(_, v) [',' value:v #add_item(_, v) ] *]? ']' ]
+        array = [ '[' #is_array(_) [value:v #add_item(_, v) [',' value:v #add_item(_, v) ]* ]? ']' ]
 
 With the following hooks::
 
@@ -418,3 +419,5 @@ You could also put all your grammar into a BNF file (here ``json.bnf``) use the 
         JSON = grammar.from_file("json.bnf")
 
 See :doc:`grammar` for more informations about way of creating grammar.
+
+See :doc:`error` if something goes wrong in your grammar.

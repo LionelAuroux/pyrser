@@ -56,7 +56,7 @@ class BasicParser(metaclass=MetaBasicParser):
     _rules = collections.ChainMap()
     _hooks = collections.ChainMap()
 
-    def __init__(self, content: str='', stream_name: str=None):
+    def __init__(self, content: str='', stream_name: str=None, raise_diagnostic=True):
         self._ignores = [BasicParser.ignore_blanks]
         self._streams = [Stream(content, stream_name)]
         self.rule_nodes = None
@@ -64,6 +64,7 @@ class BasicParser(metaclass=MetaBasicParser):
         self._lastIgnoreIndex = 0
         self._lastIgnore = False
         self._lastRule = ""
+        self.raise_diagnostic = raise_diagnostic
         self.diagnostic = error.Diagnostic()
 
 ### READ ONLY @property
