@@ -41,6 +41,16 @@ class EvalCtx:
         return None
 
     @property
+    def compute_tret(self):
+        tret = []
+        for t in self.tret.components:
+            if t in self.resolution and self.resolution[t] is not None:
+                tret.append(self.resolution[t]().show_name())
+            else:
+                tret.append(t)
+        return " ".join(tret)
+
+    @property
     def tparams(self):
         if self._sig is not None and hasattr(self._sig, 'tparams'):
             return self._sig.tparams
@@ -206,40 +216,3 @@ class EvalCtx:
         """
         if self.resolution[type_name2solve.value] is None:
             self.resolution[type_name2solve.value] = ref[type_name_ref.value]
-
-    def to_fmt(self):
-        """
-        Return an Fmt representation for pretty-printing
-        """
-        qual = "evalctx"
-        lseval = []
-        block = fmt.block(":\n", "", fmt.tab(lseval))
-        txt = fmt.sep(" ", [qual, block])
-        lseval.append(self._sig.to_fmt())
-        if len(self.resolution) > 0:
-            lsb = []
-            for k in sorted(self.resolution.keys()):
-                s = self.resolution[k]
-                if s is not None:
-                    lsb.append(
-                        fmt.end(
-                            "\n",
-                            ["'%s': %s (%s)" % (k, s, s().show_name())]
-                        )
-                    )
-                else:
-                    lsb.append(fmt.end("\n", ["'%s': Unresolved" % (k)]))
-            if self._translate_to is not None:
-                lsb.append("use translator:")
-                lsb.append(self._translate_to.to_fmt())
-            if self._variadic_types is not None:
-                lsb.append("variadic types:\n")
-                arity = self._sig.arity
-                for t in self._variadic_types:
-                    lsb.append("[%d] : %s\n" % (arity, t))
-                    arity += 1
-            lseval.append(fmt.block("\nresolution :\n", "", fmt.tab(lsb)))
-        return txt
-
-    def __str__(self):
-        return str(self.to_fmt())

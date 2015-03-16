@@ -30,11 +30,14 @@ class Scope(Symbol):
         
         A Scope have basically 3 possibles states:
         FREE: it's a standalone Scope, generally the global Scope
-        LINKED: the Scope is related to another Scope for type resolution, like compound statement
-        EMBEDDED: the Scope was added into another Scope, it forwards all 'in' calls...like namespacing
+        LINKED: the Scope is related to another Scope for type resolution,
+            like compound statement
+        EMBEDDED: the Scope was added into another Scope,
+            it forwards all 'in' calls...like namespacing
 
         A Scope could or couldn't act like a namespace.
-        All Signature added into a 'namespaced' Scope was prefixed by the Scope name.
+        All Signature added into a 'namespaced' Scope was prefixed
+        by the Scope name.
         """
         if name is not None and not isinstance(name, str):
             raise TypeError("name must be a str object.")
@@ -47,7 +50,8 @@ class Scope(Symbol):
         # internal mapping for Type Conversion
         self.mapTypeTranslate = MapSourceTranslate()
         # AST Translator Injector use to add Translator in AST
-        # def astTranslatorInjector(old: Node, trans: Translator, d: Diagnostic, li: LocationInfo) -> Node
+        # def astTranslatorInjector(old: Node, trans: Translator,
+        #               d: Diagnostic, li: LocationInfo) -> Node
         self.astTranslatorInjector = None
         # TODO: ...could be unusable
         self._ntypes = 0
@@ -118,39 +122,11 @@ class Scope(Symbol):
         self._nvars = self.count_vars()
         self._nfuns = self.count_funs()
 
-    # ======== PRETTY PRINTING ========
-    def to_fmt(self) -> fmt.indentable:
-        """
-        Return an Fmt representation for pretty-printing
-        """
-        qual = "scope"
-        txt = fmt.sep(" ", [qual])
-        name = self.show_name()
-        if name != "":
-            txt.lsdata.append(name)
-        if len(self._hsig) > 0 or len(self.mapTypeTranslate) > 0:
-            lsb = []
-            if len(self.mapTypeTranslate) > 0:
-                lsb.append("translate:\n")
-                lsb.append(fmt.end("\n", self.mapTypeTranslate.to_fmt()))
-            for k in sorted(self._hsig.keys()):
-                s = self._hsig[k]
-                lsb.append(fmt.end("\n", [s.to_fmt()]))
-            block = fmt.block(":\n", "", fmt.tab(lsb))
-            txt.lsdata.append(block)
-        return txt
-
     def __repr__(self) -> str:
         """
         Internal representation
         """
         return repr(self._hsig)
-
-    def __str__(self) -> str:
-        """
-        Usefull representation
-        """
-        return str(self.to_fmt())
 
     def __getstate__(self):
         """

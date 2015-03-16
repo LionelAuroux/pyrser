@@ -28,19 +28,6 @@ class Val(Signature):
             idx = Val.valuniq[k]
         super().__init__('$' + str(idx))
 
-    def to_fmt(self):
-        """
-        Return an Fmt representation for pretty-printing
-        """
-        params = ""
-        txt = fmt.sep(" ", ['val'])
-        name = self.show_name()
-        if name != "":
-            txt.lsdata.append(name)
-        txt.lsdata.append('(%s)' % self.value)
-        txt.lsdata.append(': ' + self.tret)
-        return txt
-
     def internal_name(self):
         """
         Return the unique internal name

@@ -45,24 +45,24 @@ class Fun(Signature):
             if p.is_polymorphic:
                 return True
 
-    def to_fmt(self):
-        """
-        Return an Fmt representation for pretty-printing
-        """
-        params = ""
-        txt = fmt.sep(" ", ['fun'])
-        name = self.show_name()
-        if name != "":
-            txt.lsdata.append(name)
-        tparams = []
-        if self.tparams is not None:
-            tparams = list(self.tparams)
-        if self.variadic:
-            tparams.append('...')
-        params = '(' + ", ".join(tparams) + ')'
-        txt.lsdata.append(': ' + params)
-        txt.lsdata.append('-> ' + self.tret)
-        return txt
+#    def to_fmt(self):
+#        """
+#        Return an Fmt representation for pretty-printing
+#        """
+#        params = ""
+#        txt = fmt.sep(" ", ['fun'])
+#        name = self.show_name()
+#        if name != "":
+#            txt.lsdata.append(name)
+#        tparams = []
+#        if self.tparams is not None:
+#            tparams = list(self.tparams)
+#        if self.variadic:
+#            tparams.append('...')
+#        params = '(' + ", ".join(tparams) + ')'
+#        txt.lsdata.append(': ' + params)
+#        txt.lsdata.append('-> ' + self.tret)
+#        return txt
 
     def internal_name(self):
         """

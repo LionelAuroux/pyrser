@@ -16,22 +16,6 @@ class Type(Scope):
     def __init__(self, name: str, sig: [Signature]=None):
         super().__init__(TypeName(name))
 
-    def to_fmt(self) -> fmt.indentable:
-        """
-        Return an Fmt representation for pretty-printing
-        """
-        qual = "type"
-        txt = fmt.sep(" ", [qual])
-        txt.lsdata.append(self.show_name())
-        if hasattr(self, '_hsig') and len(self._hsig) > 0:
-            lsb = []
-            for k in sorted(self._hsig.keys()):
-                s = self._hsig[k]
-                lsb.append(fmt.end("\n", [s.to_fmt()]))
-            block = fmt.block(":\n", "", fmt.tab(lsb))
-            txt.lsdata.append(block)
-        return txt
-
     @property
     def type_name(self) -> TypeName:
         return self.name

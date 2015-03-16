@@ -33,6 +33,30 @@ class Functor:
         return res
 
 
+class Directive2(Functor):
+    def __init__(self, name, param: [(object, type)], pt: Functor):
+        Functor.__init__(self)
+        self.name = name
+        self.pt = pt
+        # compose the list of value param, check type
+        for v, t in param:
+            if type(t) is not type:
+                raise TypeError(
+                    "Must be pair of value and type (i.e: int, str, Node)")
+        self.param = param
+
+    def do_call(self, parser: BasicParser) -> bool:
+        raise TypeError("Must be rewrite before execution")
+        return False
+
+
+class RewritingRules(Functor):
+    """Allow to write rewriting rules that transform the AST before code generation/interpretation. """
+
+    def __init__(self, name: str=""):
+        self.name = name
+
+
 class SkipIgnore(Functor):
     """Call Ignore Convention primitive functor."""
 
@@ -47,7 +71,11 @@ class SkipIgnore(Functor):
         return True
 
 
-class PeekChar(Functor):
+class Leaf:
+    pass
+
+
+class PeekChar(Functor, Leaf):
     """ !!'A' bnf primitive functor. """
 
     def __init__(self, c: str):
@@ -57,7 +85,7 @@ class PeekChar(Functor):
         return parser.peek_char(self.char)
 
 
-class PeekText(Functor):
+class PeekText(Functor, Leaf):
     """ !!"TXT" bnf primitive functor. """
 
     def __init__(self, c: str):
@@ -67,7 +95,7 @@ class PeekText(Functor):
         return parser.peek_text(self.char)
 
 
-class Text(Functor):
+class Text(Functor, Leaf):
     """ "TXT" bnf primitive functor. """
 
     def __init__(self, txt: str):
@@ -77,7 +105,7 @@ class Text(Functor):
         return parser.read_text(self.text)
 
 
-class Char(Functor):
+class Char(Functor, Leaf):
     """ 'A' bnf primitive functor. """
 
     def __init__(self, c: str):
@@ -87,7 +115,7 @@ class Char(Functor):
         return parser.read_char(self.char)
 
 
-class Range(Functor):
+class Range(Functor, Leaf):
     """ 'A'..'Z' bnf primitive functor. """
 
     def __init__(self, begin: str, end: str):
@@ -98,7 +126,7 @@ class Range(Functor):
         return parser.read_range(self.begin, self.end)
 
 
-class UntilChar(Functor):
+class UntilChar(Functor, Leaf):
     """ ->'A' bnf primitive functor. """
 
     def __init__(self, c: str):
@@ -427,7 +455,7 @@ class Error(Functor):
         raise parser.diagnostic
 
 
-class Rule(Functor):
+class Rule(Functor, Leaf):
     """Call a rule by its name."""
 
     def __init__(self, name: str):
@@ -441,7 +469,7 @@ class Rule(Functor):
         return res
 
 
-class Hook(Functor):
+class Hook(Functor, Leaf):
     """Call a hook by his name."""
 
     def __init__(self, name: str, param: [(object, type)]):

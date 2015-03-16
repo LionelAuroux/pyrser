@@ -1,7 +1,28 @@
 # inference mechanisms
-from pyrser.type_system import *
 from pyrser.error import *
+from pyrser.type_system.scope import Scope
+from pyrser.type_system.evalctx import EvalCtx
+from pyrser.type_system.val import Val
 from pyrser.passes.to_yml import *
+
+
+class InferNode:
+    """
+    An instance of this class is automatically attach on each
+    AST Nodes by the inference algorithm during the inference process
+    into the '.infer_node' attribute.
+    The aim is to keep track of the correct Scope and the final EvalCtx
+    for each AST Nodes.
+    """
+    def __init__(self, init_scope: Scope=None, parent: Scope=None):
+        if init_scope is not None:
+            self.scope_node = init_scope
+        else:
+            self.scope_node = Scope(is_namespace=False)
+        if parent is not None:
+            self.scope_node.set_parent(parent.scope_node)
+        self.type_node = None
+        self.need_feedback = False
 
 
 class Inference:
@@ -21,14 +42,34 @@ class Inference:
                         " type_algos(self) method to support" +
                         " Pyrser Type Systems.") % type(self).__name__)
 
-    def infer_type(self, diagnostic=None):
+    def infer_type(self, init_scope: Scope=None, diagnostic=None):
+        """
+        Do inference. Write infos into diagnostic object, if this parameter
+        is not provide and self is a AST (has is own diagnostic object),
+        use the diagnostic of self.
+        """
+        # create the first .infer_node
+        if not hasattr(self, 'infer_node'):
+            self.infer_node = InferNode(init_scope)
+        elif init_scope is not None:
+            # only change the root scope
+            self.infer_node.scope_node = init_scope
         # get algo
         type_algo = self.type_algos()
+        if diagnostic is None and hasattr(self, 'diagnostic'):
+            diagnostic = self.diagnostic
         type_algo[0](type_algo[1], diagnostic)
 
     def feedback(self, diagnostic=None):
+        """
+        Do feedback. Write infos into diagnostic object, if this parameter
+        is not provide and self is a AST (has is own diagnostic object),
+        use the diagnostic of self.
+        """
         # get algo
         type_algo = self.type_algos()
+        if diagnostic is None and hasattr(self, 'diagnostic'):
+            diagnostic = self.diagnostic
         type_algo[2](diagnostic)
 
     ## INFER ALGOS
@@ -37,56 +78,45 @@ class Inference:
         """
         Infer type on block is to type each of is sub-element
         """
-        # create root type_node for RootBlock
-        if not hasattr(self, 'type_node'):
-            self.type_node = Scope(is_namespace=False)
-        #diagnostic.notify(Severity.INFO, "Infer Block", self.info)
+        # RootBlockStmt has his own .infer_node (created via infer_type)
         for e in body:
-            e.type_node = Scope(is_namespace=False)
-            # linked scope
-            e.type_node.set_parent(self.type_node)
-            e.infer_type(diagnostic)
+            e.infer_node = InferNode(parent=self.infer_node)
+            e.infer_type(diagnostic=diagnostic)
+        # TODO: result in .infer_node.type_node
 
     def infer_subexpr(self, expr, diagnostic=None):
         """
         Infer type on the subexpr
         """
-        #diagnostic.notify(Severity.INFO, "Infer SubExpr", self.info)
-        expr.type_node = Scope(is_namespace=False)
-        # linked scope
-        expr.type_node.set_parent(self.type_node)
-        expr.infer_type(diagnostic)
-        self.type_node.clear()
-        self.type_node.update(expr.type_node)
+        expr.infer_node = InferNode(parent=self.infer_node)
+        expr.infer_type(diagnostic=diagnostic)
+        # TODO: result in .infer_node.type_node
 
     def infer_fun(self, args, diagnostic=None):
+        # 0 - get function
         call_expr, arguments = args
         diagnostic.notify(Severity.INFO, "Infer Function call '%s'" % call_expr.value, self.info)
         # 1 - fetch all possible types for the call expr
-        call_expr.type_node = Scope(is_namespace=False)
-        # linked scope
-        call_expr.type_node.set_parent(self.type_node)
+        call_expr.infer_node = InferNode(parent=self.infer_node)
         call_expr.infer_type(diagnostic=diagnostic)
-        f = call_expr.type_node
+        f = call_expr.infer_node.scope_node
         # 2 - fetch all possible types for each parameters
         tparams = []
         i = 0
         for p in arguments:
-            p.type_node = Scope(is_namespace=False)
-            # linked scope
-            p.type_node.set_parent(self.type_node)
+            p.infer_node = InferNode(parent=self.infer_node)
             p.infer_type(diagnostic=diagnostic)
             i += 1
-            tparams.append(p.type_node)
+            tparams.append(p.infer_node.scope_node)
         # 3 - select overloads
         (final_call_expr, final_tparams) = f.get_by_params(tparams)
         # 4 - record overloads
-        self.type_node.clear()
-        self.type_node.update(final_call_expr)
+        self.infer_node.scope_node.clear()
+        self.infer_node.scope_node.update(final_call_expr)
         nversion = len(final_call_expr)
         if nversion > 1:
             # too many choice
-            self.type_node.need_feedback = True
+            self.infer_node.need_feedback = True
             return
         elif nversion == 0:
             # TODO: Try type reconstruction if final_tparams[x][0].is_polymorphic
@@ -118,12 +148,12 @@ class Inference:
         # 5 - handle polymorphism
         # TODO: INSIDE A CLASS?
         my_map = dict()
-        my_type = self.type_node.first()
+        my_type = self.infer_node.scope_node.first()
         if my_type.tret.is_polymorphic:
             diagnostic.notify(Severity.INFO, "polymorphic return type %s" % str(my_type.get_compute_sig()), self.info)
             # if tret is polymorphic, take type from call_expr if unique, else type come from parameter resolution
-            sig = call_expr.type_node.first()
-            if len(call_expr.type_node) == 1 and not sig.tret.is_polymorphic:
+            sig = call_expr.infer_node.scope_node.first()
+            if len(call_expr.infer_node.scope_node) == 1 and not sig.tret.is_polymorphic:
                 diagnostic.notify(Severity.INFO, "call_expr have real type '%s'" % sig.tret, self.info)
                 my_map.update(sig.resolution)
                 my_type.set_resolved_name(
@@ -140,13 +170,11 @@ class Inference:
                 old = arguments[i]
                 n = t.notify
                 diagnostic.notify(n.severity, n.msg, old.info, details=n.details)
-                arguments[i] = self.type_node.callInjector(old, t)
-                scope = Scope(is_namespace=False)
-                scope.need_feedback = False
-                scope.add(t.fun)
-                scope.set_parent(self.type_node)
-                old.type_node.set_parent(scope)
-                arguments[i].type_node = scope
+                arguments[i] = self.infer_node.scope_node.callInjector(old, t)
+                infer_node = InferNode(parent=self.infer_node)
+                infer_node.scope_node.add(t.fun)
+                old.infer_node.scope_node.set_parent(infer_node.scope_node)
+                arguments[i].infer_node = infer_node
             if p.is_polymorphic:
                 # take type in final_tparams
                 diagnostic.notify(Severity.INFO, "- param[%d] polymorphic type" % i, arguments[i].info)
@@ -162,6 +190,7 @@ class Inference:
         self.final_type = my_type.tret
         self.feedback(diagnostic)
         # 7 - Are we finish? Global type reconstruction
+        # TODO: result in .infer_node.type_node
 
     def infer_id(self, ident, diagnostic=None):
         """
@@ -170,13 +199,16 @@ class Inference:
         - if no ID is polymorphic type
         """
         # check if ID is declared
-        defined = self.type_node.get_by_symbol_name(ident)
+        #defined = self.type_node.get_by_symbol_name(ident)
+        defined = self.infer_node.scope_node.get_by_symbol_name(ident)
         if len(defined) > 0:
             # set from matchings declarations
-            self.type_node.update(defined)
+            #self.type_node.update(defined)
+            self.infer_node.scope_node.update(defined)
         else:
             diagnostic.notify(Severity.ERROR, "%s never declared" % self.value, self.info)
 
+    # TODO: uncomment/fix when finish
     #def infer_id_self_type(self, ident, diagnostic=None):
     #    """
     #    Infer type from an ID!
@@ -202,53 +234,45 @@ class Inference:
         We adopt a basic convention
         """
         literal, t = args
-        self.type_node.add(EvalCtx.from_sig(Val(literal, t)))
-
-    #def infer_operator(self, op, diagnostic=None):
-    #    """
-    #    Infer type of OPERATOR!
-    #    Classic (?1, ?1) -> ?1
-    #    """
-    #    # by default all operator are polymorphic
-    #    # TODO: search proto from scope and need operators in scope
-    #    self.type_node.add(Fun(op, '?1', ['?1', '?1']))
-    #    self.type_node.need_feedback = True
+        #self.type_node.add(EvalCtx.from_sig(Val(literal, t)))
+        self.infer_node.scope_node.add(EvalCtx.from_sig(Val(literal, t)))
 
     ## FEEDBACK ALGOS
 
     def feedback_block(self, diagnostic=None):
         # normally nothing to do!?!?!
         type_algo = self.type_algos()
-        # TODO: body?
+        # body in type_algo[1]
         for e in type_algo[1]:
-            if e.type_node.need_feedback:
-                e.type_node.feedback(diagnostic)
+            if e.infer_node.need_feedback:
+                e.feedback(diagnostic)
 
     def feedback_subexpr(self, diagnostic=None):
-        self.type_node = self.type_node.get_by_return_type(self.final_type)
-        self.type_node.need_feedback = False
-        if expr.type_node.need_feedback:
-            expr.type_node.feedback(diagnostic)
+        self.infer_node.scope_node = self.infer_node.scope_node.get_by_return_type(self.final_type)
+        self.infer_node.need_feedback = False
+        if self.expr.infer_node.need_feedback:
+            self.expr.feedback(diagnostic)
 
     def feedback_leaf(self, diagnostic=None):
-        self.type_node = self.type_node.get_by_return_type(self.final_type)
-        self.type_node.need_feedback = False
+        self.infer_node.scope_node = self.infer_node.scope_node.get_by_return_type(self.final_type)
+        self.infer_node.need_feedback = False
 
     def feedback_fun(self, diagnostic=None):
-        self.type_node = self.type_node.get_by_return_type(self.final_type)
-        self.type_node.need_feedback = False
-        arguments = self.type_node.first().tparams
+        self.infer_node.scope_node = self.infer_node.scope_node.get_by_return_type(self.final_type)
+        self.infer_node.need_feedback = False
+        arguments = self.infer_node.scope_node.first().tparams
         nargs = len(arguments)
         type_algo = self.type_algos()
         call_expr, args = type_algo[1]
-        if call_expr.type_node.need_feedback:
+        if call_expr.infer_node.need_feedback:
             diagnostic.notify(Severity.INFO, "feed back call_expr = %s" % self.final_type, call_expr.info)
             call_expr.map_type = self.map_type
+            # TODO: could be infer_node.type_node
             call_expr.final_type = self.final_type
             call_expr.feedback()
         for i in range(nargs):
             p = arguments[i]
-            if args[i].type_node.need_feedback:
+            if args[i].infer_node.need_feedback:
                 diagnostic.notify(Severity.INFO, "feed back p[%d] = %s" % (i, p), args[i].info)
                 diagnostic.notify(Severity.INFO, "feed map %s" % self.map_type, args[i].info)
                 args[i].map_type = self.map_type
@@ -257,16 +281,15 @@ class Inference:
 
     def feedback_id(self, diagnostic=None):
         # instancie META!!!
-        if len(self.type_node) > 1:
-            self.type_node = self.type_node.get_by_return_type(self.final_type)
-            if len(self.type_node) != 1:
+        if len(self.infer_node.scope_node) > 1:
+            self.infer_node.scope_node = self.infer_node.scope_node.get_by_return_type(self.final_type)
+            if len(self.infer_node.scope_node) != 1:
                 # ERROR TYPE !!!?!?
-                diagnostic.notify(Severity.ERROR, "Type error: too many candidates %s" % str(self.type_node), self.info)
+                diagnostic.notify(Severity.ERROR, "Type error: too many candidates %s" % str(self.infer_node.scope_node), self.info)
         else:
-            the_sig = list(self.type_node.values())[0]
+            the_sig = list(self.infer_node.scope_node.values())[0]
             if the_sig.tret.is_polymorphic:
-                self.type_node = EvalCtx.from_sig(the_sig)
-                self.type_node.set_resolved_name(self.map_type, the_sig.tret,
+                #                                 self.final_type)
+                self.infer_node.type_node = EvalCtx.from_sig(the_sig)
+                self.infer_node.type_node.set_resolved_name(self.map_type, the_sig.tret,
                                                  self.final_type)
-                # TODO: Why this fucking line... I forgot
-                #self.type_node = self.type_node.get_compute_sig()

@@ -118,6 +118,7 @@ expr = [
     #new_expr_stmt(_, e, i)
 ]
 
+// TODO: ADD IF,WHILE,SWITCH...
 expr_tree = [
     #info:i
     unary_expression:>_
@@ -170,8 +171,6 @@ postfix_expression =
           '(' func_arg_list?:args ')' #new_func_call(pexp, _, args, i)
 /*
         | '.' identifier:ident #new_dot(_, _, ident, i)
-        | "->" identifier:ident #new_arrow(_, _, ident, i)
-        | ["++"|"--"]:op #new_operator(op, op, i) #new_post(_, op, _, i)
 */
         ]
         #bind('_', pexp)

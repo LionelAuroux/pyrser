@@ -16,8 +16,9 @@ class EBNF(parsing.Parser):
         """
         Parse the DSL and provide a dictionnaries of all resulting rules.
         Call by the MetaGrammar class.
+
+        TODO: could be done in the rules property of parsing.BasicParser???
         """
-        # TODO:
         res = None
         try:
             res = self.eval_rule('bnf_dsl')
@@ -37,6 +38,11 @@ class EBNF(parsing.Parser):
             raise d
         return res
 
+    @property
+    def rules(self) -> dict:
+        print("USE rules PROPERTY")
+        return self._rules
+
     def __init__(self, content='', sname=None):
         """
         Define the DSL parser.
@@ -45,6 +51,7 @@ class EBNF(parsing.Parser):
         self.set_rules({
             #
             # bnf_dsl = [ @ignore("C/C++") bnf_stmts ]
+            # //todo: bnf_dsl = [ @ignore("C/C++") [bnf_stmts] eof ] 
             #
             'bnf_dsl': parsing.Seq(
                 # tree is not already construct but Directive need it
@@ -57,6 +64,7 @@ class EBNF(parsing.Parser):
 
             #
             # bnf_stmts = [ [rule : r #add_rules(_, r) ]+ Base.eof ]
+            # //todo: bnf_stmts = [ [rule : r #add_rules(_, r) ]+]
             #
             'bnf_stmts': parsing.Seq(
                 parsing.Rep1N(parsing.Seq(
@@ -75,11 +83,9 @@ class EBNF(parsing.Parser):
             'rule': parsing.Seq(
                 parsing.Capture("rn", parsing.Rule('ns_name')),
                 parsing.Alt(
-                    #parsing.Call(parsing.Parser.read_text, "="),
                     parsing.Char("="),
                     parsing.Error("Expected '='")),
                 parsing.Alt(
-                    #parsing.Call(parsing.Parser.read_text, "["),
                     parsing.Char("["),
                     parsing.Error("Expected '['")),
                 parsing.Capture("alts", parsing.Rule('alternatives')),
@@ -105,7 +111,6 @@ class EBNF(parsing.Parser):
                                          ("alt", parsing.Node)]),
                 parsing.Rep0N(
                     parsing.Seq(
-                        #parsing.Call(parsing.Parser.read_char, '|'),
                         parsing.Char('|'),
                         parsing.Capture('alt', parsing.Rule('sequences')),
                         parsing.Hook('add_alt',
@@ -141,6 +146,7 @@ class EBNF(parsing.Parser):
             #     ] #add_mod(_, mod)
             #     [ repeat : rpt #add_rpt(_, mod, rpt) ]?
             #   | hook : h #add_hook(_, h)
+            #   | directive2 : d sequences : s #add_directive2(_, d, s)
             #   | directive : d sequences : s #add_directive(_, d, s)
             #   ]
             #     [
@@ -157,25 +163,9 @@ class EBNF(parsing.Parser):
                             'mod',
                             parsing.RepOptional(
                                 parsing.Alt(
-                                    #parsing.Call(
-                                    #    parsing.Parser.read_char,
-                                    #    '~'
-                                    #),
                                     parsing.Char('~'),
-                                    #parsing.Call(
-                                    #    parsing.Parser.read_text,
-                                    #    '!!'
-                                    #),
                                     parsing.Text('!!'),
-                                    #parsing.Call(
-                                    #    parsing.Parser.read_char,
-                                    #    '!'
-                                    #),
                                     parsing.Char('!'),
-                                    #parsing.Call(
-                                    #    parsing.Parser.read_text,
-                                    #    '->'
-                                    #)
                                     parsing.Text('->')
                                 )
                             )
@@ -200,7 +190,6 @@ class EBNF(parsing.Parser):
                             parsing.Seq(
                                 parsing.Capture('begin',
                                                 parsing.Rule('Base.char')),
-                                #parsing.Call(parsing.Parser.read_text, ".."),
                                 parsing.Text(".."),
                                 parsing.Capture(
                                     'end',
@@ -221,7 +210,6 @@ class EBNF(parsing.Parser):
                                               ("c", parsing.Node)])
                             ),
                             parsing.Seq(
-                                #parsing.Call(parsing.Parser.read_char, "["),
                                 parsing.Char('['),
                                 parsing.Capture(
                                     'subsequence',
@@ -229,10 +217,6 @@ class EBNF(parsing.Parser):
                                         parsing.Rule('alternatives'),
                                         parsing.Error("Expected sequences"))),
                                 parsing.Alt(
-                                    #parsing.Call(
-                                    #    parsing.Parser.read_char,
-                                    #    "]"
-                                    #),
                                     parsing.Char(']'),
                                     parsing.Error("Expected ']'")),
                                 parsing.Hook('add_subsequence',
@@ -261,6 +245,13 @@ class EBNF(parsing.Parser):
                                                   ('h', parsing.Node)])
                     ),
                     parsing.Seq(
+                        parsing.Capture('d', parsing.Rule('directive2')),
+                        parsing.Capture('s', parsing.Rule('sequences')),
+                        parsing.Hook('add_directive2', [('_', parsing.Node),
+                                                       ('d', parsing.Node),
+                                                       ('s', parsing.Node)])
+                    ),
+                    parsing.Seq(
                         parsing.Capture('d', parsing.Rule('directive')),
                         parsing.Capture('s', parsing.Rule('sequences')),
                         parsing.Hook('add_directive', [('_', parsing.Node),
@@ -271,7 +262,6 @@ class EBNF(parsing.Parser):
                 parsing.RepOptional(
                     parsing.Alt(
                         parsing.Seq(
-                            #parsing.Call(parsing.Parser.read_text, ":>"),
                             parsing.Text(':>'),
                             parsing.Capture(
                                 'bind',
@@ -281,7 +271,6 @@ class EBNF(parsing.Parser):
                                           ('bind', parsing.Node)])
                         ),
                         parsing.Seq(
-                            #parsing.Call(parsing.Parser.read_text, ":"),
                             parsing.Char(':'),
                             parsing.Capture(
                                 'cpt',
@@ -306,7 +295,6 @@ class EBNF(parsing.Parser):
                         parsing.Rule('Base.id'),
                         parsing.Rep0N(
                             parsing.Seq(
-                                #parsing.Call(parsing.Parser.read_text, "."),
                                 parsing.Char('.'),
                                 parsing.Alt(
                                     parsing.Rule('Base.id'),
@@ -326,17 +314,14 @@ class EBNF(parsing.Parser):
             #
             'repeat': parsing.Alt(
                 parsing.Seq(
-                    #parsing.Call(parsing.Parser.read_char, '?'),
                     parsing.Char('?'),
                     parsing.Hook('add_optional', [("_", parsing.Node)])
                 ),
                 parsing.Seq(
-                    #parsing.Call(parsing.Parser.read_char, '*'),
                     parsing.Char('*'),
                     parsing.Hook('add_0N', [("_", parsing.Node)])
                 ),
                 parsing.Seq(
-                    #parsing.Call(parsing.Parser.read_char, '+'),
                     parsing.Char('+'),
                     parsing.Hook('add_1N', [("_", parsing.Node)])
                 ),
@@ -350,14 +335,12 @@ class EBNF(parsing.Parser):
             # ]
             #
             'hook': parsing.Seq(
-                #parsing.Call(parsing.Parser.read_char, '#'),
                 parsing.Char('#'),
                 parsing.Capture('n', parsing.Rule('ns_name')),
                 parsing.Hook('hook_name',
                              [('_', parsing.Node), ('n', parsing.Node)]),
                 parsing.RepOptional(
                     parsing.Seq(
-                        #parsing.Call(parsing.Parser.read_char, '('),
                         parsing.Char('('),
                         parsing.Capture(
                             'p',
@@ -368,7 +351,6 @@ class EBNF(parsing.Parser):
                                                     ('p', parsing.Node)]),
                         parsing.Rep0N(
                             parsing.Seq(
-                                #parsing.Call(parsing.Parser.read_char, ','),
                                 parsing.Char(','),
                                 parsing.Capture(
                                     'p',
@@ -380,7 +362,48 @@ class EBNF(parsing.Parser):
                                               ('p', parsing.Node)]))
                         ),
                         parsing.Alt(
-                            #parsing.Call(parsing.Parser.read_char, ')'),
+                            parsing.Char(')'),
+                            parsing.Error("Expected ')'"))
+                    )
+                ),
+            ),
+
+            #
+            # directive2 = [ '$' ns_name : n #hook_name(_, n)
+            #               ['(' param : p #hook_param(_, p)
+            #                   [',' param : p #hook_param(_, p)]*
+            #                ')']?
+            # ]
+            'directive2': parsing.Seq(
+                parsing.Char('$'),
+                parsing.Capture('n', parsing.Rule('ns_name')),
+                parsing.Hook('hook_name', [('_', parsing.Node),
+                                           ('n', parsing.Node)]),
+                parsing.RepOptional(
+                    parsing.Seq(
+                        parsing.Char('('),
+                        parsing.Capture(
+                            'p',
+                            parsing.Alt(
+                                parsing.Rule('param'),
+                                parsing.Error("Expected parameter"))),
+                        parsing.Hook('hook_param',
+                                     [('_', parsing.Node),
+                                      ('p', parsing.Node)]),
+                        parsing.Rep0N(
+                            parsing.Seq(
+                                parsing.Char(','),
+                                parsing.Capture(
+                                    'p',
+                                    parsing.Alt(
+                                        parsing.Rule('param'),
+                                        parsing.Error("Expected parameter"))),
+                                parsing.Hook('hook_param',
+                                             [('_', parsing.Node),
+                                              ('p', parsing.Node)]),
+                            )
+                        ),
+                        parsing.Alt(
                             parsing.Char(')'),
                             parsing.Error("Expected ')'"))
                     )
@@ -394,14 +417,12 @@ class EBNF(parsing.Parser):
             #                ')']?
             # ]
             'directive': parsing.Seq(
-                #parsing.Call(parsing.Parser.read_char, '@'),
                 parsing.Char('@'),
                 parsing.Capture('n', parsing.Rule('ns_name')),
                 parsing.Hook('hook_name', [('_', parsing.Node),
                                            ('n', parsing.Node)]),
                 parsing.RepOptional(
                     parsing.Seq(
-                        #parsing.Call(parsing.Parser.read_char, '('),
                         parsing.Char('('),
                         parsing.Capture(
                             'p',
@@ -413,7 +434,6 @@ class EBNF(parsing.Parser):
                                       ('p', parsing.Node)]),
                         parsing.Rep0N(
                             parsing.Seq(
-                                #parsing.Call(parsing.Parser.read_char, ','),
                                 parsing.Char(','),
                                 parsing.Capture(
                                     'p',
@@ -426,7 +446,6 @@ class EBNF(parsing.Parser):
                             )
                         ),
                         parsing.Alt(
-                            #parsing.Call(parsing.Parser.read_char, ')'),
                             parsing.Char(')'),
                             parsing.Error("Expected ')'"))
                     )
@@ -687,6 +706,11 @@ def hook_param(self, hook, p):
     hook.listparam.append(p.pair)
     return True
 
+@meta.hook(EBNF, "EBNF.add_directive2")
+def add_directive2(self, sequence, d, s):
+    """Add a directive in the sequence"""
+    sequence.parser_tree = parsing.Directive2(d.name, d.listparam, s.parser_tree)
+    return True
 
 @meta.hook(EBNF, "EBNF.add_directive")
 def add_directive(self, sequence, d, s):

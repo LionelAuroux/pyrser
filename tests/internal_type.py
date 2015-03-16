@@ -1,16 +1,55 @@
 import unittest
 from pyrser.type_system import *
+from pyrser.type_system.to_fmt import *
 from pyrser.passes.to_yml import *
 from pyrser.error import *
 
 
 class InternalType_Test(unittest.TestCase):
 
+    def test_type_expr_00(self):
+        from pyrser.type_system import type_expr
+        tn = type_expr.RealName('*')
+        tn.set_attr('size', 12)
+        txt = str(tn.to_fmt())
+        print(txt)
+        self.assertEqual(txt, "*[size=12]", "Bad TypeExpr pretty printing")
+        ctn = type_expr.ComponentTypeName()
+        ctn.set_name(tn)
+        ctn.add_params(type_expr.ComponentTypeName().set_name(type_expr.RealName('char')))
+        txt = str(ctn.to_fmt())
+        print(txt)
+        self.assertEqual(txt, "*[size=12]<char>", "Bad TypeExpr pretty printing")
+        ctn = type_expr.ComponentTypeName()
+        ctn.set_name(type_expr.RealName('std'))
+        ctn.set_subcomponent(type_expr.ComponentTypeName())
+        ctn.subcomponent.set_name(type_expr.RealName('list'))
+        p = type_expr.ComponentTypeName()
+        p.set_name(type_expr.RealName('string'))
+        ctn.subcomponent.add_params(p)
+        txt = str(ctn.to_fmt())
+        print(txt)
+        self.assertEqual(txt, "std.list<string>", "Bad TypeExpr pretty printing")
+        ctn2 = type_expr.ComponentTypeName()
+        ctn2.set_name(type_expr.RealName('std'))
+        ctn2.set_subcomponent(type_expr.ComponentTypeName())
+        ctn2.subcomponent.set_name(type_expr.RealName('list'))
+        p2 = type_expr.ComponentTypeName()
+        p2.set_name(type_expr.RealName('string'))
+        ctn2.subcomponent.add_params(p2)
+        txt = str(ctn2.to_fmt())
+        print(txt)
+        dctn = ctn - ctn2
+        print(vars(dctn))
+        self.assertTrue(len(dctn) == 0, "Fail in TypeExpr equivalence")
+
+
     def test_symbol_01_symbolpatch(self):
         """
         Test of symbol mangling redefinition.
-        For custom language due to multi-inheritance order resolution
-        (python MRO), just use follow the good order. Overloads first.
+        For custom language due to method order resolution
+        (python MRO) in multi-inheritance, just use follow the good order.
+        Overloads first.
         """
         class MySymbol(Symbol):
             def show_name(self):
@@ -354,6 +393,8 @@ class InternalType_Test(unittest.TestCase):
         tenv = Scope("test", sig=typ)
         tenv.add(EvalCtx(Fun("f", "T1")))
         fs = tenv.get_by_symbol_name("f")
+        print(str(tenv))
+        print(str(fs))
         self.assertEqual(
             id(typ),
             id(
@@ -402,7 +443,7 @@ class InternalType_Test(unittest.TestCase):
             )
         )
         self.assertEqual(
-            repr(m["T3"]),
+            str(m["T3"]),
             "T1 to T3 = fun init : (T1) -> T3\ninfo : Implicit T1 to T3\n",
             "Bad Translator pretty-printing"
         )
@@ -419,7 +460,7 @@ class InternalType_Test(unittest.TestCase):
             )
         )
         self.assertEqual(
-            repr(mall["char"]["int"]),
+            str(mall["char"]["int"]),
             ("char to int = fun __builtin_cast : (char) -> int\n"
              + "info : implicit convertion\n"),
             "Bad Translator pretty-printing"

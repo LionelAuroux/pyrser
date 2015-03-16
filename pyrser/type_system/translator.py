@@ -1,15 +1,15 @@
 from collections import *
-from pyrser import fmt
 from pyrser.type_system.fun import *
-from pyrser.error import *
+from pyrser import fmt
+from pyrser import error
 
 
 # for type translation
 class Translator:
-    def __init__(self, fun: Fun, notify: Notification=None):
+    def __init__(self, fun: Fun, notify: error.Notification=None):
         if not isinstance(fun, Fun):
             raise TypeError("1st parameter must be a type_system.Fun")
-        if not isinstance(notify, Notification):
+        if not isinstance(notify, error.Notification):
             raise TypeError("2nd parameter must be a error.Notification")
         if fun.arity < 1:
             raise TypeError("type_system.Fun in 1st parameter must have an arity >= 1 (here %d)" % fun.arity)
@@ -34,21 +34,8 @@ class Translator:
         return self._fun
 
     @property
-    def notify(self) -> Notification:
+    def notify(self) -> error.Notification:
         return self._notify
-
-    def to_fmt(self, with_from=False) -> fmt.indentable:
-        """
-        Return a Fmt representation of Translator for pretty-printing
-        """
-        txt = fmt.sep("\n", [
-            fmt.sep(" ", [self._type_source, "to", self._type_target, '=', self._fun.to_fmt()]),
-            self._notify.get_content(with_from)
-        ])
-        return txt
-
-    def __repr__(self) -> str:
-        return str(self.to_fmt())
 
 
 class MapTargetTranslate(dict):
@@ -59,17 +46,6 @@ class MapTargetTranslate(dict):
     @property
     def key(self) -> str:
         return self._type_source
-
-    def to_fmt(self, with_from=False) -> fmt.indentable:
-        txt = fmt.block('{\n', '\n}', [])
-        items = fmt.sep('\n---\n', [])
-        for k in sorted(self._internal.keys()):
-            items.lsdata.append(fmt.sep(': ', [k, fmt.tab([self._internal[k].to_fmt(with_from)])]))
-        txt.lsdata.append(fmt.tab([items]))
-        return txt
-
-    def __repr__(self) -> str:
-        return str(self.to_fmt())
 
     def __len__(self) -> int:
         return len(self._internal)
@@ -114,17 +90,6 @@ class MapSourceTranslate(dict):
         tmp = self._internal
         self._internal = parent._internal.new_child()
         self._internal.maps[0].update(tmp)
-
-    def to_fmt(self, with_from=False) -> fmt.indentable:
-        txt = fmt.block('{\n', '\n}', [])
-        items = fmt.sep('\n---\n', [])
-        for k in sorted(self._internal.keys()):
-            items.lsdata.append(fmt.sep(': ', [k, fmt.tab([self._internal[k].to_fmt(with_from)])]))
-        txt.lsdata.append(fmt.tab([items]))
-        return txt
-
-    def __repr__(self) -> fmt.indentable:
-        return str(self.to_fmt())
 
     def __len__(self) -> int:
         return len(self._internal)

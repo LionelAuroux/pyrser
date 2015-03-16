@@ -9,7 +9,7 @@ from pyrser.hooks.vars import *
 from pyrser.hooks.set import *
 from pyrser.hooks.predicate import *
 from pyrser.hooks.dump_nodes import *
-from pyrser.type_system.inference import *
+from pyrser.type_system import *
 from pyrser.error import *
 from pyrser.passes.to_yml import *
 
@@ -74,21 +74,25 @@ class DeclVar(NodeInfo):
         parent_scope = self.type_node.parent()
         typ = self.t
         if self.t is None:
-            #typ = '?' + self.name
             typ = '?1'
-        parent_scope.add(Var(self.name, typ))
-        tn = Scope(sig=[Fun('=', typ, [typ, typ])])
-        tn.set_parent(parent_scope)
+        var = Var(self.name, typ)
+        parent_scope.add(var)
         # try to infer type or check type
         if self.expr is not None:
+            tn = Scope(sig=[Fun('=', typ, [typ, typ])])
+            tn.set_parent(parent_scope)
             # create a fake Expr Node to infer expression with var type
             rhs = Expr(Id('='), [Id(self.name), self.expr])
             rhs.type_node = Scope()
             rhs.type_node.set_parent(tn)
             rhs.infer_type(diagnostic)
-            #print("In declVar %s" % to_yml(rhs))
+            # TODO: scope surrounded only one sig !!!!!
+            print("RHS: [%s]" % rhs.type_node)
+            print("TRET %s" % rhs.type_node.last())
+            self.t = rhs.type_node.last().compute_tret
             self.type_node = rhs.type_node
-
+            #var.tret = rhs.type_node.last()
+            var.tret = TypeName(self.t)
 
     # to connect Inference
     def type_algos(self):

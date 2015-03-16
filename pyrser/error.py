@@ -7,7 +7,6 @@ import re
 import weakref
 from collections import *
 from pyrser import meta
-from pyrser.parsing.node import Node
 
 
 Severity = meta.enum('INFO', 'WARNING', 'ERROR')
@@ -84,7 +83,7 @@ class LocationInfo:
         return txt
 
 
-class Notification(Node):
+class Notification:
     """
     Just One notification
     """

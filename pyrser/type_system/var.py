@@ -19,18 +19,6 @@ class Var(Signature):
     def is_polymorphic(self) -> bool:
         return self.tret.is_polymorphic
 
-    def to_fmt(self):
-        """
-        Return an Fmt representation for pretty-printing
-        """
-        params = ""
-        txt = fmt.sep(" ", ['var'])
-        name = self.show_name()
-        if name != "":
-            txt.lsdata.append(name)
-        txt.lsdata.append(': ' + self.tret)
-        return txt
-
     def internal_name(self):
         """
         Return the unique internal name
