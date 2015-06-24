@@ -7,6 +7,9 @@ class StateRegister():
         self.__default = None
         self.states = dict()
         self.label = label
+        self.resetEvents()
+
+    def resetEvents(self):
         self.events = set()
         self.named_events = dict()
         self.uid_events = dict()
@@ -17,7 +20,7 @@ class StateRegister():
         self.__default = s
 
     @property
-    def as_default(self) -> State:
+    def default(self) -> State:
         return self.__default
 
     def add_state(self, s: State):
@@ -40,7 +43,7 @@ class StateRegister():
         txt += "digraph S%d {\n" % id(self)
         if self.label is not None:
             txt += '\tlabel="%s";\n' % (self.label + '\l').replace('\n', '\l')
-        txt += "\trankdir=TB;\n"
+        txt += "\trankdir=LR;\n"
         #txt += '\tlabelloc="t";\n'
         txt += '\tgraph [labeljust=l, labelloc=t, nojustify=true];\n'
         txt += "\tesep=1;\n"
@@ -63,12 +66,19 @@ class StateRegister():
         with cmd.open('pipefile', 'w') as f:
             f.write(self.to_dot())
 
-    def __repr__(self) -> str:
-        txt = '('
+    def to_fmt(self) -> str:
+        infos = fmt.end(";\n", [])
+        s = fmt.sep(', ', [])
         for ids in sorted(self.states.keys()):
-            txt += "%d, " % ids
-        txt += ')'
-        return txt
+            s.lsdata.append(str(ids))
+        infos.lsdata.append(fmt.block('(', ')', [s]))
+        infos.lsdata.append("events:" + repr(self.events))
+        infos.lsdata.append("named_events:" + repr(list(self.named_events.keys())))
+        infos.lsdata.append("uid_events:" + repr(list(self.uid_events.keys())))
+        return infos
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
 
 class EventExpr:
     def checkEvent(self, sr: StateRegister) -> bool:
@@ -84,7 +94,8 @@ class EventAlt(EventExpr):
     def checkEvent(self, sr: StateRegister) -> bool:
         res = False
         for a in self.alt:
-            res |= a.checkEvent(sr)
+            b = a.checkEvent(sr)
+            res |= b
         return res
 
     def clean(self, sr: StateRegister, updown: bool) -> bool:
@@ -105,9 +116,10 @@ class EventSeq(EventExpr):
         self.seq = seq
 
     def checkEvent(self, sr: StateRegister) -> bool:
-        res = False
+        res = True
         for s in self.seq:
-            res &= s.checkEvent(sr)
+            b = s.checkEvent(sr)
+            res &= b
         return res
 
     def clean(self, sr: StateRegister, updown: bool) -> bool:
@@ -128,7 +140,8 @@ class EventNot(EventExpr):
         self.subexpr = subexpr
 
     def checkEvent(self, sr: StateRegister) -> bool:
-        return not self.subexpr.checkEvent(sr)
+        r = not self.subexpr.checkEvent(sr)
+        return r
 
     def clean(self, sr: StateRegister, updown: bool) -> bool:
         self.subexpr.clean(sr, not updown)
@@ -164,7 +177,7 @@ class EventNamed(EventExpr):
     def checkEvent(self, sr: StateRegister) -> bool:
         if self.name in sr.named_events:
             idevent = sr.named_events[self.name]
-            return idevent[0] in self.events
+            return idevent.uid in sr.events
         return False
 
     def clean(self, sr: StateRegister, updown: bool) -> bool:
@@ -189,9 +202,11 @@ class State:
         self.types_list = list()
         self.types = dict()
         self.values = dict()
+        self.default_event = None
+        self.default_hook = None
         self.default = None
 
-    def nextstate(self, newstate, tree):
+    def nextstate(self, newstate, tree, user_data):
         if newstate is None:
             return self
         if isinstance(newstate, State) and id(newstate) != id(self):
@@ -204,22 +219,23 @@ class State:
             # newstate.expr.clean(self.state_register, True)
             return newstate.st
         elif isinstance(newstate, StateHook):
+            print("HOOK!!")
             ##TODO ??? rewriting?
-            newnode = newstate.call(self, tree)
+            newnode = newstate.call(tree, user_data)
             return newstate.st
-        else:
-            raise ValueError("Unknown object in state %s: %s" % (type(newstate), repr(newstate)))
+        #else:
+        #    raise ValueError("Unknown object in state %s: %s" % (repr(newstate.state_register), repr(newstate)))
         return self
 
     ### Custom Named Events
     ## we could write boolean expression of events...
 
-    def checkEvent(self, tree) -> State:
+    def checkEventExpr(self, tree=None, user_data=None) -> State:
         # check all free events Expressions...
         # TODO: could be attach to default of the S0 state?
         for e in self.events_expr:
             if e.expr.checkEvent(self.state_register):
-                return self.nextstate(e, tree)
+                return self.nextstate(e, tree, user_data)
         return self
 
     def matchEvent(self, n, state: State):
@@ -234,7 +250,7 @@ class State:
         self.state_register.uid_events[uid] = se
         # store ids in the state
         self.state_event = uid
-        self.default = se
+        self.default_event = se
 
     def matchEventExpr(self, e: EventExpr, state: State):
         uid = None
@@ -251,9 +267,9 @@ class State:
 
     ### ATTR
 
-    def checkAttr(self, a, tree) -> State:
+    def checkAttr(self, a, tree=None, user_data=None) -> State:
         if a in self.attrs:
-            return self.nextstate(self.attrs[a], tree)
+            return self.nextstate(self.attrs[a], tree, user_data)
         return self
 
     def matchAttr(self, a, state: State):
@@ -261,9 +277,9 @@ class State:
 
     ### INDICE
 
-    def checkIndice(self, i, tree) -> State:
+    def checkIndice(self, i, tree=None, user_data=None) -> State:
         if i in self.indices:
-            return self.nextstate(self.indices[i], tree)
+            return self.nextstate(self.indices[i], tree, user_data)
         return self
 
     def matchIndice(self, i, state: State):
@@ -271,9 +287,9 @@ class State:
 
     ### KEY
 
-    def checkKey(self, k, tree) -> State:
+    def checkKey(self, k, tree=None, user_data=None) -> State:
         if k in self.keys:
-            return self.nextstate(self.keys[k], tree)
+            return self.nextstate(self.keys[k], tree, user_data)
         return self
 
     def matchKey(self, k, state: State):
@@ -281,10 +297,13 @@ class State:
 
     ### TYPE (exact type)
 
-    def checkType(self, t, tree) -> State:
+    def checkType(self, t, tree=None, user_data=None) -> State:
+        print("on UID %d" % (self.state_register.get_uid(self)))
         for it in self.types_list:
+            print("CHECK TYPE %r" % it)
             if isinstance(t, it) or t is it:
-                return self.nextstate(self.types[it.__name__], tree)
+                return self.nextstate(self.types[it.__name__], tree, user_data)
+        print("END TYPE")
         return self
 
     def matchType(self, t, state: State):
@@ -296,9 +315,9 @@ class State:
 
     ### VALUE
 
-    def checkValue(self, v, tree) -> State:
+    def checkValue(self, v, tree=None, user_data=None) -> State:
         if str(v) in self.values:
-            return self.nextstate(self.values[str(v)], tree)
+            return self.nextstate(self.values[str(v)], tree, user_data)
         return self
 
     def matchValue(self, v, state: State):
@@ -307,20 +326,25 @@ class State:
     ### HOOK
 
     def matchHook(self, call, state: State):
-        self.default = StateHook(call, state)
+        self.default_hook = StateHook(call, state)
 
     ### DEFAULT
 
-    def doDefault(self, tree) -> State:
-        return self.nextstate(self.default, tree)
+    def doDefaultHook(self, tree=None, user_data=None) -> State:
+        return self.nextstate(self.default_hook, tree, user_data)
+
+    def doDefaultEvent(self, tree=None, user_data=None) -> State:
+        return self.nextstate(self.default_event, tree, user_data)
+
+    def doDefault(self, tree=None, user_data=None) -> State:
+        return self.nextstate(self.default, tree, user_data)
 
     def matchDefault(self, state: State):
         self.default = state
 
     # internal transition
     def cleanAll(self):
-        print("CLEAN ALL")
-        self.events = set()
+        self.state_register.events = set()
 
     def _str_state(self, s) -> str:
         if isinstance(s, State):
@@ -375,18 +399,25 @@ class State:
             for k in sorted(self.values.keys()):
                 event = self.values[k]
                 txt += self._dot_relation(event, '=' + k)
-        if self.default is not None and self.default is not self.state_register.as_default:
+        if self.default_hook is not None:
+            txt += self._dot_relation(self.default_hook, 'hook')
+        if self.default_event is not None:
+            txt += self._dot_relation(self.default_event, 'event')
+        if self.default is not None and self.default is not self.state_register.default:
             txt += self._dot_relation(self.default, '...')
+        elif self.default is None:
+            nodename = self._dot_state(self)
+            txt += "\t" + nodename + '[label="' + nodename + '*"];\n'
         return txt
 
     def __repr__(self):
         # to expand for dbg
         txt = ""
-#        if len(self.events) > 0:
-#            txt += "NAMED EVENT:\n"
-#            for k in sorted(self.events.keys()):
-#                txt += repr(k) + ': ' + self._str_state(self.events[k]) + '\n'
-#            txt += '-----\n'
+        if len(self.events_expr) > 0:
+            txt += "EXPR EVENT:\n"
+            for e in self.events_expr:
+                txt += repr(e) + '\n'
+            txt += '-----\n'
         if len(self.attrs) > 0:
             txt += "ATTR EVENT:\n"
             for k in sorted(self.attrs.keys()):
@@ -412,7 +443,11 @@ class State:
             for k in sorted(self.values.keys()):
                 txt += repr(k) + ': ' + self._str_state(self.values[k]) + '\n'
             txt += '-----\n'
-        if self.default is not None and self.default is not self.state_register.as_default:
+        if self.default_hook is not None:
+            txt += self._dot_relation(self.default_hook, 'hook')
+        if self.default_event is not None:
+            txt += self._dot_relation(self.default_event, 'event')
+        if self.default is not None and self.default is not self.state_register.default:
             txt += "DEFAULT: %s\n" % self._str_state(self.default)
         return txt
 
@@ -435,3 +470,13 @@ class StatePrecond:
         self.txtevent = repr(e)
         self.uid = uid
         self.st = st
+
+    def to_fmt(self) -> fmt.indentable:
+        res = fmt.sep(' : ', [])
+        res.lsdata.append(str(self.uid))
+        res.lsdata.append(self.txtevent)
+        res.lsdata.append(id(self.st))
+        return res
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())

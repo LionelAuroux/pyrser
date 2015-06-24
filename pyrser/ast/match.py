@@ -346,6 +346,9 @@ class Edge:
 
 def populate_from_sequence(seq: StateBuilder, r, sr: state.StateRegister):
     base_state = r
+    # we need to detect the last state of the sequence
+    idxlast = len(seq.ls) -1
+    idx = 0
     for m in seq.ls:
         # alternatives are represented by builtin list
         if isinstance(m, list):
@@ -355,16 +358,23 @@ def populate_from_sequence(seq: StateBuilder, r, sr: state.StateRegister):
             # from the current state, have we a existing edge for this event?
             eX = r().get_next_state(m)
             if eX is None:
-                sX = state.State(sr)
-                sX.matchDefault(base_state().s)
+                sX = None
+                if idx != idxlast:
+                    sX = state.State(sr)
+                    sX.matchDefault(base_state().s)
+                else:
+                    # last state of sequence return to the base
+                    sX = base_state().s
                 eX = Edge(sX)
                 r().next_state.append(eX)
                 m.attach(r().s, sX, sr)
             r = ref(eX)
+        idx += 1
 
 def populate_state_register(all_seq: [StateBuilder], sr: state.StateRegister):
     # Walk on all sequence and connect state for all contiguous sequences
     s0 = state.State(sr)
+    s0.matchDefault(s0)
     sr.set_default_state(s0)
     e0 = Edge(s0)
     for seq in all_seq:
