@@ -1,29 +1,13 @@
-# README #
+# PYRSER #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+Pyrser is a Python 3 module that help you for all parsing job.
 
-### What is this repository for? ###
+## Where ? ##
 
-* Quick summary
-* Version
+Pyrser is available on [PYPI](https://pypi.python.org/pypi/pyrser/)
+
+## What ? ##
+
+Pyrser documentation is [here](http://pythonhosted.org/pyrser/index.html)
+
 * [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
-
-### How do I get set up? ###
-
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact

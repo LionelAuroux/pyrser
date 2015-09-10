@@ -564,6 +564,47 @@ class StatePrecond:
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
+class CaptureNode:
+    kinds = {'Node', 'Attr', 'Indice', 'Key'}
+
+    def __init__(self, kind: str, parent: None):
+        if kind not in CaptureNode.kinds:
+            raise ValueError("kind parameter not in %s" % repr(CaptureNode.kinds))
+        # kind of CaptureNode
+        self.kind = kind
+        # parent object for modification
+        self.parent = parent
+        # the matched node
+        self.node = None
+        # value of attr/indice/key or None (when Node)
+        self.value = None
+        # recursively detail if in the pattern we provide the detail
+        self.detail = None
+
+    def to_fmt(self) -> fmt.indentable:
+        res = fmt.sep('\n', [])
+        res.lsdata.append("kind: %s" % self.kind)
+        if self.parent is not None:
+            res.lsdata.append("parent: %d" % id(self.parent))
+        res.lsdata.append("node: %d" % id(self.node))
+        return res
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
+
+class CaptureNodeDetail:
+    def __init__(self):
+        # contain list of CaptureNode
+        self.attrs = []
+        self.indices = []
+        self.keys = []
+
+    def to_fmt(self) -> fmt.indentable:
+        return None
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
+
 class CollectContext(list):
     def __init__(self, ls, old_ref, la, lk, li):
         super(self.__class__, self).__init__(ls)
@@ -578,6 +619,7 @@ class LivingState:
     """
     def __init__(self, s: State):
         self.alive = False
+        self.have_finish = False
         self.thestate = weakref.ref(s)
         #TODO: chain named event from StateRegister for unknown event????
         # collect all matched nodes
@@ -726,16 +768,15 @@ class LivingContext:
             ls[1].checkAttr(a, parent)
 
     def checkIndice(self, i, parent=None):
+        # TODO: must store indice and restore state...
+        # if wildcard, type are not strict... so set an event after parsing all indices
         fork_state = []
         l = len(self.ls)
         for idx, ls in zip(range(l), self.ls):
-            must_fork = False
+            store_indice = False
             if ls[1].thestate().wild_indice:
-                must_fork = True
+                store_indice = True
             ls[1].checkIndice(i, parent)
-            if must_fork:
-                print("MUST FORK %d" % idx)
-#                fork_state.append((idx, ls[1].thestate(), ls[0]))
 
     def checkKey(self, k, parent=None):
         for ls in self.ls:
@@ -752,10 +793,19 @@ class LivingContext:
     def doResultHook(self, thenode=None, user_data=None, parent=None):
         for ls in self.ls:
             ls[1].doResultHook(thenode, user_data, parent)
+            #TODO: check subEvent for put it in LivingState
+            ls[1].have_finish = True
+
+    def doSubEvent(self):
+        # TODO: doSubEvent on livingState and State
+        for ls in self.ls:
+            ls[1].doResultEvent()
 
     def doResultEvent(self):
         for ls in self.ls:
             ls[1].doResultEvent()
+            #TODO: check subEvent for put it in LivingState
+            ls[1].have_finish = True
 
     def doDefault(self):
         for ls in self.ls:
@@ -764,13 +814,15 @@ class LivingContext:
 
     def resetLivingState(self):
         """Only one Living State on the S0 of each StateRegister"""
+        # TODO: add some test to control number of instanciation of LivingState
         # clean all living state on S0
         must_delete = []
         l = len(self.ls)
         for idx, ls in zip(range(l), self.ls):
             ls[1].alive = False
             ids = id(ls[1].thestate())
-            if ids == id(ls[0]):
+            # TODO: !!!
+            if ids == id(ls[0]) and (ls[1].have_finish or not ls[1].alive):
                 must_delete.append(idx)
         for delete in reversed(must_delete):
             self.ls.pop(delete)

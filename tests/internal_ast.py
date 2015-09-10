@@ -582,3 +582,8 @@ class InternalAst_Test(unittest.TestCase):
         # L([*: *]) -> #checkMatch;
         # H({*: 12}) -> #checkMatch;
         # H({*: *}) -> #checkMatch;
+
+    def test_08(self):
+        """CollectContext test for tree matching"""
+        # TODO: put it in test 5 and rename all
+        ct = CaptureContext()

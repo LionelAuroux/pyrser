@@ -24,7 +24,7 @@ def walk(self, lc: state.LivingContext, user_data=None, parent=None):
             # check precond
             lc.checkEventExpr()
             # do sub Event (for unstrict mode)
-            lc.doResultEvent()
+            lc.doSubEvent()
     # ...as dict, walk values, match keys
     if hasattr(self, 'keys'):
         for k in sorted(self.keys()):
@@ -35,7 +35,7 @@ def walk(self, lc: state.LivingContext, user_data=None, parent=None):
             # check precond
             lc.checkEventExpr()
             # do sub Event (for unstrict mode)
-            lc.doResultEvent()
+            lc.doSubEvent()
     # ...as list, walk values, match indices
     elif not isinstance(self, str) and hasattr(self, '__iter__'):
         idx = 0
@@ -48,7 +48,7 @@ def walk(self, lc: state.LivingContext, user_data=None, parent=None):
             # check precond
             lc.checkEventExpr()
             # do sub Event (for unstrict mode)
-            lc.doResultEvent()
+            lc.doSubEvent()
     # ...type or value
     # type(self) == ?
     print("test type %s" % type(self))
