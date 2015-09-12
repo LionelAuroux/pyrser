@@ -1,0 +1,10 @@
+~$
+\.py(c|o)$
+(?i)(^|/)TAGS$
+(^|/)ID$
+(^|/)\.DS_Store$
+^\.sw.$
+.[^/]*\.sw.$
+.coverage
+report
+build
