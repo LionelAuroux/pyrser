@@ -1,0 +1,55 @@
+Pyrser Selectors:
+
+- Problematic
+    use case d'un compilo de base
+    AST visiting
+    ex: CLANG, RUST
+
+- Besoin
+    A des buts pedagogiques
+    A des buts de maintenances
+    Pattern Match d'arbre par expression --> Tree Automata
+
+    Remarque : Opposition Vitesse / Expressivité ...
+    Faire quelque chose d'expressif mais relativement performant
+
+- Tree Automata:
+    vieux XPath
+    récent CSS Selector
+
+hors XPath/CSS Selector   1 pattern -> collect ce qui match
+
+Ce qu'on veux...   N pattern -> appel dans l'ordre pendant le parcours et reconstruit l'arbre
+
+
+La Théorie:
+    Tata
+    Top-down
+    Bottom-Up
+
+Choix dans pyrser
+    Bottom-Up
+    Parcours / activation events
+
+Principe de base de la syntaxe
+    Description d'un node
+    -> Action Hook
+    -> Action Event
+    -> Precond
+
+Un point sur l'algo de construction de l'automate -> reconstruction/merge ....
+difference entre automate et instances ...
+
+Construction + evoluer composer par les elements de base
+
+    A() > B()  ancetre par event anonyme  correspond a
+        {
+            B() -> Event
+            A() ? (Event) -> #Action
+        }
+
+Résumé complet syntaxe
+
+TODO
+
+Question

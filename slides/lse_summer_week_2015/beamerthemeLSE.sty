@@ -1,0 +1,41 @@
+% \ProvidesPackageRCS $Header: /usr/home/feanor/Local/cvs-root/Enseignement/Epita/2008-2009/Prog/lib/beamerthemeLSE.sty,v 1.1 2008/10/06 15:15:07 feanor Exp $
+
+\DeclareOptionBeamer{hideothersubsections}{\PassOptionsToPackage{hideothersubsections}{beamerouterthemesidebar}}
+\DeclareOptionBeamer{hideallsubsections}{\PassOptionsToPackage{hideallsubsections}{beamerouterthemesidebar}}
+
+\PassOptionsToPackage{right}{beamerouterthemesidebar}
+\PassOptionsToPackage{width=2cm}{beamerouterthemesidebar}
+
+\DeclareOptionBeamer{width}{\PassOptionsToPackage{width=#1}{beamerouterthemesidebar}}
+\DeclareOptionBeamer{left}{\PassOptionsToPackage{left}{beamerouterthemesidebar}}
+\DeclareOptionBeamer{right}{\PassOptionsToPackage{right}{beamerouterthemesidebar}}
+
+\ProcessOptionsBeamer
+
+\mode<presentation>
+
+\pgfdeclareimage[width=1cm]{LogoLSE}{Figs/LogoLSE-epita-tr}
+\logo{\pgfuseimage{LogoLSE}}
+%% \useinnertheme{rounded}
+\useinnertheme{circles}
+\setbeamercovered{dynamic}
+
+%% Remove serif, sans-serif is more readable.
+%% \usefonttheme{serif}
+
+\useoutertheme[height=0.8cm,hideothersubsections]{sidebar}
+
+\usecolortheme{seagull}
+%% \usecolortheme{dove}
+%% \usecolortheme{crane}
+%% {\usebeamercolor{palette quaternary}}
+\usecolortheme{rose}
+\usecolortheme{seahorse}
+\usecolortheme{sidebartab}
+
+\definecolor{descitem}{rgb}{0.9,0.7,0.7}
+\setbeamercolor{description item}{fg=black,bg=descitem}
+\setbeamertemplate{description item}{\colorbox{bg}{\insertdescriptionitem}}
+
+\mode
+<all>

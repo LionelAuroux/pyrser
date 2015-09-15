@@ -1,0 +1,609 @@
+%
+% Discovering pyrser
+% Author: L. Auroux
+%
+
+\documentclass[pdftex]{beamer}
+
+\usetheme{LSE}
+\usecolortheme{koala}
+
+\usepackage[french]{babel}
+\usepackage[utf8]{inputenc} % é è à 
+\usepackage{listings}
+\usepackage[T1]{fontenc}
+
+\lstset{%
+  float=hbp,
+  basicstyle=\ttfamily\tiny,
+  identifierstyle=\color{colIdentifier},
+  keywordstyle=\color{colKeys},
+  stringstyle=\color{colString},
+  commentstyle=\color{colComments}\textit,
+  columns=flexible,
+  tabsize=2,
+  frame=trBL,
+  frameround=tttt,
+  extendedchars=true,
+  showspaces=false,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  breaklines=true,
+  breakautoindent=true,
+  captionpos=b,
+  xrightmargin=0.1cm,
+  xleftmargin=0.1cm,
+  language=Python
+}
+
+\title{Discovery of Pyrser}
+\author{Lionel "iopi" Auroux}
+\date{Jeudi, 17/07/2014}
+
+\begin{document}
+
+\scriptsize
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% ---------------------------------------------------------------------------------- %
+\section{Pyrser in few words}
+\frame
+{
+    \frametitle{Pyrser in few words}
+    \begin{itemize}
+        \item   A PEG parser tools in python 3.x
+        \item   Available on PYPI (pip install :P)
+        \item   Documented (sphinx): http://pythonhosted.org//pyrser/
+        \item   Tested (699 Unit Test)
+        \item   Will be use/Used by students each years (since 2013)
+        \item   Inspirated by codeworker (www.codeworker.org)
+        \item   Grammars as Classes, so inheritable
+        \item   Rules as methods, so overloadable
+        \item   Not so context-free (PEG)
+        \item   A Type system module (parsing is not enough)
+        \item   Still in development... 0.0.3 but completly functionnal (CNORM 4.0)
+    \end{itemize}
+
+}
+% ---------------------------------------------------------------------------------- %
+
+\section{Plan}
+\frame[containsverbatim]
+{
+    \frametitle{Plan}
+    \begin{itemize}
+        \item   About parsing...
+        \item   Motivations
+        \item   Use case 1: parsing XML
+        \item   Parsing is not enough, Type System!
+        \item   Use case 2: ToyLanguage4Typing
+        \item   Contribution/Conclusion
+    \end{itemize}
+}
+
+% ---------------------------------------------------------------------------------- %
+%
+%Evolution of needs in parsing technics...
+%from compiler to hadhoc tools...
+%Embedding of many languages HTML+JS+PHP etc...
+%Increase of complexity needs more versatility
+%LALR technics ok for programming language compiler, too much strict for engineering tools
+%
+%Emergence of PEG technics in 2004, it's just the return of Top-Down technics + cache
+%- Ordered alternatives (greedy first)
+%- Backtracking
+%- So runtime backtracking (not so context free)
+%- No left-recursion (not hard to avoid)
+%
+%Yacc critics: Yacc is dead
+%“regular expressions are `WYSIWYG'—the language described is the language that gets matched—whereas parser-generators are WYSIWYGIYULR(k)—`what you see is what you get if you understand LR(k).'"
+%
+%    2003 KOOC!
+%    2003 perl Parse::Yapp (Lex/Yacc4perl)
+%    2004-2012 codeworker
+%        2005 cnorm 1.0
+%        2012 cnorm 3.10
+%
+\section{About parsing...}
+\frame[containsverbatim]
+{
+    \frametitle{About parsing...}
+    \vfill Since 1970, goal evolves
+    \begin{itemize}
+    \item From 1 language compiler, 1 translation
+    \item To N entangled languages with N ad-hoc tools
+    \item i.e: Web Stack (HTML+PHP+JS)
+    \item i.e: C++/Doxygen
+    \item i.e: FramaC (C + ACSL)
+    \end{itemize}
+}
+\frame[containsverbatim]
+{
+    \frametitle{About parsing...}
+    \vfill Emergence of Model Driven Engineering!
+    \vfill Using Parsing/Generating technics mostly in case of MDE for:
+    \begin{itemize}
+    \item Defining DSLs for ad-hoc tools
+    \item Handle all the stuff
+    \item Generating many things (1-N files)
+    \item Extensibility and Customisation
+    \item Not really a compiler in classical terms...
+    \end{itemize}
+}
+\frame[containsverbatim]
+{
+    \frametitle{About parsing...}
+    \vfill "Yacc is dead", M. Might, D. Darais, cs.PL 24/10/10 <arXiv:1010.5023>
+    \vfill We need
+    \begin{itemize}
+    \item WYSIWYG Parser
+    \item Not WYSIWYGIYULR(k)—`what you see is what you get if you understand LR(k)
+    \item Manage Ambiguous grammar
+    \item For engineer not for computer scientist
+    \end{itemize}
+}
+\frame[containsverbatim]
+{
+    \frametitle{About parsing...}
+    \vfill "Parsing Expression Grammars", B. Ford, 2004, 31st ACM SIGPLAN-SIGACT
+    \vfill PEG provides
+    \begin{itemize}
+    \item Prioritized choices
+    \item Greedy rules
+    \item Syntactic predicates
+    \item Unlimited lookahead
+    \item Backtracking
+    \end{itemize}
+    \vfill More easy and versatile than LR
+}
+
+
+% ---------------------------------------------------------------------------------- %
+% Need versatility of scripting language
+% Need composition of grammar for managing embedding
+% 
+% Choose of python: easilily understandable, large community
+% Choose of an agnostic grammar representation language based on few abstraction: langage description library
+% Dependency Injection!!
+% 
+% -> 2013 first version of pyrser
+% 
+% CNORM!!!
+% 
+% KOOC!!!
+
+\section{Motivations}
+\frame[containsverbatim]
+{
+    \frametitle{Motivations}
+    \vfill Old EPITA C++2C project
+    \vfill 2003 KOOC: Kind Of Objective C
+    \vfill OO features on a superset of C -> need to give a grammar (C) to students!
+    \vfill Very short period (3 month) -> need quick prototyping
+}
+\frame[containsverbatim]
+{
+    \frametitle{Motivations}
+    \vfill Evolving since 2003
+    \vfill First version in PERL
+    \vfill From 2005 to 2012 in CODEWORKER (PEG)
+    \vfill Since 2013 in PYTHON
+}
+\frame[containsverbatim]
+{
+    \frametitle{Motivations}
+    \vfill A root of many projects
+    \vfill CNORM version 4 in Python with Pyrser
+    \vfill KOOC since 2013
+    \vfill Rathaxes...(MDE apply to driver development)
+}
+\frame[containsverbatim]
+{
+    \frametitle{Motivations}
+    \vfill So Pyrser...
+    \vfill Provides Codeworker features to Python (PEG)
+    \vfill Choose of Python for readability and community
+    \vfill Describes grammar thru a 'BNF-like' description
+    \vfill No embedded language in the description (language agnostic or MVC)
+    \vfill Few abstractions to connect parser engine and scripting language (other language than Python)
+    \vfill Grammar composition
+    \vfill Dependency Injection
+}
+% ---------------------------------------------------------------------------------- %
+\section{Use case 1: Parsing XML}
+\frame[containsverbatim]
+{
+    \frametitle{Use case 1: Parsing XML}
+
+    \vfill Let's apply it to an example: XML
+    \vfill We've got few abstractions
+    \begin{itemize}
+    \item Rules
+    \item Nodes
+    \item Hooks
+    \item Directives
+    \end{itemize}
+}
+\frame[containsverbatim]
+{
+    \frametitle{Use case 1: Parsing XML}
+
+    \vfill Rules allow us to describe our grammar
+    \begin{lstlisting}[language=C++]
+    =           define a non-terminal rule
+    |           alternatives (lower priority than space)
+    A           call a non-terminal
+    'a'         terminal charater
+    "abc"       terminal text
+    'a'..'z'    terminal range
+    [ ]         define groups
+    ?,*,+       classic repeater
+    some predicates:
+    ~           complement
+    !           negative lookahead
+    !!          positive lookahead
+    -> A        read all until A
+    \end{lstlisting}
+}
+\frame[containsverbatim]
+{
+    \frametitle{Use case 1: Parsing XML}
+
+    \vfill Some examples:
+    \begin{lstlisting}[language=C++]
+
+    // classic identifier
+    id = [['a'..'z'|'A'..'Z'|'_']['0'..'9'|'a'..'z'|'A'..'Z'|'_']*]
+
+    just_equal = [ '=' !'='] // in C
+
+    all_but_eol = [ ~'\n'+ ]
+    all_but_eol2 = [ ->'\n' ] // read the first \n equivalent to ~'\n'+ '\n'
+    \end{lstlisting}
+}
+\frame[containsverbatim]
+{
+    \frametitle{Use case 1: Parsing XML}
+
+    \vfill Nodes and Hooks allow to interact with python
+    \begin{lstlisting}
+from pyrser import meta, grammar
+from pyrser.parsing import Node
+
+txtbnf = grammar.from_string("""
+    plop =[ id:i #test_hook(_, i)]
+""")
+
+# txtbnf is a CLASS
+@meta.hook(txtbnf)
+def test_hook(self, ast: Node, i: Node) -> bool:
+    # ast
+    # capture value and build a node
+    ast.node = self.value(i) # capture value
+    return True
+itxt = txtbnf()
+# rule 'plop' as entry point
+res = itxt.parse("cool", "plop")
+    \end{lstlisting}
+
+    \vfill API is richer than this example!
+}
+\frame[containsverbatim]
+{
+    \frametitle{Use case 1: Parsing XML}
+    \vfill Finally, Directives have a global effect
+    \vfill We could understand it with a little example:
+    \begin{lstlisting}[language=C++]
+    tag = [
+        @ignore("blanks")
+        "<" id:nt attr*
+        [ "/>"
+        |">" [tag|data]* "</" #text(nt) ">"
+        ]
+    ]
+    data = ~'<'+
+    attr = [ id "=" qvalue]
+    id = [['a'..'z'|'A'..'Z'|'_']['0'..'9'|'a'..'z'|'A'..'Z'|'_']*]
+    qvalue = [@ignore("null") string]
+    
+    string = ['"' ['\\' #char | ~'"']* '"']
+    // very near the RE \"(\\.|[^"])*\"
+    \end{lstlisting}
+
+}
+\frame[containsverbatim]
+{
+    \frametitle{Use case 1: Parsing XML}
+    \vfill New Directives could be user defined
+    \vfill Grammar are Classes, so inheritable and composable
+    \vfill Rules are overloadable
+    \begin{lstlisting}
+    from pyrser.grammar import *
+    class GramA(Grammar):
+        grammar = """ ... """
+        entry = "entry_point"
+    class GramB(Grammar, GramA):
+        grammar = """ ... """
+        entry = "entry_point"
+    class GramC(Grammar):
+        grammar = """ ... """
+        entry = "entry_point"
+    class GramD(Grammar, GramA, GramC):
+        grammar = """ R = [GramA.R | GramC.Z] """
+        entry = "GramA.entry_point"
+    \end{lstlisting}
+    \vfill Hooks are overloadable
+    \vfill Complete example with JSON in Tutorial I on http://pythonhosted.org//pyrser/
+
+}
+% ---------------------------------------------------------------------------------- %
+% When we need to parse something, we also need to do more...
+% AST Visiting for hadhoc checking, computation, or generating.
+% 
+% Type system of functionnal language like caml is good but:
+% - need to do tools in caml (DSL with camlp4)
+% - don't fit the first part prerquesites
+% - functionnal TS don't fit engineering tools mostly imperatif
+% 
+% We need:
+% - free static checking for classic things
+% - overloadings
+% - local or global type inference
+% - we don't need function composition ( a -> b -> c <=> (a -> b) -> c <=> a -> (b -> c))
+% 
+% An extandable TS
+\section{Parsing is not enough, Type System!}
+\frame[containsverbatim]
+{
+    \frametitle{Parsing is not enough, Type System!}
+
+    \vfill Parsing is just the way to get an AST but is not enough
+    \vfill We need:
+    \begin{itemize}
+    \item A conveniance way to do AST visiting (tree transformation, generation)
+    \item To check conformity of AST from a semantic
+    \end{itemize}
+}
+\frame[containsverbatim]
+{
+    \frametitle{Parsing is not enough, Type System!}
+
+    \vfill Let's focus on conformity checks (AST visiting is trivial in python)
+    \vfill We need a Type System Module to do the job
+    \vfill Generals goals:
+    \begin{itemize}
+    \item Classic static typing: declarative or inference
+    \item Versatility
+    \item Extensibility
+    \end{itemize}
+    \vfill Remember goals for KOOC:
+    \begin{itemize}
+    \item Handle OO features: function overloads, kind of subtyping (inheritance is not really subtyping), covariant return types
+    \item Handle C narrow (ugly) typing, implicit conversion, ...
+    \end{itemize}
+}
+\frame[containsverbatim]
+{
+    \frametitle{Parsing is not enough, Type System!}
+
+    \vfill Difficult to mimic/use functionnal TS as is (with camlp4)
+    \begin{itemize}
+    \item How handle ugly things with a functionnal TS?
+    \end{itemize}
+
+    \vfill Need an expedient, an hybrid TS
+    \begin{itemize}
+    \item Provide a subset (or reinterpretation) of features found in functionnal language
+    \item A toolbox to compose our semantic
+    \item Usable outside pyrser (legacy parsing) Dependency Injection Again!
+    \end{itemize}
+}
+\frame[containsverbatim]
+{
+    \frametitle{Parsing is not enough, Type System!}
+
+    \vfill Types? a set of syntactic constraints on language expressions.
+    \begin{itemize}
+    \item We could list them: declarative system
+    \item We could deduce them thru uses: inference system
+    \end{itemize}
+
+    \vfill Our expedient:
+    \begin{itemize}
+    \item Easy type algebra: operators, statement are all functions
+    \item Only have to find type of functions that use them...
+    \item ...Deduce/Reduce from literals
+    \item ...Deduce/Reduce from operators (polymorphic or not)
+    \item ...Deduce/Reduce from statements (all is expression or not)
+    \item ...Deduce/Reduce from declarations if present
+    \item Polymorphic type (local or type reconstruction)
+    \item Variadic functions are allowed (we want to type C)
+    \item Choose between Implicit or Explicit conversion (no op if subtype)
+    \end{itemize}
+}
+\frame[containsverbatim]
+{
+    \frametitle{Parsing is not enough, Type System!}
+
+    \vfill We provide few basic abstractions:
+    \begin{itemize}
+    \item Scope: universal container (block, namespace...)
+    \item Signature: all things in a scope a identifiable
+    \item Symbol: at the end all is symbol
+    \end{itemize}
+    \vfill And more complex abstractions:
+    \begin{itemize}
+    \item Var
+    \item Val: true, false, 12, "foobar"
+    \item Fun
+    \item Type: ADT meaning
+    \end{itemize}
+}
+\frame[containsverbatim]
+{
+    \frametitle{Parsing is not enough, Type System!}
+
+    \vfill We just need to tag our AST with instances of these classes...
+    \vfill And to use generic strategies provide by the Inference submodule to:
+    \begin{itemize}
+    \item Type check and/or infer types
+    \item Alter tree if TS need it
+    \item And more...
+    \end{itemize}
+}
+
+% ---------------------------------------------------------------------------------- %
+% 
+% Using type inference thru Dependency Injection.
+% 
+% Type semantic:
+% - Symbol, Signature, Scope
+% - Type
+% - Fun
+% - Var
+% - Val
+% 
+% Typing of Literal:
+% - simple mapping   "toto" -> string
+% - complex mapping  12 -> char|short|int|long
+% 
+% Functions overloads:
+% - for operators
+% 
+% Local inference:
+% - polymorphic operator
+% 
+% Subtyping:
+% - Allow type substituion
+% - or Disallow
+% - or Allow/Warn for implicit type conversion: allow to simulate C behavior or reject it
+% 
+% Global inference:
+% - type reconstruction
+% 
+\section{Use case 2: ToyLanguage4Typing}
+\frame[containsverbatim]
+{
+    \frametitle{Use case 2: ToyLanguage4Typing}
+
+    \vfill Let see some examples with a Toy Language...
+    \vfill TL4T is a language define just for Unit/Regression Test and for tutorials
+    \vfill Very easy to understand
+    \vfill Follow some examples illustrate features of the TS
+    \vfill Complete example in Tutorial II \& III on http://pythonhosted.org//pyrser/
+}
+\frame[containsverbatim]
+{
+    \frametitle{Use case 2: ToyLanguage4Typing}
+
+    \vfill Implicit/Explict conversion and subtyping?
+    \begin{itemize}
+    \item We provide Type Operation to find if t2 is subtype of t1
+    \item You could also say, implicitly convert t2 to t1 thru function f
+    \item You could also say, prohibe convertion t2 to t1
+    \end{itemize}
+}
+\frame[containsverbatim]
+{
+    \frametitle{Use case 2: ToyLanguage4Typing}
+
+    \begin{lstlisting}[language=Python]
+from tests.grammar.tl4t import *
+from pyrser.type_system import *
+test = TL4T()
+res = test.parse("""
+    s = "toto" + 42;
+""")
+res.type_node = Scope(is_namespace=False)
+res.type_node.add(Type("string"))
+res.type_node.add(Type("int"))
+res.type_node.add(Var("s", "string"))
+res.type_node.add(Fun("=", "string", ["string", "string"]))
+res.type_node.add(Fun("+", "string", ["string", "string"]))
+f = Fun("to_str", "string", ["int"])
+res.type_node.add(f)
+n = Notification(
+    Severity.INFO,
+    "implicit conversion of int to string"
+)
+res.type_node.addTranslator(Translator(f, n))
+res.type_node.addTranslatorInjector(createFunWithTranslator)
+res.infer_type(res.diagnostic)
+print(res.to_tl4t())
+    \end{lstlisting}
+    \vfill Will show us:
+    \begin{lstlisting}[language=C]
+    s = "toto" + to_str(42);
+    \end{lstlisting}
+}
+\frame[containsverbatim]
+{
+    \frametitle{Use case 2: ToyLanguage4Typing}
+
+    \vfill Selecting function overloads like in KOOC?
+    \begin{lstlisting}[language=C]
+    fun f(int, char) -> string;
+    fun f(int, int) -> double;
+
+    var a = f(12, 12); // here var a : double
+    var a = f(12, 'c'); // here var a : string
+    \end{lstlisting}
+}
+\frame[containsverbatim]
+{
+    \frametitle{Use case 2: ToyLanguage4Typing}
+
+    \vfill How type literals?
+    \vfill Val could have many types... C
+    \begin{lstlisting}[language=C]
+    int median(int, int);
+    ...
+    int b = median('a', 'c');
+    \end{lstlisting}
+    \vfill Or Val could have unique fix types... F\#
+    \begin{lstlisting}[language=C]
+    12s -> 12 as short
+    12  -> 12 as int
+    ...
+    \end{lstlisting}
+    \vfill We allow both...
+
+}
+\frame[containsverbatim]
+{
+    \frametitle{Use case 2: ToyLanguage4Typing}
+
+    \vfill Variadic functions?
+    \begin{lstlisting}[language=C]
+    fun printf(string, ...) -> void;
+    ...
+    var a = 12;
+    // here fun printf: (string, int, int) -> void
+    printf("%d + %d\n", 42, a);
+    \end{lstlisting}
+    \vfill We could always access in annoted AST to the define type and the instanciate type!
+    Useful for polymorphic functions.
+}
+% ---------------------------------------------------------------------------------- %
+\section{Conclusion}
+\frame[containsverbatim]
+{
+    \frametitle{Conclusion}
+
+    \begin{itemize}
+    \item All presented features will be available in the next 0.0.3 Pyrser versions
+    \item Next type checked version of CNORM
+    \item Deadlines (commit on PYPI) next student sessions (september 2014)
+    \item A lot of features in the PIPE: cythonization, effective system, ...
+    \item Migration to GITHUB
+    \item 1 Lead dev + 3 contributors but need contributors...
+    \end{itemize}
+
+}
+% ---------------------------------------------------------------------------------- %
+
+
+\end{document}
