@@ -17,7 +17,7 @@ WIP:
 version 0.0.10: 2015-10-12
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    * Doc fix: content and theme (switch to alabaster)
+    * Doc fix: content and theme (switch to bizstyle)
     * Remove dependencies in the setup.py (cython)
 
 version 0.0.6: 2015-09-15
