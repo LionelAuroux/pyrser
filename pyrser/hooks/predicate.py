@@ -31,6 +31,7 @@ def pred_true(self):
     """
     return True
 
+
 @meta.hook(BasicParser, "eq")
 def pred_eq(self, n, val):
     """
@@ -53,6 +54,7 @@ def pred_eq(self, n, val):
     if isinstance(v1, int) and not isinstance(v2, int):
         return v1 == int(v2)
     return v1 == v2
+
 
 @meta.hook(BasicParser, "neq")
 def pred_neq(self, n, val):

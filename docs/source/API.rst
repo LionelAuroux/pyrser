@@ -13,4 +13,4 @@ Python API
     dump
     yml
     error
-    type_checking
+    type_system

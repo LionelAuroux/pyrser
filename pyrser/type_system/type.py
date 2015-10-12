@@ -1,5 +1,4 @@
 # type for type checking
-from pyrser import fmt
 from pyrser.type_system.scope import *
 from pyrser.type_system.type_name import *
 
@@ -12,6 +11,10 @@ class Type(Scope):
     depend of the language ref/or not).
     Non member variables/functions/values as in a scope.
     """
+
+    def __str__(self) -> str:
+        import pyrser.type_system.to_fmt
+        return str(self.to_fmt())
 
     def __init__(self, name: str, sig: [Signature]=None):
         super().__init__(TypeName(name))

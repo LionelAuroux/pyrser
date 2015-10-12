@@ -25,6 +25,22 @@ class DummyCpp(grammar.Grammar):
         main =[ @ignore("C/C++") [id:i #add(_, i)]+ ]
     """
 
+class DumCsv(grammar.Grammar):
+    entry = "csv"
+    grammar = """
+            csv =[ @ignore("null")
+                [line:l eol #rows(_, l)]+
+                [line:l #rows(_, l)]?
+                eof
+            ]
+
+            line = [
+                item:i #cols(_, i) [';' item:i #cols(_, i)]*
+            ]
+
+            item = [ [~[';'|eol]]* ]
+    """
+
 
 class GrammarBasic_Test(unittest.TestCase):
     def test_01_list_word(self):
@@ -311,3 +327,28 @@ class GrammarBasic_Test(unittest.TestCase):
         """)
         self.assertTrue(res, "failed to parse dummyCpp")
         self.assertEqual(res.last, 'g', "failed to parse comments")
+
+    def test_28_extra_complement(self):
+        @meta.hook(DumCsv)
+        def cols(self, ast, p):
+            if not hasattr(ast, 'cols'):
+                ast.cols = []
+            ast.cols.append(self.value(p).strip())
+            return True
+        
+        @meta.hook(DumCsv)
+        def rows(self, ast, p):
+            if not hasattr(ast, 'lines'):
+                ast.lines = []
+            ast.lines.append(p.cols)
+            return True
+        bnf = DumCsv("""
+            21;21;32;212;31;231;3
+            1231;3;123;123;12;312;31
+            ;123;12312;312;312;31
+            1;23;123;123;123;12;;123;12;3
+            3123;123;--;12
+        """)
+        #with dummyData as s:
+        res = bnf.parse()
+        self.assertEqual(res.lines[5][2], '--', "failed to parse correctly with ~")

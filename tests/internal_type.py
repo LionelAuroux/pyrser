@@ -1,6 +1,5 @@
 import unittest
 from pyrser.type_system import *
-from pyrser.type_system.to_fmt import *
 from pyrser.passes.to_yml import *
 from pyrser.error import *
 
@@ -223,7 +222,15 @@ class InternalType_Test(unittest.TestCase):
         p2 = Scope(sig=[Fun('b', 'int'), Fun('b', 'double')])
         p3 = Scope(sig=[Fun('c', 'int'), Fun('c', 'double'),
                    Fun('c', 'char')])
+        print("P1: " + str(p1))
+        print("P2: " + str(p2))
+        print("P3: " + str(p3))
+        # TODO: | or |= change something...error when uncommenting
+        #f |= p1 | p2 | p3
+        print("BEFORE: " + str(f))
+        # TODO: the result is different if p1, p2, p3 is or not in scope
         (trestf, trestp) = f.get_by_params([p1, p2, p3])
+        print("RESOLVEDDDD: %s" % str(trestf))
         self.assertIn(Fun('f', 'int', ['int', 'double', 'char']), trestf,
                       "Bad get_by_params in type_system.Scope")
         self.assertEqual(len(trestf), 1,

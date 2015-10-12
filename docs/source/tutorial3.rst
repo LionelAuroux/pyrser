@@ -20,6 +20,7 @@ would yield::
 
 Thus, in our language that we'll call ``TL4T`` (Toy Language For Typing), we
 will need two types of statements:
+
     * Variable declaration (with optional affectation)
     * Expressions to manipulate our variables (and using builtin functions)
 
@@ -141,10 +142,11 @@ Inference Node):
 
 So, we can see that both ``Literal`` and ``Id`` do implement the ``type_algos``
 method, which returns a tuple of three values. Those values are:
+
     * the method to use for inference (here we use the default one of the
-Inference module, inherited from the Inference class)
+        Inference module, inherited from the Inference class)
     * the parameters to give to the inference method (packed within a tuple if
-multiple arguments are required)
+        multiple arguments are required)
     * the optional feedback strategy
 
 The multiple ``infer_*`` methods have each their own way of decomposing the
@@ -180,12 +182,13 @@ example (with parameters ``(4, 5, 6)``).
 Now that the notion of call expression has been clarified, we can get to the
 resolution itself. The resolution is done in a few steps, in the following
 order:
+
     1 - Collect types associated to the call expresion
 
     2 - Collect types of each parameters
 
     3 - Compute the intersection of the first two steps (using the ``Scope``'s
-``get_by_params`` method)
+        ``get_by_params`` method)
 
     4 - Record overloads and decide if the inference can continue
 

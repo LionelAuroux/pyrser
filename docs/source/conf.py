@@ -32,13 +32,11 @@ sys.path.insert(0, os.path.abspath('../../'))
 extensions = ['sphinx.ext.viewcode', 'sphinx.ext.todo', 'sphinx.ext.graphviz',
               'sphinx.ext.inheritance_diagram', 'sphinx.ext.autodoc',
               'sphinxcontrib.programoutput']
-
+file_insertion_enabled = True
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members', 'undoc-members', 'special-members',
                          'show-inheritance']
 import inspect
-
-
 def process_signature(app, what, name, obj, options,
                       signature, return_annotation):
     if what == "function" or what == "method":
@@ -147,7 +145,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

@@ -1,5 +1,4 @@
 # fun for type checking (functions signatures)
-from pyrser import fmt
 from pyrser.type_system.signature import *
 from pyrser.type_system.type_name import *
 
@@ -9,7 +8,13 @@ class Fun(Signature):
     Describe a function signature for the language
     """
 
-    def __init__(self, name: str, tret: str, tparams: list=None, variadic=None):
+    def __init__(
+        self,
+        name: str,
+        tret: str,
+        tparams: list=None,
+        variadic=None
+    ):
         if tparams is not None and not isinstance(tparams, list):
             raise TypeError("Fun's parameter list must be a list")
         super().__init__(name)
@@ -45,25 +50,6 @@ class Fun(Signature):
             if p.is_polymorphic:
                 return True
 
-#    def to_fmt(self):
-#        """
-#        Return an Fmt representation for pretty-printing
-#        """
-#        params = ""
-#        txt = fmt.sep(" ", ['fun'])
-#        name = self.show_name()
-#        if name != "":
-#            txt.lsdata.append(name)
-#        tparams = []
-#        if self.tparams is not None:
-#            tparams = list(self.tparams)
-#        if self.variadic:
-#            tparams.append('...')
-#        params = '(' + ", ".join(tparams) + ')'
-#        txt.lsdata.append(': ' + params)
-#        txt.lsdata.append('-> ' + self.tret)
-#        return txt
-
     def internal_name(self):
         """
         Return the unique internal name
@@ -75,3 +61,6 @@ class Fun(Signature):
             unq += "_" + self.tret
         return unq
 
+    def __str__(self) -> str:
+        import pyrser.type_system.to_fmt
+        return str(self.to_fmt())

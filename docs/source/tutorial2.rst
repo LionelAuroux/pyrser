@@ -28,6 +28,16 @@ language.
 :class:`pyrser.type_system.Scope`: A Scope represents a scope or a type (ADT
 or Abstract Data Type).
 
+    We could notice that a Scope could be of three kind:
+
+    FREE: This is a standalone scope.
+
+    LINKED: This scope is connected to a parent scope. So type resolution is forwarded to parent if it failed.
+
+    EMBEDDED: This scope is a subscope of a parent scope. An embedded scope is seen as an extension of the parent scope.
+    So when we iterate thru symbols in this scope we reached also symbols present in the parent scope.
+    This is useful in certain case but problematic for other (typically :py:func:`pyrser.type_system.Scope.get_by_params`).
+
 Basically we could use the package like this:
 
 .. include:: tutorial2_scripts/minimal_scope.py
@@ -39,7 +49,7 @@ And produce the following output:
 .. program-output:: python3 splice.py 'python3 tutorial2_scripts/minimal_scope.py' 0,7
 
 We're actually generating the signatures of one variable and three functions and
-add them to an unnamed :py:class:`pyerser.type_system.Scope`, thus creating an
+add them to an unnamed :py:class:`pyrser.type_system.Scope`, thus creating an
 anonymous scope that could be our language's global scope. This is the reason
 why we instantiate the :class:`pyrser.type_system.Scope` object using the
 keyword ``sig`` (also second positionnal argument): by not giving a first
@@ -119,7 +129,7 @@ We get:
 .. program-output:: python3 splice.py 'python3 tutorial2_scripts/type_operations.py' 17,27
 
 As you may have understood,
-:py:meth:`pyrser.type_system.Scope.get_symbol_by_name` returns a sub-set of
+:py:meth:`pyrser.type_system.Scope.get_by_symbol_name` returns a sub-set of
 the Scope instance itself. Thus, we get another Scope, on which we can operate
 further.
 
@@ -145,7 +155,7 @@ On another note, :py:meth:`pyrser.type_system.Scope.get_by_symbol_name`
 also returns the Scope containing the different sets of parameters that must be
 used for each overload:
 
-.. program-output:: python3 splice.py 'python3 tutorial2_scripts/type_operations.py' 38,39
+.. program-output:: python3 splice.py 'python3 tutorial2_scripts/type_operations.py' 38,43
 
 Here, we got a unique overload so the type checking resolved the types to the
 proper function.
@@ -238,7 +248,7 @@ resolve (either following a standard resolution model or yielding an error)
 situations where multiples signatures match the one we are looking for. As we
 just saw, since we can redefine the unique internal identifier generation for
 the typing system's classes, depending on the method used, we could fall more
-or leass easily in one of those situations.
+or less easily in one of those situations.
 
 For instance, let's assume that our mangling supports function overloads, like
 the C++ language does. Then, let's assume the following symbols to have been
@@ -300,7 +310,7 @@ type:
 
 .. include:: tutorial2_scripts/type_disambiguation.py
     :code: python
-    :start-line: 25
+    :start-line: 24
 
 and we then get the following output:
 
@@ -310,7 +320,7 @@ As we can see, by using this last filter, we could identify an unique function
 signature matching our user input. Alas, in some cases, it's not as easy.
 Indeed, in some languages you might have polymorphic types, that the Scope
 class cannot resolve itself. It requires the help of another typing module: the
-:py:mod:`pyrser.type_system.Inference.py`. Sometimes, even the inference
+:class:`pyrser.type_system.inference.Inference`. Sometimes, even the inference
 module cannot resolve something, and then we fall in the case of an error, that
 will be up to us to notify to the user.
 

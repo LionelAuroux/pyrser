@@ -1,7 +1,9 @@
+""" Module for scoping manipulation.
+"""
+
 # scope for type checking
 import weakref
 from collections import *
-from pyrser import fmt, meta
 from pyrser.type_system.symbol import *
 from pyrser.type_system.signature import *
 from pyrser.type_system.evalctx import *
@@ -12,28 +14,33 @@ from pyrser.passes.to_yml import *
 
 StateScope = meta.enum('FREE', 'LINKED', 'EMBEDDED')
 
+
 # forward just for annotation (not the same id that final type)
 class Scope:
     pass
 
 
 class Scope(Symbol):
-    """
-    Scope of Signature for a Scope/namespace/type etc...
+    """ Scope of Signature for a Scope/namespace/type etc...
     Basic abstraction of type checking.
     Scope is not a 'pure' python set but something between a set and a dict...
     """
 
+    def __str__(self) -> str:
+        import pyrser.type_system.to_fmt
+        return str(self.to_fmt())
+
     def __init__(self, name: str=None, sig: [Signature]=None,
                  state=StateScope.FREE, is_namespace=True):
-        """Unnamed scope for global scope
-        
+        """ Unnamed scope for global scope
+
         A Scope have basically 3 possibles states:
-        FREE: it's a standalone Scope, generally the global Scope
-        LINKED: the Scope is related to another Scope for type resolution,
-            like compound statement
-        EMBEDDED: the Scope was added into another Scope,
-            it forwards all 'in' calls...like namespacing
+
+            FREE: it's a standalone Scope, generally the global Scope
+            LINKED: the Scope is related to another Scope for type resolution,
+                like compound statement
+            EMBEDDED: the Scope was added into another Scope,
+                it forwards all 'in' calls...like namespacing
 
         A Scope could or couldn't act like a namespace.
         All Signature added into a 'namespaced' Scope was prefixed
@@ -74,9 +81,7 @@ class Scope(Symbol):
         return self
 
     def set_name(self, name: str):
-        """
-        You could set the name after construction
-        """
+        """ You could set the name after construction """
         self.name = name
         # update internal names
         lsig = self._hsig.values()
@@ -85,9 +90,7 @@ class Scope(Symbol):
             self._hsig[s.internal_name()] = s
 
     def count_types(self) -> int:
-        """
-        Count subtypes
-        """
+        """ Count subtypes """
         n = 0
         for s in self._hsig.values():
             if type(s).__name__ == 'Type':
@@ -95,9 +98,7 @@ class Scope(Symbol):
         return n
 
     def count_vars(self) -> int:
-        """
-        Count var define by this scope
-        """
+        """ Count var define by this scope """
         n = 0
         for s in self._hsig.values():
             if hasattr(s, 'is_var') and s.is_var():
@@ -105,9 +106,7 @@ class Scope(Symbol):
         return n
 
     def count_funs(self) -> int:
-        """
-        Count function define by this scope
-        """
+        """ Count function define by this scope """
         n = 0
         for s in self._hsig.values():
             if hasattr(s, 'is_fun') and s.is_fun():
@@ -115,23 +114,17 @@ class Scope(Symbol):
         return n
 
     def __update_count(self):
-        """
-        Update internal counters
-        """
+        """ Update internal counters """
         self._ntypes = self.count_types()
         self._nvars = self.count_vars()
         self._nfuns = self.count_funs()
 
     def __repr__(self) -> str:
-        """
-        Internal representation
-        """
+        """ Internal representation """
         return repr(self._hsig)
 
     def __getstate__(self):
-        """
-        For pickle don't handle weakrefs...
-        """
+        """ For pickle, we don't handle weakrefs... """
         state = self.__dict__.copy()
         del state['parent']
         return state
@@ -141,9 +134,7 @@ class Scope(Symbol):
     # ======== SET OPERATORS OVERLOADING ========
     # in
     def __contains__(self, s: Signature) -> bool:
-        """
-        check if a Signature or a Type is declared in a Scope
-        """
+        """ check if a Signature or a Type is declared in a Scope """
         # fail if in global
         from pyrser.type_system.type import Type
         found = False
@@ -164,11 +155,11 @@ class Scope(Symbol):
 
     # |=
     def __ior__(self, sig: list or Scope) -> Scope:
-        """|= operator"""
+        """ \|= operator """
         return self.update(sig)
 
     def update(self, sig: list or Scope) -> Scope:
-        """Update the Set with values of another Set"""
+        """ Update the Set with values of another Set """
         values = sig
         if hasattr(sig, 'values'):
             values = sig.values()
@@ -183,22 +174,22 @@ class Scope(Symbol):
 
     # |
     def __or__(self, sig: Scope) -> Scope:
-        """| operator"""
+        """ | operator """
         return self.union(sig)
 
     def union(self, sig: Scope) -> Scope:
-        """Create a new Set produce by the union of 2 Set"""
+        """ Create a new Set produce by the union of 2 Set """
         new = Scope(sig=self._hsig.values(), state=self.state)
         new |= sig
         return new
 
     # &=
     def __iand__(self, sig: Scope) -> Scope:
-        """&= operator"""
+        """ &= operator """
         return self.intersection_update(sig)
 
     def intersection_update(self, oset: Scope) -> Scope:
-        """Update Set with common values of another Set"""
+        """ Update Set with common values of another Set """
         keys = list(self._hsig.keys())
         for k in keys:
             if k not in oset:
@@ -209,22 +200,22 @@ class Scope(Symbol):
 
     # &
     def __and__(self, sig: Scope) -> Scope:
-        """& operator"""
+        """ & operator """
         return self.intersection(sig)
 
     def intersection(self, sig: Scope) -> Scope:
-        """Create a new Set produce by the intersection of 2 Set"""
+        """ Create a new Set produce by the intersection of 2 Set """
         new = Scope(sig=self._hsig.values(), state=self.state)
         new &= sig
         return new
 
     # -=
     def __isub__(self, sig: Scope) -> Scope:
-        """-= operator"""
+        """ -= operator """
         return self.difference_update(sig)
 
     def difference_update(self, oset: Scope) -> Scope:
-        """Remove values common with another Set"""
+        """ Remove values common with another Set """
         keys = list(self._hsig.keys())
         for k in keys:
             if k in oset:
@@ -233,22 +224,24 @@ class Scope(Symbol):
 
     # -
     def __sub__(self, sig: Scope) -> Scope:
-        """- operator"""
+        """ - operator """
         return self.difference(sig)
 
     def difference(self, sig: Scope) -> Scope:
-        """Create a new Set produce by a Set subtracted by another Set"""
+        """ Create a new Set produce by a Set subtracted by another Set """
         new = Scope(sig=self._hsig.values(), state=self.state)
         new -= sig
         return new
 
     # ^=
     def __ixor__(self, sig: Scope) -> Scope:
-        """^= operator"""
+        """ ^= operator """
         return self.symmetric_difference_update(sig)
 
     def symmetric_difference_update(self, oset: Scope) -> Scope:
-        """Remove common values and Update specific values from another Set"""
+        """ Remove common values
+            and Update specific values from another Set
+        """
         skey = set()
         keys = list(self._hsig.keys())
         for k in keys:
@@ -263,26 +256,24 @@ class Scope(Symbol):
 
     # ^
     def __xor__(self, sig: Scope) -> Scope:
-        """^ operator"""
+        """ ^ operator """
         return self.symmetric_difference(sig)
 
     def symmetric_difference(self, sig: Scope) -> Scope:
-        """Create a new Set with values present in only one Set"""
+        """ Create a new Set with values present in only one Set """
         new = Scope(sig=self._hsig.values(), state=self.state)
         new ^= sig
         return new
 
     # ======== SCOPE MANIPULATION ========
     def add(self, it: Signature) -> bool:
-        """
-        Add it to the Set
-        """
+        """ Add it to the Set """
         if isinstance(it, Scope):
             it.state = StateScope.EMBEDDED
         txt = it.internal_name()
         it.set_parent(self)
         if self.is_namespace:
-            txt =  it.internal_name()
+            txt = it.internal_name()
         if txt == "":
             txt = '_' + str(len(self._hsig))
         if txt in self._hsig:
@@ -292,9 +283,7 @@ class Scope(Symbol):
         return True
 
     def remove(self, it: Signature) -> bool:
-        """
-        Remove it but raise KeyError if not found
-        """
+        """ Remove it but raise KeyError if not found """
         txt = it.internal_name()
         if txt not in self._hsig:
             raise KeyError(it.show_name() + ' not in Set')
@@ -305,9 +294,7 @@ class Scope(Symbol):
         return True
 
     def discard(self, it: Signature) -> bool:
-        """
-        Remove it only if present
-        """
+        """ Remove it only if present """
         txt = it.internal_name()
         if txt in self._hsig:
             sig = self._hsig[txt]
@@ -318,68 +305,50 @@ class Scope(Symbol):
         return False
 
     def clear(self) -> bool:
-        """
-        Clear all signatures in the Set
-        """
+        """ Clear all signatures in the Set """
         self._hsig.clear()
         return True
 
     def pop(self) -> Signature:
-        """
-        Pop a random Signature
-        """
+        """ Pop a random Signature """
         return self._hsig.popitem()
 
     # ======== SCOPE ITERATION ========
     def __len__(self) -> int:
-        """
-        Len of the Set
-        """
+        """ Len of the Set """
         return len(self._hsig)
 
     def values(self) -> [Signature]:
-        """
-        Retrieve all values
-        """
+        """ Retrieve all values """
         if self.state == StateScope.EMBEDDED and self.parent is not None:
             return list(self._hsig.values()) + list(self.parent().values())
         else:
             return self._hsig.values()
 
     def keys(self) -> [str]:
-        """
-        Retrieve all keys
-        """
+        """ Retrieve all keys """
         return self._hsig.keys()
 
     # ======== SCOPE QUERY ========
     def first(self) -> Signature:
-        """
-        Retrieve the first Signature ordered by mangling descendant
-        """
+        """ Retrieve the first Signature ordered by mangling descendant """
         k = sorted(self._hsig.keys())
         return self._hsig[k[0]]
 
     def last(self) -> Signature:
-        """
-        Retrieve the last Signature ordered by mangling descendant
-        """
+        """ Retrieve the last Signature ordered by mangling descendant """
         k = sorted(self._hsig.keys())
         return self._hsig[k[-1]]
 
     def get(self, key: str, default=None) -> Signature:
-        """
-        Get a signature instance by its internal_name
-        """
+        """ Get a signature instance by its internal_name """
         item = default
         if key in self._hsig:
             item = self._hsig[key]
         return item
 
     def get_by_symbol_name(self, name: str) -> Scope:
-        """
-        Retrieve a Set of all signature by symbol name
-        """
+        """ Retrieve a Set of all signature by symbol name """
         lst = []
         for s in self.values():
             if s.name == name:
@@ -399,8 +368,7 @@ class Scope(Symbol):
         return rscope
 
     def getsig_by_symbol_name(self, name: str) -> Signature:
-        """
-        Retrieve the unique Signature of a symbol.
+        """ Retrieve the unique Signature of a symbol.
         Fail if the Signature is not unique
         """
         subscope = self.get_by_symbol_name(name)
@@ -410,9 +378,7 @@ class Scope(Symbol):
         return v[0]
 
     def get_by_return_type(self, tname: str) -> Scope:
-        """
-        Retrieve a Set of all signature by (return) type
-        """
+        """ Retrieve a Set of all signature by (return) type """
         lst = []
         for s in self.values():
             if hasattr(s, 'tret') and s.tret == tname:
@@ -423,8 +389,7 @@ class Scope(Symbol):
         return rscope
 
     def get_all_polymorphic_return(self) -> bool:
-        """
-        For now, polymorphic return type are handle by symbol artefact.
+        """ For now, polymorphic return type are handle by symbol artefact.
 
         --> possible multi-polymorphic but with different constraint attached!
         """
@@ -439,11 +404,12 @@ class Scope(Symbol):
         return rscope
 
     def get_by_params(self, params: [Scope]) -> (Scope, [[Scope]]):
-        """
-        Retrieve a Set of all signature that match the parameter list.
-        Return a pair.
+        """ Retrieve a Set of all signature that match the parameter list.
+        Return a pair:
+
             pair[0] the overloads for the functions
-            pair[1] the overloads for the parameters (a list of candidate list of parameters)
+            pair[1] the overloads for the parameters
+                (a list of candidate list of parameters)
         """
         lst = []
         scopep = []
@@ -469,6 +435,13 @@ class Scope(Symbol):
                     tmp[i].set_parent(self)
                     # match param of the expr
                     if i < nbparam_sig:
+                        if params[i].state == StateScope.EMBEDDED:
+                            raise ValueError(
+                                ("params[%d] of get_by_params is a StateScope."
+                                 + "EMBEDDED scope... "
+                                 + "read the doc and try a StateScope.FREE"
+                                 + " or StateScope.LINKED.") % i
+                            )
                         m = params[i].get_by_return_type(s.tparams[i])
                         if len(m) > 0:
                             mcnt += 1
@@ -534,17 +507,13 @@ class Scope(Symbol):
         return self.mapTypeTranslate.addTranslator(val, as_global=as_global)
 
     def addTranslatorInjector(self, ast_method):
-        """
-        Could be redefine in a subscope
-        """
+        """ Could be redefine in a subscope """
         if self.astTranslatorInjector is not None:
             raise TypeError("Already define a translator injector")
         self.astTranslatorInjector = ast_method
 
     def callInjector(self, old: Node, trans: Translator) -> Node:
-        """
-        If don't have injector call from parent
-        """
+        """ If don't have injector call from parent """
         if self.astTranslatorInjector is None:
             if self.parent is not None:
                 # TODO: think if we forward for all StateScope
@@ -555,8 +524,8 @@ class Scope(Symbol):
         return self.astTranslatorInjector(old, trans)
 
     def findTranslationTo(self, t2: str) -> (bool, Signature, Translator):
-        """
-        Find an arrow (->) aka a function able to translate something to t2
+        """ Find an arrow (->)
+        aka a function able to translate something to t2
         """
         if not t2.is_polymorphic:
             collect = []

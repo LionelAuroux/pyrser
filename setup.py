@@ -2,16 +2,24 @@
 
 import setuptools
 
+def read(fname):
+    import os
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    
+#long_desc = read('README.md')
+
 version = '0.0'
-release = '0.0.6'
+release = '0.0.10'
 
 setuptools.setup(
     name='pyrser',
     version=release,
     url='https://code.google.com/p/pyrser/',
     license='GPLv3',
-    maintainer='Lionel Auroux',
-    maintainer_email='lionel.auroux@gmail.com',
+    author='Lionel Auroux',
+    author_email='lionel.auroux@gmail.com',
+    description="Pyrser a pragmatic PEG parsing tool",
+    #long_description= long_desc,
     keywords="parse parser parsing peg packrat grammar language",
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -32,7 +40,7 @@ setuptools.setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Text Processing :: General',
     ],
-    install_requires=['cython'],
+    #install_requires=['cython'],
     # TODO: need some tests
     extras_require={
         'DOC': ['Sphinx', 'sphinxcontrib-programoutput'],

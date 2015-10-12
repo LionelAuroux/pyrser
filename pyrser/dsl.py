@@ -51,7 +51,7 @@ class EBNF(parsing.Parser):
         self.set_rules({
             #
             # bnf_dsl = [ @ignore("C/C++") bnf_stmts ]
-            # //todo: bnf_dsl = [ @ignore("C/C++") [bnf_stmts] eof ] 
+            # //todo: bnf_dsl = [ @ignore("C/C++") [bnf_stmts] eof ]
             #
             'bnf_dsl': parsing.Seq(
                 # tree is not already construct but Directive need it
@@ -248,8 +248,8 @@ class EBNF(parsing.Parser):
                         parsing.Capture('d', parsing.Rule('directive2')),
                         parsing.Capture('s', parsing.Rule('sequences')),
                         parsing.Hook('add_directive2', [('_', parsing.Node),
-                                                       ('d', parsing.Node),
-                                                       ('s', parsing.Node)])
+                                                        ('d', parsing.Node),
+                                                        ('s', parsing.Node)])
                     ),
                     parsing.Seq(
                         parsing.Capture('d', parsing.Rule('directive')),
@@ -580,7 +580,7 @@ def add_text(self, sequence, txt):
 def add_range(self, sequence, begin, end):
     """Add a read_range primitive"""
     sequence.parser_tree = parsing.Range(self.value(begin).strip("'"),
-                                        self.value(end).strip("'"))
+                                         self.value(end).strip("'"))
     return True
 
 
@@ -706,11 +706,17 @@ def hook_param(self, hook, p):
     hook.listparam.append(p.pair)
     return True
 
+
 @meta.hook(EBNF, "EBNF.add_directive2")
 def add_directive2(self, sequence, d, s):
     """Add a directive in the sequence"""
-    sequence.parser_tree = parsing.Directive2(d.name, d.listparam, s.parser_tree)
+    sequence.parser_tree = parsing.Directive2(
+        d.name,
+        d.listparam,
+        s.parser_tree
+    )
     return True
+
 
 @meta.hook(EBNF, "EBNF.add_directive")
 def add_directive(self, sequence, d, s):

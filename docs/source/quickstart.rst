@@ -32,7 +32,7 @@ A minimal use of pyrser is ::
 
 This piece of code allow you to read a list of the words ``hello`` or ``world``.
 
-See :doc:`tutorial` to understand how this sample works.
+See :doc:`tutorial1` to understand how this sample works.
 
 PEG Parser
 ==========

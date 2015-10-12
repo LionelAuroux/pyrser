@@ -35,6 +35,7 @@ def set_node(self, dst, src):
                 self.tag_cache[k2] = self.tag_cache[k]
     return True
 
+
 @meta.hook(BasicParser, "setint")
 def set_node_as_int(self, dst, src):
     """
@@ -49,6 +50,7 @@ def set_node_as_int(self, dst, src):
     dst.value = int(src)
     return True
 
+
 @meta.hook(BasicParser, "setstr")
 def set_node_as_str(self, dst, src):
     """
@@ -62,6 +64,7 @@ def set_node_as_str(self, dst, src):
     """
     dst.value = src
     return True
+
 
 @meta.hook(BasicParser, "get")
 def get_subnode(self, dst, ast, expr):

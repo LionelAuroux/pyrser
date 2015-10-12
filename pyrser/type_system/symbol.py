@@ -32,7 +32,7 @@ class Symbol:
         """
         Auto deref parent and return the instance.
         """
-        if self.parent is not None:
+        if hasattr(self, 'parent') and self.parent is not None:
             return self.parent()
         return None
 

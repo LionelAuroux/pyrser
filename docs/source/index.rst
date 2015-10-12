@@ -14,12 +14,12 @@ Contents:
    
    quickstart
    changelog
-   tutorial1
-   tutorial2
-   tutorial3
    dsl
    base
    API
+   tutorial1
+   tutorial2
+   tutorial3
    maintainers
 
 

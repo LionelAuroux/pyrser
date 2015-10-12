@@ -10,7 +10,7 @@ _decorators = []
 
 
 class Functor:
-    """Dummy Base class for all parse tree classes.
+    """ Dummy Base class for all parse tree classes.
 
     common property:
         pt if contain a Functor
@@ -51,14 +51,16 @@ class Directive2(Functor):
 
 
 class RewritingRules(Functor):
-    """Allow to write rewriting rules that transform the AST before code generation/interpretation. """
+    """ Allow to write rewriting rules that transform
+        the AST before code generation/interpretation.
+    """
 
     def __init__(self, name: str=""):
         self.name = name
 
 
 class SkipIgnore(Functor):
-    """Call Ignore Convention primitive functor."""
+    """ Call Ignore Convention primitive functor. """
 
     def __init__(self, convention: str=""):
         """TODO: Could be better to implement Directive thru functors???"""
@@ -137,7 +139,7 @@ class UntilChar(Functor, Leaf):
 
 
 class Seq(Functor):
-    """A B C bnf primitive as a functor."""
+    """ A B C bnf primitive as a functor. """
 
     def __init__(self, *ptlist: Functor):
         Functor.__init__(self)
@@ -152,7 +154,7 @@ class Seq(Functor):
             self.ptlist.insert(0, SkipIgnore())
 
     def __getitem__(self, idx) -> Functor:
-        """Hide SkipIgnore object from outside"""
+        """ Hide SkipIgnore object from outside """
         if idx >= 0:
             idx = (idx * 2) + 1
         else:
@@ -168,7 +170,7 @@ class Seq(Functor):
 
 
 class Scope(Functor):
-    """functor to wrap SCOPE/rule directive or just []."""
+    """ functor to wrap SCOPE/rule directive or just []. """
 
     def __init__(self, begin: Seq, end: Seq, pt: Seq):
         Functor.__init__(self)
@@ -186,7 +188,7 @@ class Scope(Functor):
 
 
 class LookAhead(Functor):
-    """!!A bnf primitive as a functor."""
+    """ !!A bnf primitive as a functor. """
     def __init__(self, pt: Functor):
         Functor.__init__(self)
         self.pt = pt
@@ -204,7 +206,7 @@ class LookAhead(Functor):
 
 
 class Neg(Functor):
-    """!A bnf primitive as a functor."""
+    """ !A bnf primitive as a functor. """
 
     def __init__(self, pt: Functor):
         Functor.__init__(self)
@@ -224,7 +226,7 @@ class Neg(Functor):
 
 
 class Complement(Functor):
-    """~A bnf primitive as a functor."""
+    """ ~A bnf primitive as a functor. """
 
     def __init__(self, pt: Functor):
         Functor.__init__(self)
@@ -244,12 +246,11 @@ class Complement(Functor):
             parser._stream.incpos()
             return parser._stream.validate_context()
         parser._stream.restore_context()
-        parser.undo_last_ignore()
         return False
 
 
 class Until(Functor):
-    """->A bnf primitive as a functor."""
+    """ ->A bnf primitive as a functor. """
 
     def __init__(self, pt: Functor):
         Functor.__init__(self)
@@ -273,7 +274,7 @@ class Until(Functor):
 
 
 class Call(Functor):
-    """Functor wrapping a BasicParser method call in a BNF clause."""
+    """ Functor wrapping a BasicParser method call in a BNF clause. """
 
     def __init__(self, callObject, *params):
         Functor.__init__(self)
@@ -285,7 +286,7 @@ class Call(Functor):
 
 
 class CallTrue(Call):
-    """Functor to wrap arbitrary callable object in BNF clause."""
+    """ Functor to wrap arbitrary callable object in BNF clause. """
 
     def do_call(self, parser: BasicParser) -> Node:
         self.callObject(*self.params)
@@ -293,7 +294,7 @@ class CallTrue(Call):
 
 
 class Capture(Functor):
-    """Functor to handle capture nodes."""
+    """ Functor to handle capture nodes. """
 
     def __init__(self, tagname: str, pt: Functor):
         Functor.__init__(self)
@@ -325,7 +326,7 @@ class Capture(Functor):
 
 
 class DeclNode(Functor):
-    """Functor to handle node declaration with __scope__:N."""
+    """ Functor to handle node declaration with __scope__:N. """
 
     def __init__(self, tagname: str):
         Functor.__init__(self)
@@ -339,8 +340,8 @@ class DeclNode(Functor):
 
 
 class Bind(Functor):
-    """Functor to handle the binding of a resulting nodes
-    to an existing name.
+    """ Functor to handle the binding of a resulting nodes
+        to an existing name.
     """
 
     def __init__(self, tagname: str, pt: Functor):
@@ -359,7 +360,7 @@ class Bind(Functor):
 
 
 class Alt(Functor):
-    """A | B bnf primitive as a functor."""
+    """ A | B bnf primitive as a functor. """
 
     def __init__(self, *ptlist: Seq):
         Functor.__init__(self)
@@ -387,11 +388,13 @@ class Alt(Functor):
 
 
 class RepOptional(Functor):
-    """[]? bnf primitive as a functor."""
+    """ []? bnf primitive as a functor. """
     def __init__(self, pt: Seq):
         Functor.__init__(self)
         self.pt = pt
-        if isinstance(self.pt, Text) or isinstance(self.pt, Char) or isinstance(self.pt, Range) or isinstance(self.pt, Directive):
+        if (isinstance(self.pt, Text) or isinstance(self.pt, Char)
+            or isinstance(self.pt, Range) or isinstance(self.pt, Directive)
+        ):
             self.pt = Seq(self.pt)
 
     def do_call(self, parser: BasicParser) -> bool:
@@ -402,29 +405,34 @@ class RepOptional(Functor):
 
 
 class Rep0N(Functor):
-    """[]* bnf primitive as a functor."""
+    """ []* bnf primitive as a functor. """
 
     def __init__(self, pt: Seq):
         Functor.__init__(self)
         self.pt = pt
-        if isinstance(self.pt, Text) or isinstance(self.pt, Char) or isinstance(self.pt, Range) or isinstance(self.pt, Directive):
+        if (isinstance(self.pt, Text) or isinstance(self.pt, Char)
+            or isinstance(self.pt, Range) or isinstance(self.pt, Directive)
+        ):
             self.pt = Seq(self.pt)
 
     def do_call(self, parser: BasicParser) -> bool:
+        parser._stream.save_context()
         parser.push_rule_nodes()
         while self.pt(parser):
             pass
         parser.pop_rule_nodes()
-        return True
+        return parser._stream.validate_context()
 
 
 class Rep1N(Functor):
-    """[]+ bnf primitive as a functor."""
+    """ []+ bnf primitive as a functor. """
 
     def __init__(self, pt: Seq):
         Functor.__init__(self)
         self.pt = pt
-        if isinstance(self.pt, Text) or isinstance(self.pt, Char) or isinstance(self.pt, Range) or isinstance(self.pt, Directive):
+        if (isinstance(self.pt, Text) or isinstance(self.pt, Char)
+            or isinstance(self.pt, Range) or isinstance(self.pt, Directive)
+        ):
             self.pt = Seq(self.pt)
 
     def do_call(self, parser: BasicParser) -> bool:
@@ -440,7 +448,7 @@ class Rep1N(Functor):
 
 
 class Error(Functor):
-    """Raise an error."""
+    """ Raise an error. """
 
     def __init__(self, msg: str, **kwargs):
         self.msg = msg
@@ -456,7 +464,7 @@ class Error(Functor):
 
 
 class Rule(Functor, Leaf):
-    """Call a rule by its name."""
+    """ Call a rule by its name. """
 
     def __init__(self, name: str):
         Functor.__init__(self)
@@ -470,7 +478,7 @@ class Rule(Functor, Leaf):
 
 
 class Hook(Functor, Leaf):
-    """Call a hook by his name."""
+    """ Call a hook by his name. """
 
     def __init__(self, name: str, param: [(object, type)]):
         Functor.__init__(self)
@@ -490,7 +498,10 @@ class Hook(Functor, Leaf):
                     parser.diagnostic.notify(
                         error.Severity.ERROR,
                         "Unknown capture variable : %s" % v,
-                        error.LocationInfo.from_stream(parser._stream, is_error=True)
+                        error.LocationInfo.from_stream(
+                            parser._stream,
+                            is_error=True
+                        )
                     )
                     raise parser.diagnostic
                 valueparam.append(parser.rule_nodes[v])
@@ -503,8 +514,9 @@ class Hook(Functor, Leaf):
 
 
 class MetaDirectiveWrapper(type):
-    """metaclass of all DirectiveWrapper subclasses.
-    ensure that begin and end exists in subclasses as method"""
+    """ metaclass of all DirectiveWrapper subclasses.
+    ensure that begin and end exists in subclasses as method
+    """
     def __new__(metacls, name, bases, namespace):
         cls = type.__new__(metacls, name, bases, namespace)
         if 'begin' not in namespace:
@@ -523,7 +535,7 @@ class MetaDirectiveWrapper(type):
 
 
 class DirectiveWrapper(Functor, metaclass=MetaDirectiveWrapper):
-    """functor to wrap begin/end directive"""
+    """ functor to wrap begin/end directive """
 
     def __init__(self, ):
         Functor.__init__(self)
@@ -581,7 +593,7 @@ class DirectiveWrapper(Functor, metaclass=MetaDirectiveWrapper):
 
 
 class Directive(Functor):
-    """functor to wrap directive HOOKS"""
+    """ functor to wrap directive HOOKS """
 
     def __init__(self, directive: DirectiveWrapper, param: [(object, type)],
                  pt: Functor):
@@ -616,8 +628,9 @@ class Directive(Functor):
 
 
 class MetaDecoratorWrapper(type):
-    """metaclass of all DecoratorWrapper subclasses.
-    ensure that begin and end exists in subclasses as method"""
+    """ metaclass of all DecoratorWrapper subclasses.
+    ensure that begin and end exists in subclasses as method
+    """
     def __new__(metacls, name, bases, namespace):
         cls = type.__new__(metacls, name, bases, namespace)
         if 'begin' not in namespace:

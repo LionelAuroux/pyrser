@@ -57,15 +57,18 @@ def to_dsl(self, level=0):
         res += ")"
         return res
 
+
 @meta.add_method(parsing.SkipIgnore)
 def to_dsl(self, level=0):
     res = "\n{}#skipIgnore".format('\t' * (level + 1))
     return res
 
+
 @meta.add_method(parsing.Text)
 def to_dsl(self, level=0):
     res = '\n{}"{}"'.format('\t' * (level + 1), self.text)
     return res
+
 
 @meta.add_method(parsing.Scope)
 def to_dsl(self, level=0):

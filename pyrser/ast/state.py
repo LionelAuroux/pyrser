@@ -8,8 +8,11 @@ import weakref
 import pipes
 import tempfile
 
+
 # just a forward declaration -- for annotation
-class State: pass
+class State:
+    pass
+
 
 class StateRegister():
     """
@@ -20,7 +23,8 @@ class StateRegister():
         self.__default = None
         # all state belonging to this register
         self.states = dict()
-        # label store the string representation of the PSL expression that is responsible of all these states
+        # label store the string representation of the PSL expression
+        # that is responsible of all these states
         self.label = label
         # handle events
         self.named_events = named_events
@@ -104,12 +108,15 @@ class StateRegister():
             s.lsdata.append(str(ids))
         infos.lsdata.append(fmt.block('(', ')', [s]))
         infos.lsdata.append("events:" + repr(self.events))
-        infos.lsdata.append("named_events:" + repr(list(self.named_events.keys())))
+        infos.lsdata.append(
+            "named_events:" + repr(list(self.named_events.keys()))
+        )
         infos.lsdata.append("uid_events:" + repr(list(self.uid_events.keys())))
         return infos
 
     def __repr__(self) -> str:
         return str(self.to_fmt())
+
 
 class EventExpr:
     """
@@ -120,6 +127,7 @@ class EventExpr:
 
     def clean(self, sr: StateRegister, updown: bool):
         pass
+
 
 class EventAlt(EventExpr):
     """
@@ -148,6 +156,7 @@ class EventAlt(EventExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
+
 class EventSeq(EventExpr):
     """
     Ast Node for a sequence predicate expression.
@@ -175,6 +184,7 @@ class EventSeq(EventExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
+
 class EventNot(EventExpr):
     """
     Ast Node for a not predicate expression.
@@ -197,6 +207,7 @@ class EventNot(EventExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
+
 class EventParen(EventExpr):
     """
     Ast Node for a parenthesis predicate expression.
@@ -216,6 +227,7 @@ class EventParen(EventExpr):
 
     def __repr__(self) -> str:
         return str(self.to_fmt())
+
 
 class EventNamed(EventExpr):
     """
@@ -238,6 +250,7 @@ class EventNamed(EventExpr):
 
     def __repr__(self) -> str:
         return str(self.to_fmt())
+
 
 class State:
     """
@@ -272,7 +285,7 @@ class State:
         self.default_hook = None
         self.default = None
 
-    def nextstate(self, newstate, thenode=None, user_data=None, nodes: list=None):
+    def nextstate(self, newstate, treenode=None, user_data=None):
         """
         Manage transition of state.
         """
@@ -286,8 +299,8 @@ class State:
         elif isinstance(newstate, StatePrecond):
             return newstate.st
         elif isinstance(newstate, StateHook):
-            ##TODO ??? rewriting? rethink the API...
-            newstate.call(thenode, user_data, nodes)
+            # final API using PSL
+            newstate.call(treenode, user_data)
             return newstate.st
         return self
 
@@ -405,8 +418,8 @@ class State:
 
     ### DEFAULT
 
-    def doResultHook(self, thenode=None, user_data=None, nodes: list=None) -> State:
-        return self.nextstate(self.default_hook, thenode, user_data, nodes)
+    def doResultHook(self, treenode=None, user_data=None) -> State:
+        return self.nextstate(self.default_hook, treenode, user_data)
 
     def doResultEvent(self) -> State:
         return self.nextstate(self.default_event)
@@ -434,19 +447,56 @@ class State:
         dst = ""
         if isinstance(s, StateEvent):
             dst = "ent" + str(id(s))
-            txt += "\t" + dst + ' [shape=box xlabel="<' + s.name + '>"];\n'
-            txt += "\t" + dst + ' -> ' + self._dot_state(s.st) + ';\n'
+            txt += ("\t"
+                    + dst
+                    + ' [shape=box xlabel="<'
+                    + s.name
+                    + '>"];\n'
+                    )
+            txt += ("\t"
+                    + dst
+                    + ' -> '
+                    + self._dot_state(s.st)
+                    + ';\n'
+                    )
         elif isinstance(s, StatePrecond):
             dst = "ent" + str(id(s))
-            txt += "\t" + dst + ' [shape=box xlabel=" ? (' + s.txtevent + ')"];\n'
-            txt += "\t" + dst + ' -> ' + self._dot_state(s.st) + ';\n'
+            txt += ("\t"
+                    + dst
+                    + ' [shape=box xlabel=" ? ('
+                    + s.txtevent
+                    + ')"];\n'
+                    )
+            txt += ("\t"
+                    + dst
+                    + ' -> '
+                    + self._dot_state(s.st)
+                    + ';\n'
+                    )
         elif isinstance(s, StateHook):
             dst = "ent" + str(id(s))
-            txt += "\t" + dst + ' [shape=box xlabel="' + repr(s.call) + '"];\n'
-            txt += "\t" + dst + ' -> ' + self._dot_state(s.st) + '[xlabel = "return"];\n'
+            txt += ("\t"
+                    + dst
+                    + ' [shape=box xlabel="'
+                    + repr(s.call)
+                    + '"];\n'
+                    )
+            txt += ("\t"
+                    + dst
+                    + ' -> '
+                    + self._dot_state(s.st)
+                    + '[xlabel = "return"];\n'
+                    )
         else:
             dst = self._dot_state(s)
-        txt += "\t" + self._dot_state(self) + ' -> ' + dst + ' [xlabel = "' + label + '" ];\n'
+        txt += ("\t"
+                + self._dot_state(self)
+                + ' -> '
+                + dst
+                + ' [xlabel = "'
+                + label
+                + '" ];\n'
+                )
         return txt
 
     def to_dot(self) -> str:
@@ -478,7 +528,9 @@ class State:
             txt += self._dot_relation(self.default_hook, 'hook')
         if self.default_event is not None:
             txt += self._dot_relation(self.default_event, 'event')
-        if self.default is not None and self.default is not self.state_register.default:
+        if (self.default is not None
+            and self.default is not self.state_register.default
+        ):
             txt += self._dot_relation(self.default, '...')
         elif self.default is None:
             nodename = self._dot_state(self)
@@ -522,9 +574,12 @@ class State:
             txt += self._dot_relation(self.default_hook, 'hook')
         if self.default_event is not None:
             txt += self._dot_relation(self.default_event, 'event')
-        if self.default is not None and self.default is not self.state_register.default:
+        if (self.default is not None
+            and self.default is not self.state_register.default
+        ):
             txt += "DEFAULT: %s\n" % self._str_state(self.default)
         return txt
+
 
 class StateHook:
     """
@@ -536,6 +591,7 @@ class StateHook:
         self.call = call
         self.st = st
 
+
 class StateEvent:
     """
     State for handling Resulting Event.
@@ -543,6 +599,7 @@ class StateEvent:
     def __init__(self, n: str, st: State):
         self.name = n
         self.st = st
+
 
 class StatePrecond:
     """
@@ -564,70 +621,153 @@ class StatePrecond:
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-class CaptureNode:
-    kinds = {'Node', 'Attr', 'Indice', 'Key'}
 
-    def __init__(self, kind: str, parent: None):
-        if kind not in CaptureNode.kinds:
-            raise ValueError("kind parameter not in %s" % repr(CaptureNode.kinds))
-        # kind of CaptureNode
-        self.kind = kind
-        # parent object for modification
-        self.parent = parent
-        # the matched node
+class CaptureContext:
+    pass
+
+
+class CaptureContext:
+    kind_of_node = {'node': 1, 'attr': 2, 'indice': 3, 'key': 4}
+    map_intern = {2: 'attrs', 3: 'indices', 4: 'keys'}
+
+    def __init__(self):
+        # a ref
+        self.parent = None
+        # a ref
         self.node = None
-        # value of attr/indice/key or None (when Node)
+        # one of kind_of_node
+        self.kind = None
+        # value of attrs/indices/keys
         self.value = None
-        # recursively detail if in the pattern we provide the detail
-        self.detail = None
+
+    def make_from_unorder_list(ls: [CaptureContext]) -> CaptureContext:
+        self = CaptureContext()
+        for it in ls:
+            self.add_sub(it)
+        return self
+
+    def add_sub(self, it):
+        if it.kind in CaptureContext.map_intern:
+            ck = CaptureContext.map_intern[it.kind]
+            if not hasattr(self, ck):
+                setattr(self, ck, [])
+            getattr(self, ck).append(it)
+        return self
+
+    ###
+    def get(self):
+        if self.kind == CaptureContext.kind_of_node['attr']:
+            return getattr(self.node(), self.value)
+        if (self.kind == CaptureContext.kind_of_node['indice']
+            or self.kind == CaptureContext.kind_of_node['key']
+        ):
+            return self.node()[self.value]
+        return self.node
+
+    def set(self, v):
+        if self.kind == CaptureContext.kind_of_node['attr']:
+            setattr(self.node(), self.value, v)
+            return
+        if (self.kind == CaptureContext.kind_of_node['indice']
+            or self.kind == CaptureContext.kind_of_node['key']
+        ):
+            self.node()[self.value] = v
+            return
+        if hasattr(self, 'attrs'):
+            delattr(self, 'attrs')
+        if hasattr(self, 'indices'):
+            delattr(self, 'indices')
+        if hasattr(self, 'keys'):
+            delattr(self, 'keys')
+        self.node().set(v)
+
+    ###
+    def is_attr(self, n, a) -> CaptureContext:
+        self.kind = CaptureContext.kind_of_node['attr']
+        self.value = a
+        self.node = weakref.ref(n)
+        return self
+
+    def is_indice(self, n, a) -> CaptureContext:
+        self.kind = CaptureContext.kind_of_node['indice']
+        self.value = a
+        self.node = weakref.ref(n)
+        return self
+
+    def is_key(self, n, a) -> CaptureContext:
+        self.kind = CaptureContext.kind_of_node['key']
+        self.value = a
+        self.node = weakref.ref(n)
+        return self
+
+    def is_node(self, n, a, p=None) -> CaptureContext:
+        print("SET THE NODE TO %s %s" % (type(n), a))
+        self.kind = CaptureContext.kind_of_node['node']
+        self.value = a
+        self.node = weakref.ref(n)
+        self.parent = p
+        return self
+    ####
 
     def to_fmt(self) -> fmt.indentable:
-        res = fmt.sep('\n', [])
-        res.lsdata.append("kind: %s" % self.kind)
-        if self.parent is not None:
-            res.lsdata.append("parent: %d" % id(self.parent))
-        res.lsdata.append("node: %d" % id(self.node))
+        res = None
+        showlist = {
+            'attr': {
+                "res": fmt.sep('', ['.']),
+                "inblock": fmt.sep('=', [self.value])
+            },
+            'indice': {
+                "res": fmt.block('[', ']', []),
+                "inblock": fmt.sep(': ', [repr(self.value)])
+            },
+            'key': {
+                "res": fmt.block('{', '}', []),
+                "inblock": fmt.sep(': ', [repr(self.value)])
+            }
+            }
+        for k in sorted(showlist.keys()):
+            v = showlist[k]
+            if self.kind == CaptureContext.kind_of_node[k]:
+                res = v["res"]
+                inblock = v["inblock"]
+                if self.node is not None:
+                    if hasattr(self.node, 'to_fmt'):
+                        inblock.lsdata.append(self.node.to_fmt())
+                    elif type(self.node) is weakref.ReferenceType:
+                        inblock.lsdata.append(repr(self.get()))
+                res.lsdata.append(inblock)
+        ######
+        if self.kind == CaptureContext.kind_of_node['node']:
+            res = fmt.sep('', [self.value])
+            elmts = fmt.sep(',\n', [])
+            for sk in sorted(CaptureContext.map_intern.values()):
+                subelmt = None
+                if hasattr(self, sk):
+                    subelmt = getattr(self, sk)
+                if subelmt is not None:
+                    for sube in subelmt:
+                        elmts.lsdata.append(sube.to_fmt())
+            se = fmt.tab(fmt.block('(\n', '\n)', elmts))
+            res.lsdata.append(se)
         return res
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return str(self.to_fmt())
 
-class CaptureNodeDetail:
-    def __init__(self):
-        # contain list of CaptureNode
-        self.attrs = []
-        self.indices = []
-        self.keys = []
-
-    def to_fmt(self) -> fmt.indentable:
-        return None
-
-    def __repr__(self) -> str:
-        return str(self.to_fmt())
-
-class CollectContext(list):
-    def __init__(self, ls, old_ref, la, lk, li):
-        super(self.__class__, self).__init__(ls)
-        self.old_ref = old_ref
-        self.last_attr = la
-        self.last_key = lk
-        self.last_index = li
 
 class LivingState:
-    """
-    State instances in a StateRegister represents all the tree automata but only LivingState that reference a State instance are used during the walk.
+    """ State instances in a StateRegister represents all the tree automata
+    but only LivingState that reference a State instance are used
+    during the walk.
     """
     def __init__(self, s: State):
         self.alive = False
         self.have_finish = False
         self.thestate = weakref.ref(s)
-        #TODO: chain named event from StateRegister for unknown event????
-        # collect all matched nodes
-        self.matched_nodes = []
-        self.old_ref = []
-        self.last_index = None
-        self.last_key = None
-        self.last_attr = None
+        # list of CaptureContext
+        # TODO: MUST be surround by another
+        # when the living state return to first state
+        self.nodectx = CaptureContext()
         # for attrs,indices,keys collect id of parents
         self.subelmt = []
 
@@ -638,31 +778,37 @@ class LivingState:
             self.thestate = weakref.ref(s)
             self.alive = True
 
-    def checkAttr(self, a, parent=None):
+    def checkAttr(self, a, thenode=None):
         s = self.thestate().checkAttr(a)
         if id(s) != id(self.thestate()):
-            self.last_attr = a
-            self.subelmt.append(id(parent))
+            ctx = CaptureContext()
+            ctx.is_attr(thenode, a)
+            self.nodectx.add_sub(ctx)
+            self.subelmt.append(id(thenode))
             self.thestate = weakref.ref(s)
             self.alive = True
 
-    def checkIndice(self, i, parent=None):
+    def checkIndice(self, i, thenode=None):
         s = self.thestate().checkIndice(i)
         if id(s) != id(self.thestate()):
-            self.last_index = i
-            self.subelmt.append(id(parent))
+            ctx = CaptureContext()
+            ctx.is_indice(thenode, i)
+            self.nodectx.add_sub(ctx)
+            self.subelmt.append(id(thenode))
             self.thestate = weakref.ref(s)
             self.alive = True
 
-    def checkKey(self, k, parent=None):
+    def checkKey(self, k, thenode=None):
         s = self.thestate().checkKey(k)
         if id(s) != id(self.thestate()):
-            self.last_key = k
-            self.subelmt.append(id(parent))
+            ctx = CaptureContext()
+            ctx.is_key(thenode, k)
+            self.nodectx.add_sub(ctx)
+            self.subelmt.append(id(thenode))
             self.thestate = weakref.ref(s)
             self.alive = True
 
-    def checkType(self, t, thenode=None):
+    def checkType(self, t, thenode=None, parent=None):
         statetype = self.thestate()
         # count the number of subelmt that belong to this type
         nsubelm = 0
@@ -679,9 +825,11 @@ class LivingState:
                 s = self.thestate().checkKindOfType(t)
             if id(s) != id(self.thestate()):
                 print("ADD THENODE: %s" % thenode)
-                # TODO: think a better way to store in // old ref for ancestors...siblings...
-                self.matched_nodes.append(thenode)
-                self.old_ref.append((self.last_attr, self.last_key, self.last_index))
+                # TODO: must extract the correct sublist
+                # to surround by the node
+                self.nodectx.is_node(thenode, t.__name__, parent)
+                # TODO: think a better way to store
+                # in // old ref for ancestors...siblings...
                 self.thestate = weakref.ref(s)
                 self.alive = True
         for idx in reversed(toremove):
@@ -694,16 +842,12 @@ class LivingState:
             self.alive = True
 
     def doResultHook(self, thenode=None, user_data=None, parent=None):
-        #TODO: do the list nodes
-        tmp = []
-        if self.matched_nodes is not None:
-            tmp = self.matched_nodes
-        tmp = CollectContext(tmp + [parent], self.old_ref, self.last_attr, self.last_key, self.last_index)
-        s = self.thestate().doResultHook(thenode, user_data, tmp)
+        #TODO: must handle parent
+        s = self.thestate().doResultHook(self.nodectx, user_data)
         if id(s) != id(self.thestate()):
             print("RESET MATCHED NODES HOOK")
-            self.matched_nodes = []
-            self.old_ref = []
+            #self.matched_nodes = []
+            #self.old_ref = []
             self.thestate = weakref.ref(s)
             self.alive = True
 
@@ -713,8 +857,8 @@ class LivingState:
         s = self.thestate().doResultEvent()
         if id(s) != id(self.thestate()):
             print("RESET MATCHED NODES EV")
-            self.matched_nodes = []
-            self.old_ref = []
+            ##self.matched_nodes = []
+            ##self.old_ref = []
             self.thestate = weakref.ref(s)
             self.alive = True
 
@@ -723,14 +867,15 @@ class LivingState:
         s = self.thestate().doDefault()
         if id(s) != id(self.thestate()):
             print("RESET MATCHED NODES DEFAULT")
-            self.matched_nodes = []
-            self.old_ref = []
+            #self.matched_nodes = []
+            #self.old_ref = []
             self.thestate = weakref.ref(s)
             self.alive = True
 
+
 class LivingContext:
-    """
-    Create & Destroy Living State during tree walking for a current StateRegister.
+    """ Create & Destroy Living State
+    during tree walking for a current StateRegister.
     """
     def __init__(self):
         self.mblock = []
@@ -763,28 +908,29 @@ class LivingContext:
         for ls in self.ls:
             ls[1].checkEventExpr()
 
-    def checkAttr(self, a, parent=None):
+    def checkAttr(self, a, thenode=None):
         for ls in self.ls:
-            ls[1].checkAttr(a, parent)
+            ls[1].checkAttr(a, thenode)
 
-    def checkIndice(self, i, parent=None):
+    def checkIndice(self, i, thenode=None):
         # TODO: must store indice and restore state...
-        # if wildcard, type are not strict... so set an event after parsing all indices
+        # if wildcard, type are not strict...
+        # so set an event after parsing all indices
         fork_state = []
         l = len(self.ls)
         for idx, ls in zip(range(l), self.ls):
             store_indice = False
             if ls[1].thestate().wild_indice:
                 store_indice = True
-            ls[1].checkIndice(i, parent)
+            ls[1].checkIndice(i, thenode)
 
-    def checkKey(self, k, parent=None):
+    def checkKey(self, k, thenode=None):
         for ls in self.ls:
-            ls[1].checkKey(k, parent)
+            ls[1].checkKey(k, thenode)
 
-    def checkType(self, t, thenode=None):
+    def checkType(self, t, thenode=None, parent=None):
         for ls in self.ls:
-            ls[1].checkType(t, thenode)
+            ls[1].checkType(t, thenode, parent)
 
     def checkValue(self, v):
         for ls in self.ls:

@@ -1,6 +1,5 @@
 # around a signature store type resolution for monomorphic or polymorphic call
 import inspect
-from pyrser import fmt
 from pyrser.type_system.type_name import *
 from pyrser.type_system.signature import *
 from pyrser.type_system.fun import *
@@ -11,6 +10,10 @@ class EvalCtx:
     """
     Store environment for mono/poly call.
     """
+
+    def __str__(self) -> str:
+        import pyrser.type_system.to_fmt
+        return str(self.to_fmt())
 
     def __init__(self, sig: Signature):
         self._sig = sig
@@ -113,11 +116,15 @@ class EvalCtx:
                 tparams.append(" ".join(tp))
             if self.variadic:
                 if self._variadic_types is None:
-                    raise ValueError("Can't compute the sig with unresolved variadic argument")
+                    raise ValueError("Can't compute the sig "
+                                     + "with unresolved variadic argument"
+                                     )
                 for p in self._variadic_types:
                     tp = []
                     for t in p.components:
-                        if t in self.resolution and self.resolution[t] is not None:
+                        if (t in self.resolution
+                            and self.resolution[t] is not None
+                        ):
                             tp.append(self.resolution[t]().show_name())
                         else:
                             tp.append(t)

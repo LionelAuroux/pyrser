@@ -77,6 +77,7 @@ Pyrser use the following DSL to describe a grammar.
 
 ``@foo(p1, "p2", 3) expr``:
     Apply the directive ``foo`` to the expression ``expr`` with parameter to the directive (as hooks).
+
 Note: ``expr`` is compose of all basics expression except for pipe (``|``) operator.
 
 Python API: class EBNF

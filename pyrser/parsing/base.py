@@ -11,6 +11,7 @@ from pyrser.parsing.node import Node
 #: Module variable to store meta class instance by classname
 _MetaBasicParser = {}
 
+
 class MetaBasicParser(type):
     """Metaclass for all parser."""
     def __new__(metacls, name, bases, namespace):
@@ -56,7 +57,12 @@ class BasicParser(metaclass=MetaBasicParser):
     _rules = collections.ChainMap()
     _hooks = collections.ChainMap()
 
-    def __init__(self, content: str='', stream_name: str=None, raise_diagnostic=True):
+    def __init__(
+            self,
+            content: str='',
+            stream_name: str=None,
+            raise_diagnostic=True
+    ):
         self._ignores = [BasicParser.ignore_blanks]
         self._streams = [Stream(content, stream_name)]
         self.rule_nodes = None

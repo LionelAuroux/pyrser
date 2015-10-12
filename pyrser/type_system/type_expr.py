@@ -13,6 +13,7 @@ from pyrser.grammar import *
 #   *[const]<char[const]> : attribute syntaxe []
 #   *[size=20,const]<char> : array size as attribute of type *
 
+
 class TypeName:
     def __init__(self, name: str=None):
         self.name = name
@@ -41,9 +42,11 @@ class TypeName:
 class RealName(TypeName):
     pass
 
+
 class AbstractName(TypeName):
     def to_fmt(self) -> fmt.indentable:
         return fmt.sep("", ['?', TypeName.to_fmt(self)])
+
 
 class DeltaComponentTypeName:
     def __init__(self):
@@ -53,14 +56,17 @@ class DeltaComponentTypeName:
         return 0
 
     def add(self, d1, d2):
-        class D(dict): pass
+        class D(dict):
+            pass
         d = D()
         d.wref1 = ref(d1)
         d.wref2 = ref(d2)
         self.diff.append(d)
 
+
 class ComponentTypeName:
     pass
+
 
 class ComponentTypeName:
 
@@ -84,16 +90,26 @@ class ComponentTypeName:
             if i < l1 and i < l2:
                 res.add(self.__params[i], other._ComponentTypeName__params[i])
             elif i >= l1:
-                res.add(ComponentTypeName.empty, other._ComponentTypeName__params[i])
+                res.add(
+                    ComponentTypeName.empty,
+                    other._ComponentTypeName__params[i]
+                )
             elif i >= l2:
                 res.add(self.__params[i], ComponentTypeName.empty)
-        if self.__subcomponent is not None and other._ComponentTypeName__subcomponent is not None:
-            subdiff = self.__subcomponent - other._ComponentTypeName__subcomponent
+        if (self.__subcomponent is not None
+            and other._ComponentTypeName__subcomponent is not None
+        ):
+            sc = self.__subcomponent
+            osc = other._ComponentTypeName__subcomponent
+            subdiff = sc - osc
             res.diff += subdiff.diff
         elif self.__subcomponent is not None:
             res.add(self.__subcomponent, ComponentTypeName.empty)
         elif other._ComponentTypeName__subcomponent is not None:
-            res.add(ComponentTypeName.empty, other._ComponentTypeName__subcomponent)
+            res.add(
+                ComponentTypeName.empty,
+                other._ComponentTypeName__subcomponent
+            )
         return res
 
     def set_name(self, tn: TypeName) -> ComponentTypeName:
@@ -171,6 +187,7 @@ class ComponentTypeName:
     def __str__(self) -> str:
         return str(self.to_fmt())
 
+
 class TypeExprParser(Grammar):
     entry = 'atype'
     grammar = """
@@ -186,6 +203,7 @@ class TypeExprParser(Grammar):
 
         kv = [ id ['=' value]?]
     """
+
 
 class TypeExpr:
     def __init__(self, expr):

@@ -6,6 +6,7 @@ from pyrser import meta
 from pyrser.parsing import node
 from pyrser.ast import state
 
+
 @meta.add_method(node.Node)
 def walk(self, lc: state.LivingContext, user_data=None, parent=None):
     """
@@ -52,12 +53,13 @@ def walk(self, lc: state.LivingContext, user_data=None, parent=None):
     # ...type or value
     # type(self) == ?
     print("test type %s" % type(self))
-    lc.checkType(type(self), self)
+    lc.checkType(type(self), self, parent)
     # self == ?
     print("test value %s" % str(self))
     lc.checkValue(self)
     ## Check EVENTS
-    #TODO: what if the event do something but don't change current state and default change it!!!
+    # TODO: what if the event do something
+    # but don't change current state and default change it!!!
     lc.checkEventExpr()
     print("RESULT")
     # check Event

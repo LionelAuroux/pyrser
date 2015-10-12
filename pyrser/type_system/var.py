@@ -1,5 +1,4 @@
 # var for type checking (variables)
-from pyrser import fmt
 from pyrser.type_system.signature import *
 from pyrser.type_system.type_name import *
 
@@ -27,3 +26,7 @@ class Var(Signature):
         if self.tret is not None:
             unq += "_" + self.tret
         return unq
+
+    def __str__(self) -> str:
+        import pyrser.type_system.to_fmt
+        return str(self.to_fmt())

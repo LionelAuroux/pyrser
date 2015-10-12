@@ -36,7 +36,12 @@ class MatchIndice(MatchExpr):
             return s.indices[self.idx]
         return None
 
-    def attach(self, s1: state.State, s2: state.State, sr: state.StateRegister):
+    def attach(
+        self,
+        s1: state.State,
+        s2: state.State,
+        sr: state.StateRegister
+    ):
         s1.matchIndice(self.idx, s2)
 
     def build_state_tree(self, tree: list):
@@ -56,6 +61,7 @@ class MatchIndice(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
+
 class MatchKey(MatchExpr):
     """
     Ast Node for matching one key.
@@ -74,7 +80,12 @@ class MatchKey(MatchExpr):
             return s.keys[self.key]
         return None
 
-    def attach(self, s1: state.State, s2: state.State, sr: state.StateRegister):
+    def attach(
+        self,
+        s1: state.State,
+        s2: state.State,
+        sr: state.StateRegister
+    ):
         s1.matchKey(self.key, s2)
 
     def build_state_tree(self, tree: list):
@@ -94,6 +105,7 @@ class MatchKey(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
+
 class MatchAttr(MatchExpr):
     """
     Ast Node for matching one attribute.
@@ -112,7 +124,12 @@ class MatchAttr(MatchExpr):
             return s.attrs[self.name]
         return None
 
-    def attach(self, s1: state.State, s2: state.State, sr: state.StateRegister):
+    def attach(
+        self,
+        s1: state.State,
+        s2: state.State,
+        sr: state.StateRegister
+    ):
         if self.name is not None:
             s1.matchAttr(self.name, s2)
         else:
@@ -140,6 +157,7 @@ class MatchAttr(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
+
 class MatchValue(MatchExpr):
     """
     Ast Node for matching one value.
@@ -158,7 +176,12 @@ class MatchValue(MatchExpr):
             return s.values[str(self.v)]
         return None
 
-    def attach(self, s1: state.State, s2: state.State, sr: state.StateRegister):
+    def attach(
+        self,
+        s1: state.State,
+        s2: state.State,
+        sr: state.StateRegister
+    ):
         s1.matchValue(self.v, s2)
 
     def build_state_tree(self, tree: list):
@@ -176,11 +199,18 @@ class MatchValue(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
+
 class MatchType(MatchExpr):
     """
     Ast Node for matching exactly one type.
     """
-    def __init__(self, t: type=object, attrs: [MatchExpr]=None, strict=True, iskindof=False):
+    def __init__(
+        self,
+        t: type=object,
+        attrs: [MatchExpr]=None,
+        strict=True,
+        iskindof=False
+    ):
         self.t = t
         self.attrs = attrs
         self.strict = strict
@@ -196,7 +226,12 @@ class MatchType(MatchExpr):
             return s.types[self.t]
         return None
 
-    def attach(self, s1: state.State, s2: state.State, sr: state.StateRegister):
+    def attach(
+        self,
+        s1: state.State,
+        s2: state.State,
+        sr: state.StateRegister
+    ):
         if self.t is not object:
             if self.iskindof:
                 s1.matchKindType(self.t, s2)
@@ -221,7 +256,7 @@ class MatchType(MatchExpr):
                 for a in self.attrs:
                     # add a new event...
                     ev_name = '.E' + str(id(self)) + '_' + str(idx)
-                    # the MatchEvent instance will set the event when is reached
+                    # MatchEvent instance will set the event when is reached
                     ev = MatchEvent(ev_name, a)
                     b = list()
                     ev.build_state_tree(b)
@@ -233,7 +268,16 @@ class MatchType(MatchExpr):
                 list_expr = []
                 for e in list_ev:
                     list_expr.append(state.EventNamed(e))
-                precond = MatchPrecond(state.EventSeq(list_expr), MatchType(self.t, attrs=[], strict=True, iskindof=self.iskindof), clean_event=True)
+                precond = MatchPrecond(
+                    state.EventSeq(list_expr),
+                    MatchType(
+                        self.t,
+                        attrs=[],
+                        strict=True,
+                        iskindof=self.iskindof
+                    ),
+                    clean_event=True
+                )
                 # add all alternative states
                 tree.append(list_alt)
         # if needed, add a precondition
@@ -251,7 +295,8 @@ class MatchType(MatchExpr):
             res.lsdata.append('*')
         iparen = []
         if self.attrs is not None:
-            # TODO: render unknown attr (.?) at the end after ..., also unknown attr implie 'unstrict' mode
+            # TODO: render unknown attr (.?) at the end after ...,
+            # also unknown attr implie 'unstrict' mode
             iparen = fmt.sep(', ', [])
             for a in self.attrs:
                 iparen.lsdata.append(a.to_fmt())
@@ -267,11 +312,17 @@ class MatchType(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
+
 class MatchPrecond(MatchExpr):
     """
     Ast Node for matching a precondition expression.
     """
-    def __init__(self, precond: state.EventExpr, v: MatchValue=None, clean_event=True):
+    def __init__(
+        self,
+        precond: state.EventExpr,
+        v: MatchValue=None,
+        clean_event=True
+    ):
         self.precond = precond
         self.v = v
         self.clean_event = clean_event
@@ -284,7 +335,12 @@ class MatchPrecond(MatchExpr):
             return s.events_expr[self.precond]
         return None
 
-    def attach(self, s1: state.State, s2: state.State, sr: state.StateRegister):
+    def attach(
+        self,
+        s1: state.State,
+        s2: state.State,
+        sr: state.StateRegister
+    ):
         s1.matchEventExpr(self.precond, s2, self.clean_event)
 
     def build_state_tree(self, tree: list):
@@ -308,6 +364,7 @@ class MatchPrecond(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
+
 class MatchEvent(MatchExpr):
     """
     Ast Node for a Resulting Event.
@@ -319,7 +376,12 @@ class MatchEvent(MatchExpr):
     def __eq__(self, other) -> bool:
         return self.n == other.n
 
-    def attach(self, s1: state.State, s2: state.State, sr: state.StateRegister):
+    def attach(
+        self,
+        s1: state.State,
+        s2: state.State,
+        sr: state.StateRegister
+    ):
         # TODO:!!! the event must be store in the LivingState
         s1.matchEvent(self.n, s2)
 
@@ -336,6 +398,7 @@ class MatchEvent(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
+
 class MatchHook(MatchExpr):
     """
     Ast Node for a Resulting Hook.
@@ -350,7 +413,12 @@ class MatchHook(MatchExpr):
     def __eq__(self, other) -> bool:
         return id(self.call) == id(other.call)
 
-    def attach(self, s1: state.State, s2: state.State, sr: state.StateRegister):
+    def attach(
+        self,
+        s1: state.State,
+        s2: state.State,
+        sr: state.StateRegister
+    ):
         s1.matchHook(self.call, s2)
 
     def build_state_tree(self, tree: list):
@@ -366,25 +434,26 @@ class MatchHook(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
+
 class MatchBlock(MatchExpr):
-    """
-    Ast Node for a block of PSL statement.
-    """
+    """ Ast Node for a block of PSL statement. """
     def __init__(self, stmts: [MatchExpr]):
         self.stmts = stmts
         self.root_edge = None
 
     def build_state_tree(self, tree: list, sr: state.StateRegister):
-        """
-        main function for creating a bottom-up tree automata for a block of matching statements.
+        """ main function for creating a bottom-up tree automata
+            for a block of matching statements.
         """
         all_seq = []
-        # for all statements populate a list from deeper to nearer of MatchExpr instances.
+        # for all statements populate a list
+        # from deeper to nearer of MatchExpr instances.
         for stmt in self.stmts:
             part_seq = list()
             stmt.build_state_tree(part_seq)
             all_seq.append(part_seq)
-        # Walk on all MatchExpr instance and create State instance into the StateRegister
+        # Walk on all MatchExpr instance
+        # and create State instance into the StateRegister
         self.root_edge = populate_state_register(all_seq, sr)
 
     def to_fmt(self) -> fmt.indentable:
@@ -397,11 +466,10 @@ class MatchBlock(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-##############
 
 class Edge:
-    """
-    Class that implement the state transition, used for state construction.
+    """ Class that implement the state transition
+        used for state construction.
     """
     def __init__(self, s: state.State):
         self.s = s
@@ -416,10 +484,9 @@ class Edge:
                 return self.next_edge[id(sX)]
         return None
 
+
 def populate_from_sequence(seq: list, r: ref(Edge), sr: state.StateRegister):
-    """
-    function that connect each other one sequence of MatchExpr.
-    """
+    """ function that connect each other one sequence of MatchExpr. """
     base_state = r
     # we need to detect the last state of the sequence
     idxlast = len(seq) - 1
@@ -447,9 +514,10 @@ def populate_from_sequence(seq: list, r: ref(Edge), sr: state.StateRegister):
             r = ref(eX)
         idx += 1
 
+
 def populate_state_register(all_seq: [list], sr: state.StateRegister) -> Edge:
-    """
-    function that create a state for all instance of MatchExpr in the given list and connect each others.
+    """ function that create a state for all instance
+        of MatchExpr in the given list and connect each others.
     """
     # Basic State
     s0 = state.State(sr)
@@ -465,4 +533,3 @@ def populate_state_register(all_seq: [list], sr: state.StateRegister) -> Edge:
         populate_from_sequence(seq, r, sr)
     # return edge for debug purpose
     return e0
-

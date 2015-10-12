@@ -13,7 +13,7 @@ def to_yml(self):
     Allow to get the YML string representation of a Node.::
 
         from pyrser.passes import to_yml
-        
+
         t = Node()
         ...
         print(str(t.to_yml()))

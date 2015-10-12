@@ -30,6 +30,198 @@ class H(dict):
         return dict.__repr__(self) + " - " + str(vars(self))
 
 class InternalAst_Test(unittest.TestCase):
+
+    def test_000(self):
+        """ListNode tests"""
+        # ListNodeItem
+        l = ListNodeItem("a")
+        self.assertEqual(l.prev, None, "Bad construction of l")
+        self.assertEqual(l.next, None, "Bad construction of l")
+        l.append("b")
+        self.assertEqual(l.prev, None, "Bad construction of l")
+        self.assertNotEqual(l.next, None, "Bad construction of l")
+        self.assertEqual(id(l.next.prev), id(l), "Bad construction of l")
+        self.assertEqual(l.next.next, None, "Bad construction of l")
+        thelist = l.thelist
+        self.assertEqual(len(thelist), 2, "Bad construction of l")
+        self.assertEqual(thelist.must_update, False, "Bad construction of l")
+        self.assertEqual(id(thelist.begin), id(l), "Bad construction of l")
+        self.assertEqual(id(thelist.begin), id(l.next.prev), "Bad construction of l")
+        self.assertEqual(id(thelist.end), id(l.next), "Bad construction of l")
+        self.assertEqual(thelist.begin.data, 'a', "Bad construction of l")
+        self.assertEqual(thelist.end.data, 'b', "Bad construction of l")
+        l.append("c")
+        self.assertEqual(thelist.must_update, True, "Bad construction of l")
+        self.assertEqual(len(thelist), 3, "Bad construction of l")
+        self.assertEqual(thelist.must_update, False, "Bad construction of l")
+        self.assertEqual(thelist.begin.data, 'a', "Bad construction of l")
+        self.assertEqual(thelist.end.data, 'b', "Bad construction of l")
+        self.assertEqual(thelist.begin.next.data, 'c', "Bad construction of l")
+        self.assertEqual(thelist.end.prev.data, 'c', "Bad construction of l")
+        self.assertEqual(l[0], 'a', "Bad construction of l")
+        self.assertEqual(l[1], 'c', "Bad construction of l")
+        self.assertEqual(l[2], 'b', "Bad construction of l")
+        with self.assertRaises(IndexError):
+            x = l[3]
+        with self.assertRaises(IndexError):
+            l[3] = 'g'
+        with self.assertRaises(IndexError):
+            l[-1] = 'g'
+        with self.assertRaises(IndexError):
+            x = l[-1]
+        subelm = []
+        for it in l._fwd():
+            subelm.append(it.data)
+        self.assertEqual(subelm, ['a', 'c', 'b'], "Bad construction of l")
+        subelm = []
+        for it in l.values():
+            subelm.append(it)
+        self.assertEqual(subelm, ['a', 'c', 'b'], "Bad construction of l")
+        subelm = []
+        end = l.next.next
+        for it in end._bwd():
+            subelm.append(it.data)
+        self.assertEqual(subelm, ['b', 'c', 'a'], "Bad construction of l")
+        subelm = []
+        end = l.next.next
+        for it in end.rvalues():
+            subelm.append(it)
+        self.assertEqual(subelm, ['b', 'c', 'a'], "Bad construction of l")
+        l = ListNodeItem("a")
+        l.prepend("b")
+        self.assertEqual(l.next, None, "Bad construction of l")
+        self.assertNotEqual(l.prev, None, "Bad construction of l")
+        self.assertEqual(id(l.prev.next), id(l), "Bad construction of l")
+        self.assertEqual(l.prev.prev, None, "Bad construction of l")
+        thelist = l.thelist
+        self.assertEqual(len(thelist), 2, "Bad construction of l")
+        self.assertEqual(thelist.must_update, False, "Bad construction of l")
+        self.assertEqual(id(thelist.end), id(l), "Bad construction of l")
+        self.assertEqual(id(thelist.end), id(l.prev.next), "Bad construction of l")
+        self.assertEqual(id(thelist.begin), id(l.prev), "Bad construction of l")
+        self.assertEqual(thelist.begin.data, 'b', "Bad construction of l")
+        self.assertEqual(thelist.end.data, 'a', "Bad construction of l")
+        l.prepend("c")
+        self.assertEqual(thelist.must_update, True, "Bad construction of l")
+        self.assertEqual(len(thelist), 3, "Bad construction of l")
+        self.assertEqual(thelist.must_update, False, "Bad construction of l")
+        self.assertEqual(thelist.begin.data, 'b', "Bad construction of l")
+        self.assertEqual(thelist.end.data, 'a', "Bad construction of l")
+        self.assertEqual(thelist.begin.next.data, 'c', "Bad construction of l")
+        self.assertEqual(thelist.end.prev.data, 'c', "Bad construction of l")
+        self.assertEqual(l[0], 'a', "Bad construction of l")
+        self.assertEqual(l[-1], 'c', "Bad construction of l")
+        self.assertEqual(l[-2], 'b', "Bad construction of l")
+        with self.assertRaises(IndexError):
+            x = l[1]
+        with self.assertRaises(IndexError):
+            l[1] = 'g'
+        with self.assertRaises(IndexError):
+            l[-3] = 'g'
+        with self.assertRaises(IndexError):
+            x = l[-3]
+        subelm = []
+        for it in l._bwd():
+            subelm.append(it.data)
+        self.assertEqual(subelm, ['a', 'c', 'b'], "Bad construction of l")
+        subelm = []
+        for it in l.rvalues():
+            subelm.append(it)
+        self.assertEqual(subelm, ['a', 'c', 'b'], "Bad construction of l")
+        subelm = []
+        begin = l.prev.prev
+        for it in begin._fwd():
+            subelm.append(it.data)
+        self.assertEqual(subelm, ['b', 'c', 'a'], "Bad construction of l")
+        subelm = []
+        begin = l.prev.prev
+        for it in begin.values():
+            subelm.append(it)
+        self.assertEqual(subelm, ['b', 'c', 'a'], "Bad construction of l")
+        lbegin = ListNodeItem('a')
+        l = lbegin
+        l = l.append('b')
+        l = l.append('c')
+        l = l.append('d')
+        l = l.append('e')
+        l = l.append('f')
+        idx = 0
+        for it in lbegin._fwd():
+            if idx == 2:
+                it.popitem()
+            idx += 1
+        self.assertEqual(str(lbegin), "['a', 'b', 'd', 'e', 'f']", "Bad construction of l")
+        self.assertEqual(l.thelist.must_update, True, "Bad construction of l")
+        lbegin = ListNodeItem('a')
+        l = lbegin
+        l = l.append('b')
+        l = l.append('c')
+        l = l.append('d')
+        l = l.append('e')
+        l = l.append('f')
+        del lbegin[2]
+        self.assertEqual(str(lbegin), "['a', 'b', 'd', 'e', 'f']", "Bad construction of l")
+        self.assertEqual(l.thelist.must_update, True, "Bad construction of l")
+        # ListNode
+        ls = ListNode()
+        ls.append('a')
+        self.assertEqual(ls.begin.data, 'a', "Bad construction of ls")
+        self.assertEqual(ls.end.data, 'a', "Bad construction of ls")
+        ls.append('b')
+        self.assertEqual(ls.begin.data, 'a', "Bad construction of ls")
+        self.assertEqual(ls.end.data, 'b', "Bad construction of ls")
+        ls.append('c')
+        self.assertEqual(ls.begin.data, 'a', "Bad construction of ls")
+        self.assertEqual(ls.begin.next.data, 'b', "Bad construction of ls")
+        self.assertEqual(ls.end.prev.data, 'b', "Bad construction of ls")
+        self.assertEqual(ls.end.data, 'c', "Bad construction of ls")
+        self.assertEqual(ls.must_update, True, "Bad construction of ls")
+        self.assertEqual(len(ls), 3, "Bad construction of ls")
+        self.assertEqual(ls.must_update, False, "Bad construction of ls")
+        self.assertEqual(len(ls.cache), 3, "Bad construction of ls")
+        self.assertEqual(ls[0], 'a', "Bad construction of ls")
+        self.assertEqual(ls[1], 'b', "Bad construction of ls")
+        self.assertEqual(ls[2], 'c', "Bad construction of ls")
+        ls = ListNode()
+        ls.prepend('c')
+        self.assertEqual(ls.must_update, True, "Bad construction of ls")
+        self.assertNotEqual(ls.begin, None, "Bad construction of ls")
+        self.assertNotEqual(ls.end, None, "Bad construction of ls")
+        ls.prepend('b')
+        ls.prepend('a')
+        self.assertEqual(len(ls), 3, "Bad construction of ls")
+        self.assertEqual(ls.must_update, False, "Bad construction of ls")
+        self.assertEqual(ls[0], 'a', "Bad construction of ls")
+        self.assertEqual(ls.must_update, False, "Bad construction of ls")
+        ls.append('d')
+        self.assertEqual(len(ls), 4, "Bad construction of ls")
+        self.assertEqual(ls[1], 'b', "Bad construction of ls")
+        self.assertEqual(ls[2], 'c', "Bad construction of ls")
+        self.assertEqual(ls[3], 'd', "Bad construction of ls")
+        # ListNode vs list
+        ls = ListNode([1, 2, 3, 4, 5, 6])
+        self.assertEqual(len(ls), 6, "Bad construction of ls")
+        ls2 = list(ls)
+        self.assertEqual(ls2, [1, 2, 3, 4, 5, 6], "Bad construction of ls")
+        ls3 = list(reversed(ls))
+        self.assertEqual(ls3, [6, 5, 4, 3, 2, 1], "Bad construction of ls")
+        node = ls.get(3)
+        self.assertEqual(node.data, 4, "Bad construction of ls")
+        self.assertEqual(node.next.data, 5, "Bad construction of ls")
+        self.assertEqual(node.prev.data, 3, "Bad construction of ls")
+        del ls[3]
+        self.assertEqual(ls[3], 5, "Bad construction of ls")
+        self.assertEqual(id(ls.get(3).prev), id(ls.get(2)), "Bad construction of ls")
+        self.assertEqual(id(ls.get(3).next), id(ls.get(4)), "Bad construction of ls")
+        self.assertEqual(id(ls.get(2).next), id(ls.get(3)), "Bad construction of ls")
+        self.assertEqual(id(ls.get(4).prev), id(ls.get(3)), "Bad construction of ls")
+        sz = len(ls) - 1
+        del ls[sz]
+        sz -= 1
+        self.assertEqual(ls[sz], 5, "Bad construction of ls")
+        self.assertEqual(id(ls.get(sz).next), id(None), "Bad construction of ls")
+
+
     def test_00(self):
         """Basic test on state creation"""
         nsr = StateRegister()
@@ -54,7 +246,7 @@ class InternalAst_Test(unittest.TestCase):
         s0.matchEvent('lolo', s1)
         self.assertEqual(id(s1), id(s0.doResultEvent()), "Failed to return correct state")
         #   Hook
-        def dummy(node, user_data, nodes):
+        def dummy(nodes, user_data):
             pass
         s0.matchHook(dummy, s1)
         sh = s0.default_hook
@@ -218,15 +410,13 @@ class InternalAst_Test(unittest.TestCase):
 
     def test_05(self):
         """basic tree matching"""
-        def checkMatch(tree: Node, user_data, nodes) -> Node:
+        def checkMatch(tree: Node, user_data) -> Node:
             global in_test
             in_test = True
-            user_data[1].assertEqual(user_data[0], id(tree), "Failed to match the node of tree")
-            return tree
-        def checkNoMatch(tree: Node, user_data, nodes) -> Node:
+            user_data[1].assertEqual(user_data[0], id(tree.node()), "Failed to match the node of tree")
+        def checkNoMatch(tree: Node, user_data) -> Node:
             global in_test
             in_test = True
-            return tree
 
         global in_test
         # Test(.b = 42) -> #checkMatch;
@@ -359,28 +549,29 @@ class InternalAst_Test(unittest.TestCase):
 
     def test_06(self):
         """tree rewriting"""
-        def checkMatch1(tree: Node, user_data, nodes):
+        def checkMatch1(tree: Node, user_data):
             global in_test
             in_test = True
-            user_data[1].assertEqual(user_data[0], id(tree), "Failed to match the node of tree")
-            index = nodes[-1].index(nodes[0])
-            nodes[-1][index] = "rewrited"
-        def checkMatch2(tree: Node, user_data, nodes):
+            user_data[1].assertEqual(user_data[0], id(tree.node()), "Failed to match the node of tree")
+            idx = tree.parent.index(tree.node())
+            tree.parent[idx] = "rewrited"
+        def checkMatch2(tree: Node, user_data):
             global in_test
             in_test = True
-            user_data[1].assertEqual(user_data[0], id(tree), "Failed to match the node of tree")
-            nodes[-1][nodes.last_index] = "rewrited"
-        def checkMatch3(tree: Node, user_data, nodes):
+            user_data[1].assertEqual(user_data[0], id(tree.node()), "Failed to match the node of tree")
+            idx = tree.parent.index(tree.node())
+            tree.parent[idx] = "rewrited"
+        def checkMatch3(tree: Node, user_data):
             global in_test
             in_test = True
-            user_data[1].assertEqual(user_data[0], id(tree), "Failed to match the node of tree")
-            index = nodes[-1].index(nodes[0])
-            nodes[-1][index] = "rewrited"
-        def checkMatch4(tree: Node, user_data, nodes):
+            user_data[1].assertEqual(user_data[0], id(tree.node()), "Failed to match the node of tree")
+            idx = tree.parent.index(tree.node())
+            tree.parent[idx] = "rewrited"
+        def checkMatch4(tree: Node, user_data):
             global in_test
             in_test = True
-            index = nodes[-1].index(nodes[0])
-            nodes[-1][index] = "rewrited"
+            idx = tree.parent.index(tree.node())
+            tree.parent[idx] = "rewrited"
         global in_test
         # Test(.b = 42) -> #checkMatch1;
         m = MatchBlock([
@@ -429,7 +620,7 @@ class InternalAst_Test(unittest.TestCase):
         lc.add_match_block(m)
         lc.build_automata()
         lc.to_png_file(rpath + os.sep + 't6_3.png')
-        t = [H(), H(), H()]
+        t = ListNode([H(), H(), H()])
         t[0]['chausette'] = 12
         t[0]['toto'] = 12
         t[1]['toto'] = 42
@@ -447,7 +638,7 @@ class InternalAst_Test(unittest.TestCase):
         lc.add_match_block(m)
         lc.build_automata()
         lc.to_png_file(rpath + os.sep + 't6_4.png')
-        t = [Test(), Test(), Test(), Test(), Test()]
+        t = ListNode([Test(), Test(), Test(), Test(), Test()])
         t[0].a = 12
         t[0].b = 42
         t[1].a = 12
@@ -468,10 +659,10 @@ class InternalAst_Test(unittest.TestCase):
         """wildcard tree matching"""
         global in_test
         # Test(.b = *) -> #checkMatch;
-        def checkMatch(tree: Node, user_data, nodes):
+        def checkMatch(tree: Node, user_data):
             global in_test
             in_test = True
-            tree.is_rewrited = True
+            tree.node().is_rewrited = True
         m = MatchBlock([
             MatchHook(checkMatch, MatchType(Test, [MatchAttr('b')])),
         ])
@@ -489,16 +680,17 @@ class InternalAst_Test(unittest.TestCase):
         self.assertTrue(hasattr(t[0], "is_rewrited"), "Failed to rewrite a node")
         self.assertFalse(lc.is_in_stable_state(), "LivingContext not in correct state due to WILDCAR MATCH")
         # L([2: *]) -> #checkMatch;
-        def checkMatch(tree: Node, user_data, nodes):
+        def checkMatch(tree: Node, user_data):
             global in_test
             in_test = True
             # nodes[0] == nodes[-1] on root node
-            if nodes[0] != nodes[-1]:
-                index = nodes[-1].index(nodes[0])
-                nodes[-1][index] = Test()
-                nodes[-1][index].is_rewrited = True
-            else:
-                nodes[0].is_rewrited = True
+            print(repr(tree))
+            #if nodes[0] != nodes[-1]:
+            #    index = nodes[-1].index(nodes[0])
+            #    nodes[-1][index] = Test()
+            #    nodes[-1][index].is_rewrited = True
+            #else:
+            #    nodes[0].is_rewrited = True
         m = MatchBlock([
             MatchHook(checkMatch, MatchType(L, [MatchIndice(2)])),
         ])
@@ -521,7 +713,7 @@ class InternalAst_Test(unittest.TestCase):
         self.assertTrue(hasattr(t[2].subls[2], "is_rewrited"), "Failed to rewrite a node")
         self.assertFalse(lc.is_in_stable_state(), "LivingContext not in correct state due to WILDCAR MATCH")
         # H({'toto': *}) -> #checkMatch;
-        def checkMatch(tree: Node, user_data, nodes):
+        def checkMatch(tree: Node, user_data):
             global in_test
             in_test = True
             # nodes[0] == nodes[-1] on root node
@@ -554,7 +746,7 @@ class InternalAst_Test(unittest.TestCase):
         self.assertFalse(lc.is_in_stable_state(), "LivingContext not in correct state due to WILDCAR MATCH")
         # Test([*: 12]) -> #checkMatch;
         print('-------------------------------------------------------------------------------')
-        def checkMatch(tree: Node, user_data, nodes):
+        def checkMatch(tree: Node, user_data):
             global in_test
             in_test = True
             print("HHHHHEEEERRRREEEE %r" % nodes)
@@ -585,5 +777,28 @@ class InternalAst_Test(unittest.TestCase):
 
     def test_08(self):
         """CollectContext test for tree matching"""
-        # TODO: put it in test 5 and rename all
+        class A(Node): pass
+        a = A()
+        a.attr1 = 6.6
+        a["toto"] = 42
+        a["plop"] = 'gram'
+        ##
         ct = CaptureContext()
+        ct.is_key(a, "toto")
+        ct2 = CaptureContext()
+        ct2.is_key(a, "plop")
+        ctx = CaptureContext.make_from_unorder_list([ct, ct2])
+        ctx.is_node(a, "A")
+        ca = CaptureContext().is_attr(a, "attr1")
+        ctx.add_sub(ca)
+        self.assertEqual(a.attr1, ca.get(), "Failed to get a captured value in a tree")
+        self.assertEqual(a["toto"], ct.get(), "Failed to get a captured value in a tree")
+        self.assertEqual(a["plop"], ct2.get(), "Failed to get a captured value in a tree")
+        ct.set('pouet')
+        ct2.set('chaussure')
+        ca.set(999)
+        self.assertEqual(a.attr1, 999, "Failed to get a captured value in a tree")
+        self.assertEqual(a["toto"], "pouet", "Failed to get a captured value in a tree")
+        self.assertEqual(a["plop"], "chaussure", "Failed to get a captured value in a tree")
+        ctx.set(Node())
+        self.assertTrue(not hasattr(ctx, 'keys'), "Failed to clean a node by setting it")

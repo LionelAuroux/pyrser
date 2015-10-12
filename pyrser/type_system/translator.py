@@ -1,18 +1,30 @@
 from collections import *
 from pyrser.type_system.fun import *
-from pyrser import fmt
 from pyrser import error
 
 
 # for type translation
 class Translator:
+    """
+    Handle conversion from type_source to type_target thru a function.
+    Do error.Notification if applyiable.
+    """
+
+    def __str__(self) -> str:
+        import pyrser.type_system.to_fmt
+        return str(self.to_fmt())
+
     def __init__(self, fun: Fun, notify: error.Notification=None):
         if not isinstance(fun, Fun):
             raise TypeError("1st parameter must be a type_system.Fun")
         if not isinstance(notify, error.Notification):
             raise TypeError("2nd parameter must be a error.Notification")
         if fun.arity < 1:
-            raise TypeError("type_system.Fun in 1st parameter must have an arity >= 1 (here %d)" % fun.arity)
+            raise TypeError(
+                ("type_system.Fun in 1st parameter"
+                 + " must have an arity >= 1 (here %d)"
+                 ) % fun.arity
+            )
         self._type_source = fun.this_type
         self._type_target = fun.return_type
         self._fun = fun
@@ -39,6 +51,14 @@ class Translator:
 
 
 class MapTargetTranslate(dict):
+    """
+    Handle all translation to one type
+    """
+
+    def __str__(self) -> str:
+        import pyrser.type_system.to_fmt
+        return str(self.to_fmt())
+
     def __init__(self):
         self._internal = {}
         self._type_source = None
@@ -69,11 +89,18 @@ class MapTargetTranslate(dict):
         if not isinstance(val, Translator):
             raise TypeError("value must be a Translator")
         if key != val.target:
-            raise KeyError("Key:%s != Translator:%s, bad key of Translator" % (key, val.target))
+            raise KeyError(
+                ("Key:%s != Translator:%s,"
+                 + " bad key of Translator") % (key, val.target)
+            )
         if self._type_source is None:
             self._type_source = val.source
         elif self._type_source != val.source:
-            raise KeyError("Map.source:%s != Translator.source:%s, Translator incompatible with map" % (self._type_source, val._type_source))
+            raise KeyError(
+                ("Map.source:%s != Translator.source:%s,"
+                 + " Translator incompatible with map"
+                 ) % (self._type_source, val._type_source)
+            )
         self._internal[key] = val
 
 
@@ -83,6 +110,14 @@ class MapSourceTranslate:
 
 
 class MapSourceTranslate(dict):
+    """
+    Handle all conversions functions provide as Translator.
+    """
+
+    def __str__(self) -> str:
+        import pyrser.type_system.to_fmt
+        return str(self.to_fmt())
+
     def __init__(self):
         self._internal = ChainMap()
 
@@ -135,9 +170,16 @@ class MapSourceTranslate(dict):
         if not isinstance(val, MapTargetTranslate):
             raise TypeError("value must be a MapTargetTranslate")
         if key != val.key:
-            raise KeyError("Key:%s != Translator:%s, bad key of Translator" % (key, val.key))
+            raise KeyError(
+                ("Key:%s != Translator:%s,"
+                 + " bad key of Translator") % (key, val.key)
+            )
         if val._type_source is None:
             val._type_source = key
         elif val._type_source != key:
-            raise KeyError("MapSource.key:%s != MapTarget.source:%s, MapTarget incompatible with key" % (key, val._type_source))
+            raise KeyError(
+                ("MapSource.key:%s != MapTarget.source:%s,"
+                 + " MapTarget incompatible with key"
+                 ) % (key, val._type_source)
+            )
         self._internal[key] = val

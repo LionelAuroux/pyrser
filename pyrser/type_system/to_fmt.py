@@ -37,9 +37,6 @@ def to_fmt(self) -> fmt.indentable:
         txt.lsdata.append(block)
     return txt
 
-@meta.add_method(Scope)
-def __str__(self) -> str:
-    return str(self.to_fmt())
 
 @meta.add_method(Type)
 def to_fmt(self) -> fmt.indentable:
@@ -58,9 +55,6 @@ def to_fmt(self) -> fmt.indentable:
         txt.lsdata.append(block)
     return txt
 
-@meta.add_method(Type)
-def __str__(self) -> str:
-    return str(self.to_fmt())
 
 @meta.add_method(EvalCtx)
 def to_fmt(self):
@@ -97,9 +91,6 @@ def to_fmt(self):
         lseval.append(fmt.block("\nresolution :\n", "", fmt.tab(lsb)))
     return txt
 
-@meta.add_method(EvalCtx)
-def __str__(self) -> str:
-    return str(self.to_fmt())
 
 @meta.add_method(Translator)
 def to_fmt(self, with_from=False) -> fmt.indentable:
@@ -107,48 +98,55 @@ def to_fmt(self, with_from=False) -> fmt.indentable:
     Return a Fmt representation of Translator for pretty-printing
     """
     txt = fmt.sep("\n", [
-        fmt.sep(" ", [self._type_source, "to", self._type_target, '=', self._fun.to_fmt()]),
+        fmt.sep(
+            " ",
+            [
+                self._type_source,
+                "to",
+                self._type_target,
+                '=',
+                self._fun.to_fmt()
+            ]
+        ),
         self._notify.get_content(with_from)
     ])
     return txt
 
-@meta.add_method(Translator)
-def __str__(self) -> str:
-    return str(self.to_fmt())
 
 @meta.add_method(MapTargetTranslate)
 def to_fmt(self, with_from=False) -> fmt.indentable:
     txt = fmt.block('{\n', '\n}', [])
     items = fmt.sep('\n---\n', [])
     for k in sorted(self._internal.keys()):
-        items.lsdata.append(fmt.sep(': ', [k, fmt.tab([self._internal[k].to_fmt(with_from)])]))
+        items.lsdata.append(
+            fmt.sep(': ', [
+                k,
+                fmt.tab([self._internal[k].to_fmt(with_from)])
+                ])
+        )
     txt.lsdata.append(fmt.tab([items]))
     return txt
 
-@meta.add_method(MapTargetTranslate)
-def __str__(self) -> str:
-    return str(self.to_fmt())
 
 @meta.add_method(MapSourceTranslate)
 def to_fmt(self, with_from=False) -> fmt.indentable:
     txt = fmt.block('{\n', '\n}', [])
     items = fmt.sep('\n---\n', [])
     for k in sorted(self._internal.keys()):
-        items.lsdata.append(fmt.sep(': ', [k, fmt.tab([self._internal[k].to_fmt(with_from)])]))
+        items.lsdata.append(
+            fmt.sep(': ', [
+                k,
+                fmt.tab([self._internal[k].to_fmt(with_from)])
+                ])
+        )
     txt.lsdata.append(fmt.tab([items]))
     return txt
 
-@meta.add_method(MapSourceTranslate)
-def __str__(self) -> str:
-    return str(self.to_fmt())
 
 @meta.add_method(Signature)
 def to_fmt(self):
     raise TypeError("Signature.to_fmt must be redefined")
 
-@meta.add_method(Signature)
-def __str__(self) -> str:
-    return str(self.to_fmt())
 
 @meta.add_method(Val)
 def to_fmt(self):
@@ -164,6 +162,7 @@ def to_fmt(self):
     txt.lsdata.append(': ' + self.tret)
     return txt
 
+
 @meta.add_method(Var)
 def to_fmt(self):
     """
@@ -176,6 +175,7 @@ def to_fmt(self):
         txt.lsdata.append(name)
     txt.lsdata.append(': ' + self.tret)
     return txt
+
 
 @meta.add_method(Fun)
 def to_fmt(self):

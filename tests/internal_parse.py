@@ -518,7 +518,7 @@ class InternalParse_Test(unittest.TestCase):
 
     def test_19_Until(self):
         """
-        Basic test for complement ->R
+        Basic test for until ->R
         """
         parser = parsing.Parser()
         parser.parsed_stream("==|=|==tutu")
