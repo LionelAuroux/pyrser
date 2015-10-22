@@ -662,7 +662,7 @@ class CaptureContext:
             or self.kind == CaptureContext.kind_of_node['key']
         ):
             return self.node()[self.value]
-        return self.node
+        return self.node()
 
     def set(self, v):
         if self.kind == CaptureContext.kind_of_node['attr']:
@@ -691,13 +691,19 @@ class CaptureContext:
     def is_indice(self, n, a) -> CaptureContext:
         self.kind = CaptureContext.kind_of_node['indice']
         self.value = a
-        self.node = weakref.ref(n)
+        if type(n) != list:
+            self.node = weakref.ref(n)
+        else:
+            raise ValueError("PSL don't work on builtin list")
         return self
 
     def is_key(self, n, a) -> CaptureContext:
         self.kind = CaptureContext.kind_of_node['key']
         self.value = a
-        self.node = weakref.ref(n)
+        if type(n) != dict:
+            self.node = weakref.ref(n)
+        else:
+            raise ValueError("PSL don't work on builtin dict")
         return self
 
     def is_node(self, n, a, p=None) -> CaptureContext:
@@ -751,7 +757,17 @@ class CaptureContext:
             res.lsdata.append(se)
         return res
 
-    def __repr__(self):
+    def dbg_str(self) -> str:
+        txt = fmt.sep('\n', [])
+        txt.lsdata.append("id parent = %d" % id(self.parent))
+        n = self.node()
+        txt.lsdata.append("node = %s - %s" % (type(n), str(n)))
+        d = CaptureContext.kind_of_node
+        txt.lsdata.append("kind = %s" % list(d.keys())[list(d.values()).index(self.kind)])
+        txt.lsdata.append("value = %s" % repr(self.value))
+        return str(txt)
+
+    def __repr__(self) -> str:
         return str(self.to_fmt())
 
 
@@ -933,6 +949,7 @@ class LivingContext:
             ls[1].checkType(t, thenode, parent)
 
     def checkValue(self, v):
+        print("check value")
         for ls in self.ls:
             ls[1].checkValue(v)
 

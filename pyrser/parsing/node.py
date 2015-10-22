@@ -97,6 +97,8 @@ class ListNodeItemIterator:
 
 
 class ListNode:
+    allinst = []
+
     def __init__(self, it: []=None):
         self.cache = None
         self.must_update = False
@@ -160,31 +162,31 @@ class ListNode:
             self.cache = {}
             idx = 0
             for it in self.begin._fwd():
-                it.thelist = self
+                it.thelist = weakref.ref(self)
                 self.cache[idx] = it
                 idx += 1
             self.must_update = False
 
-    def index(self, v) -> int:
+    def index(self, data) -> int:
         self._update()
         for k, v in self.cache.items():
-            if v.data == v:
+            if v.data == data:
                 return k
         raise ValueError("%d is not in list" % v)
 
-    def count(self, v) -> int:
+    def count(self, data) -> int:
         self._update()
         cnt = 0
         for v in self.cache.values():
-            if v.data == v:
+            if v.data == data:
                 cnt += 1
         return cnt
 
     def get(self, k) -> ListNodeItem:
         if type(k) is not int:
             raise ValueError('Key must be an int')
-        k = self._trueindex(k)
         self._update()
+        k = self._trueindex(k)
         if k not in self.cache:
             raise IndexError("list index out of range")
         return self.cache[k]
@@ -193,8 +195,8 @@ class ListNode:
     def __getitem__(self, k) -> object:
         if type(k) is not int:
             raise ValueError('Key must be an int')
-        k = self._trueindex(k)
         self._update()
+        k = self._trueindex(k)
         if k not in self.cache:
             raise IndexError("list index out of range")
         return self.cache[k].data
@@ -203,8 +205,8 @@ class ListNode:
     def __setitem__(self, k, d):
         if type(k) is not int:
             raise ValueError('Key must be an int')
-        k = self._trueindex(k)
         self._update()
+        k = self._trueindex(k)
         if k not in self.cache:
             raise IndexError("list index out of range")
         self.cache[k].data = d
@@ -213,8 +215,8 @@ class ListNode:
     def __delitem__(self, k):
         if type(k) is not int:
             raise ValueError('Key must be an int')
-        k = self._trueindex(k)
         self._update()
+        k = self._trueindex(k)
         if k not in self.cache:
             raise IndexError("list index out of range")
         self.cache[k].popitem()
@@ -265,11 +267,15 @@ class ListNodeItem:
 
     # []
     def __getitem__(self, k) -> object:
-        return self.thelist[k]
+        if self.thelist is None:
+            raise ValueError("Bad initialised ListNode")
+        return self.thelist()[k]
 
     # [] =
     def __setitem__(self, k, d):
-        self.thelist[k] = d
+        if self.thelist is None:
+            raise ValueError("Bad initialised ListNode")
+        self.thelist()[k] = d
 
     # del []
     def __delitem__(self, k):
@@ -291,7 +297,7 @@ class ListNodeItem:
             self.prev.next = self.next
         if self.next is not None:
             self.next.prev = self.prev
-        thelist = self.thelist
+        thelist = self.thelist()
         if thelist is not None:
             if thelist.begin is self:
                 thelist.begin = self.next
@@ -302,11 +308,12 @@ class ListNodeItem:
 
     def append(self, data) -> ListNodeItem:
         if self.thelist is None:
-            self.thelist = ListNode()
-        thelist = self.thelist
+            ListNode.allinst.append(ListNode())
+            self.thelist = weakref.ref(ListNode.allinst[-1])
+        thelist = self.thelist()
         thelist.must_update = True
         new = ListNodeItem(data)
-        new.thelist = thelist
+        new.thelist = weakref.ref(thelist)
         new.next = self.next
         self.next = new
         new.prev = self
@@ -321,11 +328,12 @@ class ListNodeItem:
 
     def prepend(self, data) -> ListNodeItem:
         if self.thelist is None:
-            self.thelist = ListNode()
-        thelist = self.thelist
+            ListNode.allinst.append(ListNode())
+            self.thelist = weakref.ref(ListNode.allinst[-1])
+        thelist = self.thelist()
         thelist.must_update = True
         new = ListNodeItem(data)
-        new.thelist = thelist
+        new.thelist = weakref.ref(thelist)
         new.prev = self.prev
         self.prev = new
         new.next = self

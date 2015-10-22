@@ -17,11 +17,11 @@ Setup your environment
 ======================
 Install setuptools and sphinx::
 
-    pip install setuptools sphinx
+    pip3 install setuptools sphinx sphinxcontrib-programoutput
 
 Clone the pyrser repository::
 
-    hg clone https://code.google.com/p/pyrser/
+    git clone git@github.com:LionelAuroux/pyrser.git
 
 Prepare package and documentation
 =================================
@@ -34,7 +34,7 @@ Uploading a new package to pypi
 Don't forget to upgrade the package number or delete the package you want to
 replace on pypi before running the following command::
 
-    python setup.py sdist upload
+    python setup.py sdist register upload
 
 
 Links for reset syntax

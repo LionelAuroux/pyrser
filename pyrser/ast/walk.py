@@ -12,12 +12,14 @@ def walk(self, lc: state.LivingContext, user_data=None, parent=None):
     """
     TODO: should_test_type??
     """
+    global _cacheid
     # root node autorefence
     if parent is None:
         parent = self
     ## walk attributes
-    if hasattr(self, '__dict__'):
+    if hasattr(self, '__dict__') and not isinstance(self, node.ListNode):
         for k in sorted(vars(self).keys()):
+            print("RECURS key %s ID %d" % (k, id(getattr(self, k))))
             walk(getattr(self, k), lc, user_data, self)
             # k == ?
             print('test attr .%s' % k)
@@ -29,6 +31,7 @@ def walk(self, lc: state.LivingContext, user_data=None, parent=None):
     # ...as dict, walk values, match keys
     if hasattr(self, 'keys'):
         for k in sorted(self.keys()):
+            print("RECURS ID %d" % id(self[k]))
             walk(self[k], lc, user_data, self)
             # k == ?
             print('test key [%s]' % repr(k))
@@ -41,6 +44,7 @@ def walk(self, lc: state.LivingContext, user_data=None, parent=None):
     elif not isinstance(self, str) and hasattr(self, '__iter__'):
         idx = 0
         for i in self:
+            print("RECURS ID %d" % id(i))
             walk(i, lc, user_data, self)
             # idx == ?
             print('test indice [%s]' % str(idx))

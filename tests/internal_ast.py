@@ -42,7 +42,7 @@ class InternalAst_Test(unittest.TestCase):
         self.assertNotEqual(l.next, None, "Bad construction of l")
         self.assertEqual(id(l.next.prev), id(l), "Bad construction of l")
         self.assertEqual(l.next.next, None, "Bad construction of l")
-        thelist = l.thelist
+        thelist = l.thelist()
         self.assertEqual(len(thelist), 2, "Bad construction of l")
         self.assertEqual(thelist.must_update, False, "Bad construction of l")
         self.assertEqual(id(thelist.begin), id(l), "Bad construction of l")
@@ -61,22 +61,22 @@ class InternalAst_Test(unittest.TestCase):
         self.assertEqual(l[0], 'a', "Bad construction of l")
         self.assertEqual(l[1], 'c', "Bad construction of l")
         self.assertEqual(l[2], 'b', "Bad construction of l")
+        l.thelist().append('g')
+        self.assertEqual(l[3], 'g', "Bad construction of l")
+        self.assertEqual(l[-1], 'g', "Bad construction of l")
+        self.assertEqual(l[-2], 'b', "Bad construction of l")
+        self.assertEqual(l[-3], 'c', "Bad construction of l")
+        self.assertEqual(l[-4], 'a', "Bad construction of l")
         with self.assertRaises(IndexError):
-            x = l[3]
-        with self.assertRaises(IndexError):
-            l[3] = 'g'
-        with self.assertRaises(IndexError):
-            l[-1] = 'g'
-        with self.assertRaises(IndexError):
-            x = l[-1]
+            l[-5] = 'g'
         subelm = []
         for it in l._fwd():
             subelm.append(it.data)
-        self.assertEqual(subelm, ['a', 'c', 'b'], "Bad construction of l")
+        self.assertEqual(subelm, ['a', 'c', 'b', 'g'], "Bad construction of l")
         subelm = []
         for it in l.values():
             subelm.append(it)
-        self.assertEqual(subelm, ['a', 'c', 'b'], "Bad construction of l")
+        self.assertEqual(subelm, ['a', 'c', 'b', 'g'], "Bad construction of l")
         subelm = []
         end = l.next.next
         for it in end._bwd():
@@ -93,7 +93,7 @@ class InternalAst_Test(unittest.TestCase):
         self.assertNotEqual(l.prev, None, "Bad construction of l")
         self.assertEqual(id(l.prev.next), id(l), "Bad construction of l")
         self.assertEqual(l.prev.prev, None, "Bad construction of l")
-        thelist = l.thelist
+        thelist = l.thelist()
         self.assertEqual(len(thelist), 2, "Bad construction of l")
         self.assertEqual(thelist.must_update, False, "Bad construction of l")
         self.assertEqual(id(thelist.end), id(l), "Bad construction of l")
@@ -109,17 +109,9 @@ class InternalAst_Test(unittest.TestCase):
         self.assertEqual(thelist.end.data, 'a', "Bad construction of l")
         self.assertEqual(thelist.begin.next.data, 'c', "Bad construction of l")
         self.assertEqual(thelist.end.prev.data, 'c', "Bad construction of l")
-        self.assertEqual(l[0], 'a', "Bad construction of l")
-        self.assertEqual(l[-1], 'c', "Bad construction of l")
-        self.assertEqual(l[-2], 'b', "Bad construction of l")
-        with self.assertRaises(IndexError):
-            x = l[1]
-        with self.assertRaises(IndexError):
-            l[1] = 'g'
-        with self.assertRaises(IndexError):
-            l[-3] = 'g'
-        with self.assertRaises(IndexError):
-            x = l[-3]
+        self.assertEqual(l[0], 'b', "Bad construction of l")
+        self.assertEqual(l[-1], 'a', "Bad construction of l")
+        self.assertEqual(l[-2], 'c', "Bad construction of l")
         subelm = []
         for it in l._bwd():
             subelm.append(it.data)
@@ -151,7 +143,7 @@ class InternalAst_Test(unittest.TestCase):
                 it.popitem()
             idx += 1
         self.assertEqual(str(lbegin), "['a', 'b', 'd', 'e', 'f']", "Bad construction of l")
-        self.assertEqual(l.thelist.must_update, True, "Bad construction of l")
+        self.assertEqual(l.thelist().must_update, True, "Bad construction of l")
         lbegin = ListNodeItem('a')
         l = lbegin
         l = l.append('b')
@@ -161,7 +153,7 @@ class InternalAst_Test(unittest.TestCase):
         l = l.append('f')
         del lbegin[2]
         self.assertEqual(str(lbegin), "['a', 'b', 'd', 'e', 'f']", "Bad construction of l")
-        self.assertEqual(l.thelist.must_update, True, "Bad construction of l")
+        self.assertEqual(l.thelist().must_update, True, "Bad construction of l")
         # ListNode
         ls = ListNode()
         ls.append('a')
@@ -484,11 +476,11 @@ class InternalAst_Test(unittest.TestCase):
         t = [L(), L(), L()]
         t[0].append(10)
         t[0].append(42)
-        t[1].append(10)
-        t[1].append(10)
-        t[1].append(10)
-        t[2].append(10)
-        t[2].append(10)
+        t[1].append(11)
+        t[1].append(12)
+        t[1].append(13)
+        t[2].append(14)
+        t[2].append(15)
         t[2].append(42)
         in_test = False
         walk(t, lc, (id(t[2]), self))
@@ -601,11 +593,11 @@ class InternalAst_Test(unittest.TestCase):
         t = [L(), L(), L()]
         t[0].append(10)
         t[0].append(42)
-        t[1].append(10)
-        t[1].append(10)
-        t[1].append(10)
-        t[2].append(10)
-        t[2].append(10)
+        t[1].append(11)
+        t[1].append(12)
+        t[1].append(13)
+        t[2].append(14)
+        t[2].append(15)
         t[2].append(42)
         in_test = False
         walk(t, lc, (id(t[2]), self))
@@ -622,11 +614,12 @@ class InternalAst_Test(unittest.TestCase):
         lc.to_png_file(rpath + os.sep + 't6_3.png')
         t = ListNode([H(), H(), H()])
         t[0]['chausette'] = 12
-        t[0]['toto'] = 12
+        t[0]['toto'] = 13
         t[1]['toto'] = 42
-        t[2]['zozo'] = 42
+        t[2]['zozo'] = 43
+        print("HHHHHHHHH %s" % repr(t))
         in_test = False
-        walk(t, lc, (id(t[1]), self))
+        walk(t, lc, (id(t[1]), self)) ###
         self.assertTrue(in_test, "Expect the Hook checkMatch is called")
         self.assertTrue(lc.is_in_stable_state(), "LivingContext not in correct state")
         self.assertEqual(t[1], "rewrited", "Failed to rewrite a node")
@@ -659,12 +652,12 @@ class InternalAst_Test(unittest.TestCase):
         """wildcard tree matching"""
         global in_test
         # Test(.b = *) -> #checkMatch;
-        def checkMatch(tree: Node, user_data):
+        def checkMatch1(tree: Node, user_data):
             global in_test
             in_test = True
             tree.node().is_rewrited = True
         m = MatchBlock([
-            MatchHook(checkMatch, MatchType(Test, [MatchAttr('b')])),
+            MatchHook(checkMatch1, MatchType(Test, [MatchAttr('b')])),
         ])
         lc = LivingContext()
         lc.add_match_block(m)
@@ -673,26 +666,23 @@ class InternalAst_Test(unittest.TestCase):
         t = [Test()]
         t[0].b = 42
         t.append(A())
-        t[1].b = 42
+        t[1].b = 666
+        t.append(Test())
+        t[2].b = "cool"
         in_test = False
         walk(t, lc)
         self.assertTrue(in_test, "Expect the Hook checkMatch is called")
         self.assertTrue(hasattr(t[0], "is_rewrited"), "Failed to rewrite a node")
+        self.assertTrue(hasattr(t[2], "is_rewrited"), "Failed to rewrite a node")
         self.assertFalse(lc.is_in_stable_state(), "LivingContext not in correct state due to WILDCAR MATCH")
         # L([2: *]) -> #checkMatch;
-        def checkMatch(tree: Node, user_data):
+        def checkMatch2(tree: Node, user_data):
             global in_test
             in_test = True
-            # nodes[0] == nodes[-1] on root node
-            print(repr(tree))
-            #if nodes[0] != nodes[-1]:
-            #    index = nodes[-1].index(nodes[0])
-            #    nodes[-1][index] = Test()
-            #    nodes[-1][index].is_rewrited = True
-            #else:
-            #    nodes[0].is_rewrited = True
+            tree.get().is_rewrited = True
+            print("RECV %s" % tree.dbg_str())
         m = MatchBlock([
-            MatchHook(checkMatch, MatchType(L, [MatchIndice(2)])),
+            MatchHook(checkMatch2, MatchType(L, [MatchIndice(2)])),
         ])
         lc = LivingContext()
         lc.add_match_block(m)
@@ -707,24 +697,22 @@ class InternalAst_Test(unittest.TestCase):
         t[2].c = 42
         t[2].subls = [0, 1, L([2, 3, Test(), 4]), 5]
         in_test = False
+        with self.assertRaises(ValueError):
+            walk(t, lc)
+        t[2].subls = L([0, 1, L([2, 3, Test(), 4]), 5])
         walk(t, lc)
         self.assertTrue(in_test, "Expect the Hook checkMatch is called")
-        self.assertTrue(hasattr(t, "is_rewrited"), "Failed to rewrite a node")
-        self.assertTrue(hasattr(t[2].subls[2], "is_rewrited"), "Failed to rewrite a node")
+        print(">>>>>>>> %s" % repr(t))
+        self.assertTrue(hasattr(t[2], "is_rewrited"), "Failed to rewrite a node")
+        self.assertTrue(hasattr(t[2].subls[2][2], "is_rewrited"), "Failed to rewrite a node")
         self.assertFalse(lc.is_in_stable_state(), "LivingContext not in correct state due to WILDCAR MATCH")
         # H({'toto': *}) -> #checkMatch;
-        def checkMatch(tree: Node, user_data):
+        def checkMatch3(tree: Node, user_data):
             global in_test
             in_test = True
-            # nodes[0] == nodes[-1] on root node
-            if nodes[0] != nodes[-1]:
-                k = 'toto'
-                nodes[-1][k] = Test()
-                nodes[-1][k].is_rewrited = True
-            else:
-                nodes[0].is_rewrited = True
+            tree.node().is_rewrited = True
         m = MatchBlock([
-            MatchHook(checkMatch, MatchType(H, [MatchKey("toto")])),
+            MatchHook(checkMatch3, MatchType(H, [MatchKey("toto")])),
         ])
         lc = LivingContext()
         lc.add_match_block(m)
@@ -739,6 +727,9 @@ class InternalAst_Test(unittest.TestCase):
         t['blu'].c = 42
         t['blu'].subh = {'t': 0, 'x': 1, 'toto': H({'2': 2, '3': 3, 'toto': Test(), '4': 4}), 'z': 5}
         in_test = False
+        with self.assertRaises(ValueError):
+            walk(t, lc)
+        t['blu'].subh = H({'t': 0, 'x': 1, 'toto': H({'2': 2, '3': 3, 'toto': Test(), '4': 4}), 'z': 5})
         walk(t, lc)
         self.assertTrue(in_test, "Expect the Hook checkMatch is called")
         self.assertTrue(hasattr(t, "is_rewrited"), "Failed to rewrite a node")
@@ -746,19 +737,12 @@ class InternalAst_Test(unittest.TestCase):
         self.assertFalse(lc.is_in_stable_state(), "LivingContext not in correct state due to WILDCAR MATCH")
         # Test([*: 12]) -> #checkMatch;
         print('-------------------------------------------------------------------------------')
-        def checkMatch(tree: Node, user_data):
+        def checkMatch4(tree: Node, user_data):
             global in_test
             in_test = True
-            print("HHHHHEEEERRRREEEE %r" % nodes)
-            # nodes[0] == nodes[-1] on root node
-            if nodes[0] != nodes[-1]:
-                index = nodes[-1].index(nodes[0])
-                nodes[-1][index] = Test()
-                nodes[-1][index].is_rewrited = True
-            else:
-                nodes[0].is_rewrited = True
+            tree.node().is_rewrited = True
         m = MatchBlock([
-            MatchHook(checkMatch, MatchType(L, [MatchIndice(None, MatchValue(12))])),
+            MatchHook(checkMatch4, MatchType(L, [MatchIndice(None, MatchValue(12))])),
         ])
         lc = LivingContext()
         lc.add_match_block(m)
@@ -768,6 +752,7 @@ class InternalAst_Test(unittest.TestCase):
         in_test = False
         walk(t, lc)
         self.assertTrue(in_test, "Expect the Hook checkMatch is called")
+        self.assertTrue(hasattr(t, "is_rewrited"), "Failed to rewrite a node")
         # Test(.* = *) -> #checkMatch;
         # *(.a = 12) -> #checkMatch;
         # L([*: 12]) -> #checkMatch;

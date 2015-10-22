@@ -11,13 +11,11 @@ class InternalType_Test(unittest.TestCase):
         tn = type_expr.RealName('*')
         tn.set_attr('size', 12)
         txt = str(tn.to_fmt())
-        print(txt)
         self.assertEqual(txt, "*[size=12]", "Bad TypeExpr pretty printing")
         ctn = type_expr.ComponentTypeName()
         ctn.set_name(tn)
         ctn.add_params(type_expr.ComponentTypeName().set_name(type_expr.RealName('char')))
         txt = str(ctn.to_fmt())
-        print(txt)
         self.assertEqual(txt, "*[size=12]<char>", "Bad TypeExpr pretty printing")
         ctn = type_expr.ComponentTypeName()
         ctn.set_name(type_expr.RealName('std'))
@@ -27,7 +25,6 @@ class InternalType_Test(unittest.TestCase):
         p.set_name(type_expr.RealName('string'))
         ctn.subcomponent.add_params(p)
         txt = str(ctn.to_fmt())
-        print(txt)
         self.assertEqual(txt, "std.list<string>", "Bad TypeExpr pretty printing")
         ctn2 = type_expr.ComponentTypeName()
         ctn2.set_name(type_expr.RealName('std'))
@@ -37,9 +34,7 @@ class InternalType_Test(unittest.TestCase):
         p2.set_name(type_expr.RealName('string'))
         ctn2.subcomponent.add_params(p2)
         txt = str(ctn2.to_fmt())
-        print(txt)
         dctn = ctn - ctn2
-        print(vars(dctn))
         self.assertTrue(len(dctn) == 0, "Fail in TypeExpr equivalence")
 
 
@@ -222,15 +217,8 @@ class InternalType_Test(unittest.TestCase):
         p2 = Scope(sig=[Fun('b', 'int'), Fun('b', 'double')])
         p3 = Scope(sig=[Fun('c', 'int'), Fun('c', 'double'),
                    Fun('c', 'char')])
-        print("P1: " + str(p1))
-        print("P2: " + str(p2))
-        print("P3: " + str(p3))
-        # TODO: | or |= change something...error when uncommenting
-        #f |= p1 | p2 | p3
-        print("BEFORE: " + str(f))
         # TODO: the result is different if p1, p2, p3 is or not in scope
         (trestf, trestp) = f.get_by_params([p1, p2, p3])
-        print("RESOLVEDDDD: %s" % str(trestf))
         self.assertIn(Fun('f', 'int', ['int', 'double', 'char']), trestf,
                       "Bad get_by_params in type_system.Scope")
         self.assertEqual(len(trestf), 1,
@@ -400,8 +388,6 @@ class InternalType_Test(unittest.TestCase):
         tenv = Scope("test", sig=typ)
         tenv.add(EvalCtx(Fun("f", "T1")))
         fs = tenv.get_by_symbol_name("f")
-        print(str(tenv))
-        print(str(fs))
         self.assertEqual(
             id(typ),
             id(
