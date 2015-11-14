@@ -420,7 +420,7 @@ class Scope(Symbol):
                 # number of matched params
                 mcnt = 0
                 # temporary collect
-                nbparam_sig = len(s.tparams)
+                nbparam_sig = (0 if s.tparams is None else len(s.tparams))
                 nbparam_candidates = len(params)
                 # don't treat signature too short
                 if nbparam_sig > nbparam_candidates:
