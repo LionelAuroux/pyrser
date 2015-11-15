@@ -50,6 +50,10 @@ class Fun(Signature):
             if p.is_polymorphic:
                 return True
 
+    @property
+    def is_fun(self) -> bool:
+        return True
+
     def internal_name(self):
         """
         Return the unique internal name

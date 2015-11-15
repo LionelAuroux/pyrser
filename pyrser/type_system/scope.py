@@ -101,7 +101,7 @@ class Scope(Symbol):
         """ Count var define by this scope """
         n = 0
         for s in self._hsig.values():
-            if hasattr(s, 'is_var') and s.is_var():
+            if hasattr(s, 'is_var') and s.is_var:
                 n += 1
         return n
 
@@ -109,7 +109,7 @@ class Scope(Symbol):
         """ Count function define by this scope """
         n = 0
         for s in self._hsig.values():
-            if hasattr(s, 'is_fun') and s.is_fun():
+            if hasattr(s, 'is_fun') and s.is_fun:
                 n += 1
         return n
 

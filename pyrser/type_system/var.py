@@ -18,6 +18,10 @@ class Var(Signature):
     def is_polymorphic(self) -> bool:
         return self.tret.is_polymorphic
 
+    @property
+    def is_var(self) -> bool:
+        return True
+
     def internal_name(self):
         """
         Return the unique internal name
