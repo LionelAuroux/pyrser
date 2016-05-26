@@ -785,6 +785,7 @@ class LivingState:
         # when the living state return to first state
         self.nodectx = CaptureContext()
         # for attrs,indices,keys collect id of parents
+        self.subelmtctx = []
         self.subelmt = []
 
     #TODO: forward call to internal state
@@ -799,8 +800,9 @@ class LivingState:
         if id(s) != id(self.thestate()):
             ctx = CaptureContext()
             ctx.is_attr(thenode, a)
-            self.nodectx.add_sub(ctx)
+            self.subelmtctx.append(ctx)
             self.subelmt.append(id(thenode))
+            print("ADDSUBELMT %s in %d" % (self.subelmtctx, id(self)))
             self.thestate = weakref.ref(s)
             self.alive = True
 
@@ -809,7 +811,7 @@ class LivingState:
         if id(s) != id(self.thestate()):
             ctx = CaptureContext()
             ctx.is_indice(thenode, i)
-            self.nodectx.add_sub(ctx)
+            self.subelmtctx.append(ctx)
             self.subelmt.append(id(thenode))
             self.thestate = weakref.ref(s)
             self.alive = True
@@ -819,7 +821,7 @@ class LivingState:
         if id(s) != id(self.thestate()):
             ctx = CaptureContext()
             ctx.is_key(thenode, k)
-            self.nodectx.add_sub(ctx)
+            self.subelmtctx.append(ctx)
             self.subelmt.append(id(thenode))
             self.thestate = weakref.ref(s)
             self.alive = True
@@ -841,15 +843,25 @@ class LivingState:
                 s = self.thestate().checkKindOfType(t)
             if id(s) != id(self.thestate()):
                 print("ADD THENODE: %s" % thenode)
+                subnodes = []
+                for idx in toremove:
+                    subnodes.append(self.subelmtctx[idx])
+                ctx = CaptureContext.make_from_unorder_list(subnodes)
                 # TODO: must extract the correct sublist
                 # to surround by the node
-                self.nodectx.is_node(thenode, t.__name__, parent)
+                #self.nodectx.is_node(thenode, t.__name__, parent)
+                ctx.is_node(thenode, t.__name__, parent)
+                self.nodectx = ctx
+                self.subelmtctx.append(ctx)
+                self.subelmt.append(id(parent))
                 # TODO: think a better way to store
                 # in // old ref for ancestors...siblings...
                 self.thestate = weakref.ref(s)
                 self.alive = True
-        for idx in reversed(toremove):
-            self.subelmt.pop(idx)
+                for idx in reversed(toremove):
+                    self.subelmt.pop(idx)
+                    print("remove %d in %d" % (idx, id(self)))
+                    self.subelmtctx.pop(idx)
 
     def checkValue(self, v):
         s = self.thestate().checkValue(v)

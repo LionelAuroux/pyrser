@@ -402,6 +402,41 @@ class InternalAst_Test(unittest.TestCase):
 
     def test_05(self):
         """basic tree matching"""
+        def checkMatch1(tree: Node, user_data) -> Node:
+            global in_test
+            in_test = True
+            user_data[1].assertEqual(user_data[0], id(tree.node()), "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.attrs[0].value, 'b', "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.attrs[0].get(), 42, "Failed to match the node of tree")
+        def checkMatch2(tree: Node, user_data) -> Node:
+            global in_test
+            in_test = True
+            user_data[1].assertEqual(user_data[0], id(tree.node()), "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.attrs[0].value, 'a', "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.attrs[0].get(), 42, "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.attrs[1].value, 'c', "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.attrs[1].get(), 1.2, "Failed to match the node of tree")
+        def checkMatch3(tree: Node, user_data) -> Node:
+            global in_test
+            in_test = True
+            user_data[1].assertEqual(user_data[0], id(tree.node()), "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.indices[0].value, 2, "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.indices[0].get(), 42, "Failed to match the node of tree")
+        def checkMatch4(tree: Node, user_data) -> Node:
+            global in_test
+            in_test = True
+            user_data[1].assertEqual(user_data[0], id(tree.node()), "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.keys[0].value, 'toto', "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.keys[0].get(), 42, "Failed to match the node of tree")
+        def checkMatch5(tree: Node, user_data) -> Node:
+            global in_test
+            in_test = True
+            user_data[1].assertEqual(user_data[0], id(tree.node()), "Failed to match the node of tree")
+            print("MATCH TREE %s" % tree)
+            user_data[1].assertEqual(tree.attrs[0].value, 'a', "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.attrs[0].get(), 12, "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.attrs[1].value, 'c', "Failed to match the node of tree")
+            user_data[1].assertEqual(tree.attrs[1].get(), 42, "Failed to match the node of tree")
         def checkMatch(tree: Node, user_data) -> Node:
             global in_test
             in_test = True
@@ -411,9 +446,9 @@ class InternalAst_Test(unittest.TestCase):
             in_test = True
 
         global in_test
-        # Test(.b = 42) -> #checkMatch;
+        # Test(.b = 42) -> #checkMatch1;
         m = MatchBlock([
-            MatchHook(checkMatch, MatchType(Test, [MatchAttr('b', MatchValue(42))])),
+            MatchHook(checkMatch1, MatchType(Test, [MatchAttr('b', MatchValue(42))])),
         ])
         lc = LivingContext()
         lc.add_match_block(m)
@@ -442,11 +477,11 @@ class InternalAst_Test(unittest.TestCase):
         walk(t, lc, (id(t), self))
         self.assertFalse(in_test, "Expect that the Hook checkNoMatch isn't called")
         self.assertTrue(lc.is_in_stable_state(), "LivingContext not in correct state")
-        # Test(.a=42, .c=1.2) -> #checkMatch;
+        # Test(.a=42, .c=1.2) -> #checkMatch2;
         m = MatchBlock([
-            MatchHook(checkMatch, MatchType(Test, [MatchAttr('a', MatchValue(42)), MatchAttr('c', MatchValue(1.2))])),
+            MatchHook(checkMatch2, MatchType(Test, [MatchAttr('a', MatchValue(42)), MatchAttr('c', MatchValue(1.2))])),
         ])
-        lc = LivingContext()
+        c = LivingContext()
         lc.add_match_block(m)
         lc.build_automata()
         lc.to_png_file(rpath + os.sep + 't5_3.png')
@@ -465,9 +500,9 @@ class InternalAst_Test(unittest.TestCase):
         walk(t, lc, (id(t), self))
         self.assertFalse(in_test, "Expect that the Hook checkMatch isn't called")
         self.assertTrue(lc.is_in_stable_state(), "LivingContext not in correct state")
-        # L([2: 42]) -> #checkMatch;
+        # L([2: 42]) -> #checkMatch3;
         m = MatchBlock([
-            MatchHook(checkMatch, MatchType(L, [MatchIndice(2, MatchValue(42))])),
+            MatchHook(checkMatch3, MatchType(L, [MatchIndice(2, MatchValue(42))])),
         ])
         lc = LivingContext()
         lc.add_match_block(m)
@@ -486,9 +521,9 @@ class InternalAst_Test(unittest.TestCase):
         walk(t, lc, (id(t[2]), self))
         self.assertTrue(in_test, "Expect the Hook checkMatch is called")
         self.assertTrue(lc.is_in_stable_state(), "LivingContext not in correct state")
-        # H({'toto': 42}) -> #checkMatch;
+        # H({'toto': 42}) -> #checkMatch4;
         m = MatchBlock([
-            MatchHook(checkMatch, MatchType(H, [MatchKey('toto', MatchValue(42))])),
+            MatchHook(checkMatch4, MatchType(H, [MatchKey('toto', MatchValue(42))])),
         ])
         lc = LivingContext()
         lc.add_match_block(m)
@@ -503,9 +538,9 @@ class InternalAst_Test(unittest.TestCase):
         walk(t, lc, (id(t[1]), self))
         self.assertTrue(in_test, "Expect the Hook checkMatch is called")
         self.assertTrue(lc.is_in_stable_state(), "LivingContext not in correct state")
-        # Test(.a = 12, .c = 42, ...) -> #checkMatch;
+        # Test(.a = 12, .c = 42, ...) -> #checkMatch5;
         m = MatchBlock([
-            MatchHook(checkMatch, MatchType(Test, [MatchAttr('a', MatchValue(12)), MatchAttr('c', MatchValue(42))], strict=False)),
+            MatchHook(checkMatch5, MatchType(Test, [MatchAttr('a', MatchValue(12)), MatchAttr('c', MatchValue(42))], strict=False)),
         ])
         lc = LivingContext()
         lc.add_match_block(m)
