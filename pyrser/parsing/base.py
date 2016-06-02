@@ -422,6 +422,54 @@ def read_eol(self) -> bool:
     return self._stream.restore_context()
 
 
+@meta.rule(Parser, "Base.hex_num")
+def read_hex_integer(self) -> bool:
+    """
+    Read the following BNF rule else return False::
+
+        readHexInteger = [
+            [ '0'..'9' | 'a'..'f' | 'A'..'F' ]+
+        ]
+    """
+    if self.read_eof():
+        return False
+    self._stream.save_context()
+    c = self._stream.peek_char
+    if c.isdigit() or ('a' <= c.lower() and c.lower() <= 'f'):
+        self._stream.incpos()
+        while not self.read_eof():
+            c = self._stream.peek_char
+            if not (c.isdigit() or ('a' <= c.lower() and c.lower() <= 'f')):
+                break
+            self._stream.incpos()
+        return self._stream.validate_context()
+    return self._stream.restore_context()
+
+
+@meta.rule(Parser, "Base.oct_num")
+def read_oct_integer(self) -> bool:
+    """
+    Read the following BNF rule else return False::
+
+        readOctInteger = [
+            [ '0'..'7' ]+
+        ]
+    """
+    if self.read_eof():
+        return False
+    self._stream.save_context()
+    c = self._stream.peek_char
+    if c.isdigit() and 0 <= int(c) and int(c) <= 7:
+        self._stream.incpos()
+        while not self.read_eof():
+            c = self._stream.peek_char
+            if not (c.isdigit() and 0 <= int(c) and int(c) <= 7):
+                break
+            self._stream.incpos()
+        return self._stream.validate_context()
+    return self._stream.restore_context()
+
+
 @meta.rule(Parser, "Base.num")
 def read_integer(self) -> bool:
     """
