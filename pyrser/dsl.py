@@ -329,9 +329,9 @@ class EBNF(parsing.Parser):
 
             #
             # hook = [ '#' ns_name : n #hook_name(_, n)
-            #          ['(' param : p #hook_param(_, p)
+            #          ['(' [ param : p #hook_param(_, p)
             #              [',' param : p #hook_param(_, p)]*
-            #           ')']?
+            #           ]? ')']?
             # ]
             #
             'hook': parsing.Seq(
@@ -342,24 +342,27 @@ class EBNF(parsing.Parser):
                 parsing.RepOptional(
                     parsing.Seq(
                         parsing.Char('('),
-                        parsing.Capture(
-                            'p',
-                            parsing.Alt(
-                                parsing.Rule('param'),
-                                parsing.Error("Expected parameter"))),
-                        parsing.Hook('hook_param', [('_', parsing.Node),
-                                                    ('p', parsing.Node)]),
-                        parsing.Rep0N(
+                        parsing.RepOptional(
                             parsing.Seq(
-                                parsing.Char(','),
                                 parsing.Capture(
                                     'p',
-                                    parsing.Alt(
-                                        parsing.Rule('param'),
-                                        parsing.Error("Expected parameter"))),
-                                parsing.Hook('hook_param',
-                                             [('_', parsing.Node),
-                                              ('p', parsing.Node)]))
+                                    parsing.Rule('param'),
+                                ),
+                                parsing.Hook('hook_param', [('_', parsing.Node),
+                                                            ('p', parsing.Node)]),
+                                parsing.Rep0N(
+                                    parsing.Seq(
+                                        parsing.Char(','),
+                                        parsing.Capture(
+                                            'p',
+                                            parsing.Alt(
+                                                parsing.Rule('param'),
+                                                parsing.Error("Expected parameter"))),
+                                        parsing.Hook('hook_param',
+                                                     [('_', parsing.Node),
+                                                      ('p', parsing.Node)]))
+                                )
+                            )
                         ),
                         parsing.Alt(
                             parsing.Char(')'),

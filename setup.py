@@ -9,7 +9,7 @@ def read(fname):
 #long_desc = read('README.md')
 
 version = '0.0'
-release = '0.0.10a1'
+release = '0.0.10a2'
 
 setuptools.setup(
     name='pyrser',
