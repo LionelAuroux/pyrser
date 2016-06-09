@@ -153,10 +153,8 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
         """Parse filename using the grammar"""
         self.from_string = False
         import os.path
-        if os.path.exists(filename):
-            f = open(filename, 'r')
+        with open(filename, 'r') as f:
             self.parsed_stream(f.read(), os.path.abspath(filename))
-            f.close()
         if entry is None:
             entry = self.entry
         if entry is None:
