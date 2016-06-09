@@ -384,10 +384,12 @@ class InternalDsl_Test(unittest.TestCase):
 
     def test_24_hookAndCapture(self):
         @meta.hook(parsing.Parser)
-        def my_hook_multi(self, n1, n2, n3):
+        def my_hook_multi(self, n1, n2, n3, n4, n5):
             self.test.assertTrue(self.value(n1) == "456")
             self.test.assertTrue(self.value(n2) == '"toto"')
             self.test.assertTrue(self.value(n3) == "blabla")
+            self.test.assertTrue(self.value(n4) == "cafebabe12CFE")
+            self.test.assertTrue(self.value(n5) == "0755")
             return True
 
         bnf = dsl.EBNF("""
@@ -398,8 +400,12 @@ class InternalDsl_Test(unittest.TestCase):
 
             I = [ Base.id ]
 
-            the_rule = [ N:nth S:t I:i
-                         #my_hook_multi(nth, t, i)
+            H = [ Base.hex_num ]
+
+            O = [ Base.oct_num ]
+
+            the_rule = [ N:nth S:t I:i H:h O:o
+                         #my_hook_multi(nth, t, i, h, o)
             ]
         """)
         res = bnf.get_rules()
@@ -407,7 +413,7 @@ class InternalDsl_Test(unittest.TestCase):
         self.assertIsInstance(res['the_rule'], parsing.Seq)
         self.assertTrue(res['the_rule'][-1].name == "my_hook_multi")
         dummyData = parsing.Parser("""
-            456    "toto"        blabla
+            456    "toto"        blabla  cafebabe12CFE 0755
             """)
         dummyData.set_rules(res)
         dummyData.test = self

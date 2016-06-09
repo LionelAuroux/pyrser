@@ -429,6 +429,14 @@ class InternalParse_Test(unittest.TestCase):
                         "failed no found Base.string")
         self.assertTrue("Base.string" in parser._rules,
                         "failed no found Base.string")
+        self.assertTrue("hex_num" in parser._rules,
+                        "failed no found Base.hex_num")
+        self.assertTrue("Base.hex_num" in parser._rules,
+                        "failed no found Base.hex_num")
+        self.assertTrue("oct_num" in parser._rules,
+                        "failed no found Base.oct_num")
+        self.assertTrue("Base.oct_num" in parser._rules,
+                        "failed no found Base.oct_num")
 
     def test_14_MetaGrammar(self):
         """
