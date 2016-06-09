@@ -249,7 +249,7 @@ class GrammarBasic_Test(unittest.TestCase):
                 grammar = """
                     not_finished_bnf =[ #hook("""
                 entry = "not_finished_bnf"
-        self.assertEqual(pe.exception.logs[0].msg, "Expected parameter",
+        self.assertEqual(pe.exception.logs[0].msg, "Expected ')'",
                          "failed to get the correct message")
         self.assertEqual(pe.exception.logs[0].location.col, 47,
                          "failed to get the correct position")
@@ -352,3 +352,12 @@ class GrammarBasic_Test(unittest.TestCase):
         #with dummyData as s:
         res = bnf.parse()
         self.assertEqual(res.lines[5][2], '--', "failed to parse correctly with ~")
+
+    def test_29_parse_file(self):
+        @meta.hook(WordList)
+        def add_to(self, mylist, word):
+            return True
+
+        ws = WordList()
+        with self.assertRaises(ValueError) as ve:
+            res = ws.parse_file("test.ws")

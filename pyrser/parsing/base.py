@@ -83,6 +83,11 @@ class BasicParser(metaclass=MetaBasicParser):
         return self._streams[-1]
 
     @property
+    def nstream(self) -> int:
+        """Return the number of opened stream"""
+        return len(self._streams)
+
+    @property
     def rules(self) -> dict:
         """
         Return the grammar dict

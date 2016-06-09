@@ -101,6 +101,12 @@ class Grammar(parsing.Parser, metaclass=MetaGrammar):
         return node
 
     def _do_parse(self, entry: str) -> parsing.Node:
+        if self.nstream == 0:
+            raise ValueError("No opened stream for reading."
+                             + " Check if you provide something "
+                             + "to read for method parse()"
+                             + " or a correct file for method parse_file()"
+                             )
         res = None
         self.diagnostic = error.Diagnostic()
         try:
