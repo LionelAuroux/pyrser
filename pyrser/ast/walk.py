@@ -22,7 +22,7 @@ def walk(self, lc: state.LivingContext, user_data=None, parent=None):
             print("RECURS key %s ID %d" % (k, id(getattr(self, k))))
             walk(getattr(self, k), lc, user_data, self)
             # k == ?
-            print('test attr .%s' % k)
+            #print('test attr .%s' % k)
             lc.checkAttr(k, self)
             # check precond
             lc.checkEventExpr()
@@ -31,10 +31,10 @@ def walk(self, lc: state.LivingContext, user_data=None, parent=None):
     # ...as dict, walk values, match keys
     if hasattr(self, 'keys'):
         for k in sorted(self.keys()):
-            print("RECURS ID %d" % id(self[k]))
+            #print("RECURS ID %d" % id(self[k]))
             walk(self[k], lc, user_data, self)
             # k == ?
-            print('test key [%s]' % repr(k))
+            #print('test key [%s]' % repr(k))
             lc.checkKey(k, self)
             # check precond
             lc.checkEventExpr()
@@ -44,10 +44,10 @@ def walk(self, lc: state.LivingContext, user_data=None, parent=None):
     elif not isinstance(self, str) and hasattr(self, '__iter__'):
         idx = 0
         for i in self:
-            print("RECURS ID %d" % id(i))
+            #print("RECURS ID %d" % id(i))
             walk(i, lc, user_data, self)
             # idx == ?
-            print('test indice [%s]' % str(idx))
+            #print('test indice [%s]' % str(idx))
             lc.checkIndice(idx, self)
             idx += 1
             # check precond
@@ -56,16 +56,16 @@ def walk(self, lc: state.LivingContext, user_data=None, parent=None):
             lc.doSubEvent()
     # ...type or value
     # type(self) == ?
-    print("test type %s" % type(self))
+    #print("test type %s" % type(self))
     lc.checkType(type(self), self, parent)
     # self == ?
-    print("test value %s" % str(self))
+    #print("test value %s" % str(self))
     lc.checkValue(self)
     ## Check EVENTS
     # TODO: what if the event do something
     # but don't change current state and default change it!!!
     lc.checkEventExpr()
-    print("RESULT")
+    #print("RESULT")
     # check Event
     lc.doResultEvent()
     # check Hook

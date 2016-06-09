@@ -57,10 +57,11 @@ class Node(dict):
         if not iscycle(self, ndict, info):
             res = False
             if len(self) > 0:
-                keys = list(self.keys())
-                for k in keys:
-                    ndict["['" + k + "']"] = id(self[k])
-                    res |= recurs(self[k], ndict, "%s[%s]" % (info, k))
+                if hasattr(self, 'keys'):
+                    keys = list(self.keys())
+                    for k in keys:
+                        ndict["['" + k + "']"] = id(self[k])
+                        res |= recurs(self[k], ndict, "%s[%s]" % (info, k))
             keys = list(vars(self).keys())
             for k in keys:
                 ndict["." + k] = id(getattr(self, k))
@@ -96,6 +97,14 @@ class ListNodeItemIterator:
     pass
 
 
+class DictNode(dict):
+    pass
+
+
+class TupleNode(list):
+    pass
+
+
 class ListNode:
     allinst = []
 
@@ -126,12 +135,18 @@ class ListNode:
             self.begin = self.begin.prepend(d)
 
     def __str__(self) -> str:
-        return str(self.begin)
+        return repr(self)
 
     def __repr__(self) -> str:
+        txt = []
+        for it in self.begin._fwd():
+            txt.append(str(it))
+        return repr(txt)
+
+    def dump(self) -> str:
         txt = ""
         for it in self.begin._fwd():
-            txt += repr(it)
+            txt += dump(it)
         return txt
 
     def __len__(self) -> int:
@@ -231,12 +246,12 @@ class ListNodeItem:
         self.thelist = None
 
     def __str__(self) -> str:
-        ls = []
-        for it in self._fwd():
-            ls.append(repr(it.data))
-        return '[' + ", ".join(ls) + ']'
+        return str(self.data)
 
     def __repr__(self) -> str:
+        return str(self.data)
+
+    def dump(self) -> str:
         txt = "{\n"
         txt += "prev= %d\n" % id(self.prev)
         txt += "self= %d\n" % id(self)
@@ -387,3 +402,31 @@ class ListNodeItemIterator:
         data = self.current.data
         self.current = getattr(self.current, self.attr)
         return data
+
+
+def normalize(ast: Node) -> Node:
+    """
+    Normalize an AST nodes.
+
+    all builtins containers are replace by referencable subclasses
+    """
+    res = ast
+    typemap = {DictNode, ListNode, TupleNode}
+    if type(ast) is dict:
+        res = DictNode(ast)
+    elif type(ast) is list:
+        res = ListNode(ast)
+    elif type(ast) is tuple:
+        res = TupleNode(ast)
+    # in-depth change
+    if hasattr(res, 'items'):
+        for k, v in res.items():
+            res[k] = normalize(v)
+    elif hasattr(res, '__getitem__'):
+        for idx, v in zip(range(len(res)), res):
+            res[idx] = normalize(v)
+    if type(res) not in typemap and hasattr(res, '__dict__'):
+        subattr = vars(res)
+        for k, v in subattr.items():
+            setattr(res, k, normalize(v))
+    return res

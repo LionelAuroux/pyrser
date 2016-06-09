@@ -245,12 +245,36 @@ class InternalDsl_Test(unittest.TestCase):
         )
 
     def test_18_hookNoParam(self):
+        @meta.hook(parsing.Parser)
+        def my_hook(self):
+            self.the_hook = True
+            return True
         bnf = dsl.EBNF("""
-            the_rule = [ #hook ]
+            the_rule = [ #my_hook ]
         """)
         res = bnf.get_rules()
         self.assertTrue('the_rule' in res)
         self.assertIsInstance(res['the_rule'], parsing.Hook)
+        self.assertTrue(res['the_rule'].name == "my_hook")
+        dummyData = parsing.Parser()
+        dummyData.set_rules(res)
+        dummyData.the_hook = False
+        res = dummyData.eval_rule('the_rule')
+        self.assertTrue(res)
+        self.assertTrue(dummyData.the_hook)
+        bnf = dsl.EBNF("""
+            the_rule = [ #my_hook() ]
+        """)
+        res = bnf.get_rules()
+        self.assertTrue('the_rule' in res)
+        self.assertIsInstance(res['the_rule'], parsing.Hook)
+        self.assertTrue(res['the_rule'].name == "my_hook")
+        dummyData = parsing.Parser()
+        dummyData.set_rules(res)
+        dummyData.the_hook = False
+        res = dummyData.eval_rule('the_rule')
+        self.assertTrue(res)
+        self.assertTrue(dummyData.the_hook)
 
     def test_19_hookOneParamStr(self):
         @meta.hook(parsing.Parser)

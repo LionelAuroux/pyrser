@@ -707,7 +707,7 @@ class CaptureContext:
         return self
 
     def is_node(self, n, a, p=None) -> CaptureContext:
-        print("SET THE NODE TO %s %s" % (type(n), a))
+        #print("SET THE NODE TO %s %s" % (type(n), a))
         self.kind = CaptureContext.kind_of_node['node']
         self.value = a
         self.node = weakref.ref(n)
@@ -802,7 +802,7 @@ class LivingState:
             ctx.is_attr(thenode, a)
             self.subelmtctx.append(ctx)
             self.subelmt.append(id(thenode))
-            print("ADDSUBELMT %s in %d" % (self.subelmtctx, id(self)))
+            #print("ADDSUBELMT %s in %d" % (self.subelmtctx, id(self)))
             self.thestate = weakref.ref(s)
             self.alive = True
 
@@ -842,7 +842,7 @@ class LivingState:
             if id(s) == id(self.thestate()):
                 s = self.thestate().checkKindOfType(t)
             if id(s) != id(self.thestate()):
-                print("ADD THENODE: %s" % thenode)
+                #print("ADD THENODE: %s" % thenode)
                 subnodes = []
                 for idx in toremove:
                     subnodes.append(self.subelmtctx[idx])
@@ -860,7 +860,7 @@ class LivingState:
                 self.alive = True
                 for idx in reversed(toremove):
                     self.subelmt.pop(idx)
-                    print("remove %d in %d" % (idx, id(self)))
+                    #print("remove %d in %d" % (idx, id(self)))
                     self.subelmtctx.pop(idx)
 
     def checkValue(self, v):
@@ -873,7 +873,7 @@ class LivingState:
         #TODO: must handle parent
         s = self.thestate().doResultHook(self.nodectx, user_data)
         if id(s) != id(self.thestate()):
-            print("RESET MATCHED NODES HOOK")
+            #print("RESET MATCHED NODES HOOK")
             #self.matched_nodes = []
             #self.old_ref = []
             self.thestate = weakref.ref(s)
@@ -884,7 +884,7 @@ class LivingState:
         olds = self.thestate()
         s = self.thestate().doResultEvent()
         if id(s) != id(self.thestate()):
-            print("RESET MATCHED NODES EV")
+            #print("RESET MATCHED NODES EV")
             ##self.matched_nodes = []
             ##self.old_ref = []
             self.thestate = weakref.ref(s)
@@ -894,7 +894,7 @@ class LivingState:
         # TODO: ??? kill livingState in LivingContext??
         s = self.thestate().doDefault()
         if id(s) != id(self.thestate()):
-            print("RESET MATCHED NODES DEFAULT")
+            #print("RESET MATCHED NODES DEFAULT")
             #self.matched_nodes = []
             #self.old_ref = []
             self.thestate = weakref.ref(s)
@@ -961,7 +961,7 @@ class LivingContext:
             ls[1].checkType(t, thenode, parent)
 
     def checkValue(self, v):
-        print("check value")
+        #print("check value")
         for ls in self.ls:
             ls[1].checkValue(v)
 
@@ -994,11 +994,12 @@ class LivingContext:
         must_delete = []
         l = len(self.ls)
         for idx, ls in zip(range(l), self.ls):
-            ls[1].alive = False
+            # TODO: alive by default on False, change to True on the first match
             ids = id(ls[1].thestate())
-            # TODO: !!!
             if ids == id(ls[0]) and (ls[1].have_finish or not ls[1].alive):
                 must_delete.append(idx)
+            elif ls[1].alive:
+                ls[1].alive = False
         for delete in reversed(must_delete):
             self.ls.pop(delete)
         self.init_all()
