@@ -5,11 +5,11 @@ import setuptools
 def read(fname):
     import os
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
-    
+
 #long_desc = read('README.md')
 
 version = '0.0'
-release = '0.0.10'
+release = '0.0.10a2'
 
 setuptools.setup(
     name='pyrser',
