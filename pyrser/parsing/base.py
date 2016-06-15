@@ -239,7 +239,10 @@ class BasicParser(metaclass=MetaBasicParser):
             )
             raise self.diagnostic
         self._lastRule = '#' + name
-        return self.__class__._hooks[name](self, *ctx)
+        res = self.__class__._hooks[name](self, *ctx)
+        if type(res) is not bool:
+            raise TypeError("Your hook %r didn't return a bool value" % name)
+        return res
 
 ### PARSING PRIMITIVES
 

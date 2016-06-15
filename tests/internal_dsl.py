@@ -595,7 +595,7 @@ class InternalDsl_Test(unittest.TestCase):
         #with dummyData as s:
         eval_res = dummyData.eval_rule('main')
 
-    def test_28_hookerror(self):
+    def test_28_errors(self):
         with self.assertRaises(TypeError):
             @meta.hook(parsing.Parser, "num")
             def check5(self):
@@ -604,3 +604,14 @@ class InternalDsl_Test(unittest.TestCase):
             @meta.rule(parsing.Parser, "Base.read_char")
             def check6(self):
                 pass
+        with self.assertRaises(TypeError):
+            @meta.hook(parsing.Parser, "plop")
+            def check7(self):
+                pass
+            bnf = dsl.EBNF("""
+                main = [ #plop ]
+            """)
+            res = bnf.get_rules()
+            p = parsing.Parser("")
+            p.set_rules(res)
+            p.eval_rule('main')
