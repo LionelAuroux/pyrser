@@ -259,6 +259,13 @@ class BasicParser(metaclass=MetaBasicParser):
             return False
         return self._stream[self._stream.index:stop] == text
 
+    def one_char(self) -> bool:
+        """Read one byte in stream"""
+        if self.read_eof():
+            return False
+        self._stream.incpos()
+        return True
+
     def read_char(self, c: str) -> bool:
         """
         Consume the c head byte, increment current index and return True
@@ -281,11 +288,11 @@ class BasicParser(metaclass=MetaBasicParser):
             return False
         self._stream.save_context()
         while not self.read_eof():
-            if self._stream.peek_char == inhibitor:
+            if self.peek_char(inhibitor):
                 # Delete inhibitor and inhibited character
-                self._stream.incpos()
-                self._stream.incpos()
-            if self._stream.peek_char == c:
+                self.one_char()
+                self.one_char()
+            if self.peek_char(c):
                 self._stream.incpos()
                 return self._stream.validate_context()
             self._stream.incpos()
@@ -404,11 +411,7 @@ def bind(self, dst: str, src: Node) -> bool:
 
 @meta.rule(BasicParser, "Base.read_char")
 def read_one_char(self) -> bool:
-    """Read one byte in stream"""
-    if self.read_eof():
-        return False
-    self._stream.incpos()
-    return True
+    return self.one_char()
 
 
 @meta.rule(BasicParser, "Base.eof")

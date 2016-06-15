@@ -47,7 +47,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test List Word
         """
-        @meta.hook(WordList)
+        @meta.hook(WordList, erase=True)
         def add_to(self, mylist, word):
             if not hasattr(mylist, 'lst'):
                 mylist.lst = [self.value(word)]
@@ -72,7 +72,7 @@ class GrammarBasic_Test(unittest.TestCase):
                 csv.tab.append(l.cols)
             return True
 
-        @meta.hook(CSV)
+        @meta.hook(CSV, erase=True)
         def add_col(self, line, c):
             if not hasattr(line, 'cols'):
                 line.cols = [c.value]
@@ -103,7 +103,7 @@ class GrammarBasic_Test(unittest.TestCase):
         """
         Test CSV2
         """
-        @meta.hook(CSV2)
+        @meta.hook(CSV2, erase=True)
         def add_col(self, line, c):
             colval = ''
             if hasattr(c, 'value'):
@@ -354,7 +354,7 @@ class GrammarBasic_Test(unittest.TestCase):
         self.assertEqual(res.lines[5][2], '--', "failed to parse correctly with ~")
 
     def test_29_parse_file(self):
-        @meta.hook(WordList)
+        @meta.hook(WordList, erase=True)
         def add_to(self, mylist, word):
             return True
 
@@ -362,3 +362,29 @@ class GrammarBasic_Test(unittest.TestCase):
         with self.assertRaises(FileNotFoundError) as ve:
             res = ws.parse_file("test.ws")
         res = ws.parse_file("tests/files/test.ws")
+
+    def test_30_read_until(self):
+        a = 0
+        class Exemple(grammar.Grammar):
+            entry = 'exemple'
+            grammar = """
+                exemple = [ [broken_read_until:res #dump(res) ]+ eof ]
+            """
+        
+        @meta.rule(Exemple)
+        def broken_read_until(self):
+            return self.read_until('\n', r"\\")
+        
+        @meta.hook(Exemple)
+        def dump(self, stuff):
+            nonlocal a
+            elem = ['stuff on \\\n', 'multiple \\\\\\\n', 'line\n']
+            item = self.value(stuff)
+            self.test.assertTrue(item == elem[a], "Fail to handle correctly read_until. %r != %r" % (item, elem[a]))
+            a += 1
+            return True
+        
+        ex = Exemple()
+        ex.test = self
+        ex.parse_file('tests/files/test_read_until')
+        self.assertTrue(a == 3, "Fail to parse entirely with read_until")
