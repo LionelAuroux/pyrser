@@ -359,5 +359,6 @@ class GrammarBasic_Test(unittest.TestCase):
             return True
 
         ws = WordList()
-        with self.assertRaises(ValueError) as ve:
+        with self.assertRaises(FileNotFoundError) as ve:
             res = ws.parse_file("test.ws")
+        res = ws.parse_file("tests/files/test.ws")

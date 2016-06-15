@@ -132,7 +132,7 @@ def add_method(cls):
     return wrapper
 
 
-def hook(cls, hookname=None):
+def hook(cls, hookname=None, erase=False):
     """Attach a method to a parsing class and register it as a parser hook.
 
        The method is registered with its name unless hookname is provided.
@@ -141,12 +141,15 @@ def hook(cls, hookname=None):
         raise TypeError(
             "%s didn't seems to be a BasicParser subsclasse" % cls.__name__)
     class_hook_list = cls._hooks
+    class_rule_list = cls._rules
 
     def wrapper(f):
         nonlocal hookname
         add_method(cls)(f)
         if hookname is None:
             hookname = f.__name__
+        if not erase and (hookname in class_hook_list or hookname in class_rule_list):
+            raise TypeError("%s is already define has rule or hook" % hookname)
         if '.' not in hookname:
             hookname = '.'.join([cls.__module__, cls.__name__, hookname])
         set_one(class_hook_list, hookname, f)
@@ -154,7 +157,7 @@ def hook(cls, hookname=None):
     return wrapper
 
 
-def rule(cls, rulename=None):
+def rule(cls, rulename=None, erase=False):
     """Attach a method to a parsing class and register it as a parser rule.
 
        The method is registered with its name unless rulename is provided.
@@ -162,6 +165,7 @@ def rule(cls, rulename=None):
     if not hasattr(cls, '_rules'):
         raise TypeError(
             "%s didn't seems to be a BasicParser subsclasse" % cls.__name__)
+    class_hook_list = cls._hooks
     class_rule_list = cls._rules
 
     def wrapper(f):
@@ -169,6 +173,8 @@ def rule(cls, rulename=None):
         add_method(cls)(f)
         if rulename is None:
             rulename = f.__name__
+        if not erase and (rulename in class_hook_list or rulename in class_rule_list):
+            raise TypeError("%s is already define has rule or hook" % rulename)
         if '.' not in rulename:
             rulename = cls.__module__ + '.' + cls.__name__ + '.' + rulename
         set_one(class_rule_list, rulename, f)

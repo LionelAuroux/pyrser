@@ -439,7 +439,7 @@ class InternalDsl_Test(unittest.TestCase):
                 parser.test.assertTrue(parser.workflow == 2)
                 return True
 
-        @meta.hook(parsing.Parser)
+        @meta.hook(parsing.Parser, erase=True)
         def my_hook(self):
             # for workflow checking
             self.test.assertTrue(self.workflow == 1)
@@ -503,7 +503,7 @@ class InternalDsl_Test(unittest.TestCase):
             def __getitem__(self, n):
                 return self._ls[n]
 
-        @meta.hook(parsing.Parser)
+        @meta.hook(parsing.Parser, erase=True)
         def in_list(self, ls, ident):
             if type(ls) is parsing.Node:
                 ls.set(dummyList())
@@ -594,3 +594,13 @@ class InternalDsl_Test(unittest.TestCase):
         dummyData.test = self
         #with dummyData as s:
         eval_res = dummyData.eval_rule('main')
+
+    def test_28_hookerror(self):
+        with self.assertRaises(TypeError):
+            @meta.hook(parsing.Parser, "num")
+            def check5(self):
+                pass
+        with self.assertRaises(TypeError):
+            @meta.rule(parsing.Parser, "Base.read_char")
+            def check6(self):
+                pass
