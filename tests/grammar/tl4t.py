@@ -260,10 +260,9 @@ TL4T = grammar.from_file(os.getcwd() + "/tests/bnf/tl4t.bnf", 'source')
 
 
 @meta.hook(TL4T)
-def info(self):
-    n = Node()
+def info(self, n):
     n.info = LocationInfo.from_stream(self._stream, is_error=self.from_string)
-    return n
+    return True
 
 
 @meta.hook(TL4T)

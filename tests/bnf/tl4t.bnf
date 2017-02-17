@@ -5,8 +5,9 @@
 source =
 [   
     @ignore("C/C++")
+    __scope__:i
     [
-        [#info:i stmt:s #new_rootstmt(_, s, i)]+
+        [#info(i) stmt:s #new_rootstmt(_, s, i)]+
         eof
     ]
 ]
@@ -20,13 +21,13 @@ decl_var =
 [
     __scope__:t
     __scope__:e
-    #info:i
+    #info(i)
     "var" name:n [ ':' type:t ]? [';' | '=' expr:>e ]? #new_declvar(_, n, t, e, i)
 ]
 
 decl_fun =
 [
-    #info:i
+    #info(i)
     "fun" name:n params:p ':' type:t implem:b #new_declfun(_, n, t, p, b, i)
 ]
 
@@ -43,7 +44,7 @@ params =
 
 param =
 [
-    #info:i
+    #info(i)
     name:n ':' type:t #new_param(_, n, t, i)
 ]
 
@@ -59,12 +60,12 @@ type = [ id ]
 
 block =
 [
-    '{' [ #info:i stmt:s #new_stmt(_, s, i) ]+ '}'
+    '{' [ #info(i) stmt:s #new_stmt(_, s, i) ]+ '}'
 ]
 
 operators = [
     @ignore('null')
-    [ #info:i
+    [ #info(i)
     __scope__:priority
     __scope__:assoc
         [
@@ -113,14 +114,14 @@ operators = [
 ]
 
 expr = [
-    #info:i
+    #info(i)
     expr_tree:e ';'
     #new_expr_stmt(_, e, i)
 ]
 
 // TODO: ADD IF,WHILE,SWITCH...
 expr_tree = [
-    #info:i
+    #info(i)
     unary_expression:>_
     [
         operators:op
@@ -137,7 +138,7 @@ expr_tree = [
 unary_op =
 [
     @ignore('null') 
-    #info:i
+    #info(i)
     [
      '~' !'='
     | '!' !'='
@@ -150,9 +151,10 @@ unary_expression =
     postfix_expression:>_
     |
         __scope__:op
-        #info:i
+        #info(i)
         [   unary_op:>op
-        |   #info:i
+        |   __scope__:i
+            #info(i)
             Base.id:ident
             #new_operator(op, ident, i)
         ]
@@ -165,7 +167,7 @@ postfix_expression =
     primary_expression:>_
     [
         __scope__:pexp
-        #info:i
+        #info(i)
         [
 /*        '[' expression:expr ']' #new_array_call(e, e, expr) */
           '(' func_arg_list?:args ')' #new_func_call(pexp, _, args, i)
@@ -188,7 +190,7 @@ func_arg_list =
 
 primary_expression =
 [
-    #info:i '(' expr_tree:expr ')' #new_paren(_, expr, i)
+    #info(i) '(' expr_tree:expr ')' #new_paren(_, expr, i)
     |[ literal | identifier]:>_
 ]
 
@@ -196,7 +198,7 @@ identifier =
 [
     @ignore('null') 
     [
-        #info:i
+        #info(i)
         rootidentifier:id
         #new_id(_, id, i)
     ]
@@ -268,7 +270,7 @@ literal =
     @ignore('null')
     [
     __scope__:t
-    #info:i
+    #info(i)
     [
         hexadecimal_const_int #set(t, "int")
         | octal_const #set(t, "int")
