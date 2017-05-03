@@ -123,30 +123,74 @@ class T:
 from collections import ChainMap
 
 class Bind:
-    def __init__(self, cnt):
+    def __init__(self, ast_node, cnt: 'Constraints'):
+        self.ast_node = ast_node
         self.cnt = cnt
-        self.src = None
-        self.dst = None
+        # top-down dependence on another Bind object
+        # top-down dependence on another Bind object
+        self.td_depend = None
+        # bottom-up dependence on another Bind object
+        self.bu_depend = None
+        self.final_type = None
         self.flag = {'to_visit'}
+
+    @staticmethod
+    def createList(cnt: 'Constraints', parent_bind: 'Bind', size: int) -> ['Bind']:
+        res = []
+        lastid = cnt.get_id_by_bind(parent_bind)
+        for it in range(size):
+            b = Bind(None, cnt)
+            b.bu_depend = lastid
+            bid = cnt.get_id_by_bind(b)
+            cnt.get_bind_by_id(lastid).td_depend = bid
+            lastid = bid
+            res.append(b)
+        return res
+
+    @staticmethod
+    def bu_walk(b: 'Bind'):
+        cnt = b.cnt
+        bid = cnt.get_id_by_bind(b)
+        nid = b.bu_depend
+        while True:
+            yield (bid, nid)
+            if nid is not None:
+                b = cnt.get_bind_by_id(nid)
+                bid = id(b)
+                nid = b.bu_depend
+            else:
+                break
+
+    @staticmethod
+    def td_walk(b: 'Bind'):
+        cnt = b.cnt
+        bid = cnt.get_id_by_bind(b)
+        nid = b.td_depend
+        while True:
+            yield (bid, nid)
+            if nid is not None:
+                b = cnt.get_bind_by_id(nid)
+                bid = id(b)
+                nid = b.td_depend
+            else:
+                break
 
     def __str__(self) -> str:
         r = "\nid: %d" % id(self)
-        r += "\ndef: %s" % str(self.cnt.defs)
-        if self.src is not None:
-            r += "\nsrc: %s" % str(self.src)
-        if self.dst is not None:
-            r += "\ndst: %s" % str(self.dst)
+        r += "\nflags: %s" % str(self.flag)
+        if self.bu_depend is not None:
+            r += "\nbu_depend: %d" % self.bu_depend
+        if self.td_depend is not None:
+            r += "\ntd_depend: %d" % self.td_depend
+        print("\n")
         return r
     
     def __repr__(self) -> str:
         return str(self)
 
-    @property
-    def resolvable(self) -> bool:
-        return self.src is not None and self.dst is not None
-
     def unify(self):
-        print("Unify %s" % str(self.adef))
+        print("Unify %s" % self.ast_node.to_tl4t())
+        return True
 
 class Constraints:
     def __init__(self, initial_defs: [Define]=None):
@@ -154,7 +198,8 @@ class Constraints:
         self.defs = []
         # map name -> idx in defs
         self.name2id = ChainMap()
-        self.add_defines(initial_defs)
+        if initial_defs is not None:
+            self.add_defines(initial_defs)
         # ...
         self.top_down = []
         self.bottom_up = []
@@ -185,57 +230,63 @@ class Constraints:
         r += "\ndefs:\n%s" % str(self.defs)
         r += "\nname2id: %s" % repr(self.name2id)
         if len(self.mapbind) > 0:
-            r += "\nmapbind: %s" % repr(self.mapbind)
+            r += "\nmapbind:\n"
+            r += "{\n"
+            for k in sorted(self.mapbind.keys()):
+                r += "\t%d: %s\n" % (k, self.mapbind[k])
+            r += "}\n"
         return r
 
     def get_def(self, name: str) -> Define:
         return self.defs[self.name2id[name]]
 
-    def get_bind_id(self, src) -> int:
+    def get_bind_by_id(self, bid: int) -> Bind:
+        return self.mapbind[bid]
+
+    def get_id_by_bind(self, src) -> int:
         bid = id(src)
         if bid not in self.mapbind:
             self.mapbind[bid] = src
         return bid
 
-    def add_BU_cnt(self, src):
-        id_src = self.get_bind_id(src)
+    def add_BU_cnt(self, src) -> int:
+        id_src = self.get_id_by_bind(src)
         self.bottom_up.append(id_src)
+        return id_src
 
     def add_TD_cnt(self, src):
-        id_src = self.get_bind_id(src)
+        id_src = self.get_id_by_bind(src)
         self.top_down.append(id_src)
+        return id_src
 
     def resolve(self):
         while True:
             done_something = False
+            # BU
             while True:
                 if len(self.bottom_up) == 0:
                     break
                 it = self.bottom_up.pop()
                 b = self.mapbind[it]
-                print("BU %d" % it)
-                if 'to_resolve' in b.flag and b.resolvable:
-                    b.unify()
+                print("BU %d - %s" % (it, b.ast_node))
+                if 'to_resolve' in b.flag:
+                    if b.unify():
+                        if b.bu_depend is not None:
+                            self.bottom_up.append(b.bu_depend)
+                        b.flag = {'to_resolve'}
                     done_something = True
+            # TD
             while True:
                 if len(self.top_down) == 0:
                     break
                 it = self.top_down.pop()
                 b = self.mapbind[it]
-                print("TD %d" % it)
+                print("TD %d - %s" % (it, b.ast_node))
                 if 'to_visit' in b.flag:
-                    print("visit %d" % it)
-                    if b.src is not None:
-                        p = b.src
-                        print("add %d" % id(p))
-                        self.add_TD_cnt(p)
-                        self.add_BU_cnt(p)
-                    if b.dst is not None:
-                        for p in b.dst:
-                            print("add %d" % id(p))
-                            self.add_TD_cnt(p)
-                            self.add_BU_cnt(p)
-                    b.flag = {'to_resolve'}
+                    if b.unify():
+                        if b.td_depend is not None:
+                            self.top_down.append(b.td_depend)
+                        b.flag = {'to_resolve'}
                     done_something = True
             if not done_something:
                 break
@@ -246,77 +297,99 @@ class Constraints:
 ## Create a Bind object and add it in the contraint object
 ## Add a TD if need
 @meta.add_method(BlockStmt)
-def populate(self, cnt: Constraints):
+def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
     cnt.push_context()
-    for it in self.body:
-        it.populate(cnt)
+    len_lst = len(self.body)
+    sub = Bind.createList(cnt, parent_bind, len_lst)
+    parent_bind.ast_node = self
+    bid = cnt.add_TD_cnt(parent_bind)
+    for idx, it in zip(range(len_lst), self.body):
+        it.populate(cnt, sub[idx])
+    parent_bind.td_depend = cnt.get_id_by_bind(sub[0])
+    sub[0].bu_depend = cnt.get_id_by_bind(bid)
     cnt.pop_context()
 
 @meta.add_method(DeclVar)
-def populate(self, cnt: Constraints):
+def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
     d = Define(self.name, T(self.t))
     cnt.add_defines([d])
-    self.expr.populate(cnt)
-    b = Bind(cnt)
-    b.src = d
-    b.dst = self.expr
-    cnt.add_TD_cnt(b)
+    sub = Bind.createList(cnt, parent_bind, 1)
+    parent_bind.ast_node = self
+    down_id = self.expr.populate(cnt, sub[0])
+    bid = cnt.add_TD_cnt(parent_bind)
+    parent_bind.td_depend = cnt.get_id_by_bind(sub[0])
+    cnt.get_bind_by_id(down_id).bu_depend = bid
+    return bid
     
 
 @meta.add_method(DeclFun)
-def populate(self, cnt: Constraints):
+def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
     # TODO: namespace/parametric/variadic...
+    # voir td_depend et bu_depend
     d = Define(self.name, Fun(T(self.t, *self.p)))
     cnt.add_defines([d])
-    for it in self.block:
-        it.populate(cnt)
-    b = Bind(cnt)
-    b.src = d
-    b.dst = self.block
-    cnt.add_TD_cnt(b)
+    len_lst = len(self.block)
+    sub = Bind.createList(cnt, parent_bind, len_lst)
+    parent_bind.ast_node = self
+    bid = cnt.add_TD_cnt(parent_bind)
+    for idx, it in zip(range(len_lst), self.block):
+        it.populate(cnt, sub[idx])
+    parent_bind.td_depend = cnt.get_id_by_bind(sub[0])
+    sub[0].bu_depend = cnt.get_id_by_bind(bid)
+    return bid
 
 @meta.add_method(ExprStmt)
-def populate(self, cnt: Constraints):
+def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
-    self.expr.populate(cnt)
+    return self.expr.populate(cnt, parent_bind)
 
 @meta.add_method(Expr)
-def populate(self, cnt: Constraints):
+def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
-    self.call_expr.populate(cnt)
-    for it in self.p:
-        it.populate(cnt)
-    b = Bind(cnt)
-    # TODO: Found the definition of expr
-    b.src = self.call_expr
-    b.dst = self.p
-    cnt.add_TD_cnt(b)
+    len_lst = len(self.p)
+    sub = Bind.createList(cnt, parent_bind, len_lst + 1)
+    parent_bind.ast_node = self
+    bid = cnt.add_TD_cnt(parent_bind)
+    down_id = self.call_expr.populate(cnt, sub[0])
+    # TODO: must do a Bind for return?
+    for idx, it in zip(range(1, len_lst + 1), self.p):
+        it.populate(cnt, sub[idx])
+    parent_bind.td_depend = cnt.get_id_by_bind(sub[0])
+    sub[0].bu_depend = cnt.get_id_by_bind(bid)
+    return bid
 
 @meta.add_method(Id)
-def populate(self, cnt: Constraints):
+def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
     print(self.value)
-    b = Bind(cnt)
+    parent_bind.ast_node = self
     # TODO: Found the definition of self.value
-    cnt.add_BU_cnt(b)
+    bid = cnt.add_BU_cnt(parent_bind)
+    parent_bind.bu_depend = bid
+    return bid
 
 @meta.add_method(Operator)
-def populate(self, cnt: Constraints):
+def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
     print(self.value)
-    b = Bind(cnt)
+    parent_bind.ast_node = self
     # TODO: Found the definition of operator
+    bid = cnt.add_BU_cnt(parent_bind)
+    parent_bind.bu_depend = bid
+    return bid
 
 @meta.add_method(Literal)
-def populate(self, cnt: Constraints):
+def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
     print(self.value)
-    b = Bind(cnt)
+    parent_bind.ast_node = self
     # TODO: Found the type of the literal
-    cnt.add_BU_cnt(b)
+    bid = cnt.add_BU_cnt(parent_bind)
+    parent_bind.bu_depend = bid
+    return bid
 
 class Unifying_Test(unittest.TestCase):
 
@@ -390,37 +463,66 @@ class Unifying_Test(unittest.TestCase):
         self.assertEqual(cnt.get_def("A"), basic_a, "Can't find a basic define")
 
     def test_003(self):
-        """Basic unification.
-        We assume the Binding (link item to type definition is done.
+        """Bind object and list
         """
-        # just unification for a Fun
-        overloads = Overload(
-                Fun(T("t1"), T("t2"), T("t3")),
-                Fun(T("t4"), T("t2"), T("t5"))
-            )
-        def_f = Define("f", overloads)
-        print(def_f)
-        # v = f(a, b)
-        def_a = Define("a", Overload(T("t1"), T("t2")))
-        def_b = Define("b", Overload(T("t3"), T("t0")))
-        def_v = Define("v", Overload(T("t1"), T("t4")))
-
-        ####
-        from itertools import product
-
-        fun_args = [def_v, def_a, def_b]
-        # make the product of all possible signature
-        selected_sig = []
-        arg_pos = [range(len(arg)) for arg in fun_args]
-        for types_tuple in product(*arg_pos):
-            print(types_tuple)
-            # make a proposition
-            possible_sig = [arg[idx] for arg, idx in zip(fun_args, types_tuple)]
-            print(possible_sig)
-            # if is good, take it
-            if possible_sig in def_f:
-                selected_sig.append(possible_sig)
-        print(selected_sig)
+        cnt = Constraints()
+        b = Bind(None, cnt)
+        lstb = Bind.createList(cnt, b, 5)
+        self.assertEqual(b.td_depend, id(lstb[0]), "List return by createList seems buggy")
+        self.assertEqual(id(b), lstb[0].bu_depend, "List return by createList seems buggy")
+        self.assertEqual(lstb[0].td_depend, id(lstb[1]), "List return by createList seems buggy")
+        self.assertEqual(id(lstb[0]), lstb[1].bu_depend, "List return by createList seems buggy")
+        self.assertEqual(lstb[1].td_depend, id(lstb[2]), "List return by createList seems buggy")
+        self.assertEqual(id(lstb[1]), lstb[2].bu_depend, "List return by createList seems buggy")
+        self.assertEqual(lstb[2].td_depend, id(lstb[3]), "List return by createList seems buggy")
+        self.assertEqual(id(lstb[2]), lstb[3].bu_depend, "List return by createList seems buggy")
+        self.assertEqual(lstb[3].td_depend, id(lstb[4]), "List return by createList seems buggy")
+        self.assertEqual(id(lstb[3]), lstb[4].bu_depend, "List return by createList seems buggy")
+        self.assertEqual(lstb[4].td_depend, None, "List return by createList seems buggy")
+        lsbu = list(Bind.bu_walk(lstb[-1]))
+        lsburef = []
+        what = lstb[-1]
+        while what is not None:
+            (bid, nid) = (id(what), what.bu_depend)
+            lsburef.append((bid, nid))
+            if nid is not None:
+                what = what.cnt.get_bind_by_id(nid)
+            else:
+                what = None
+        self.assertEqual(lsbu, lsburef, "List walked by bu_walk seems buggy")
+        lstd = list(Bind.td_walk(b))
+        lstdref = []
+        what = b
+        while what is not None:
+            (bid, nid) = (id(what), what.td_depend)
+            lstdref.append((bid, nid))
+            if nid is not None:
+                what = what.cnt.get_bind_by_id(nid)
+            else:
+                what = None
+        self.assertEqual(lstd, lstdref, "List walked by bu_walk seems buggy")
+        # Test it with a little grammar
+        test = TL4T()
+        res = test.parse("""
+            v = f(a, b, c, d);
+        """)
+        # get AST nodes
+        blockstmt = res
+        exprstmt = blockstmt.body[0]
+        eqexpr = exprstmt.expr
+        eq = eqexpr.call_expr
+        self.assertEqual(eq.value, '=', "bad access to parameter")
+        v = eqexpr.p[0]
+        self.assertEqual(v.value, 'v', "bad access to parameter")
+        funexpr = eqexpr.p[1]
+        f = funexpr.call_expr
+        self.assertEqual(f.value, 'f', "bad access to parameter")
+        a = funexpr.p[0]
+        self.assertEqual(a.value, 'a', "bad access to parameter")
+        b = funexpr.p[1]
+        self.assertEqual(b.value, 'b', "bad access to parameter")
+        c = funexpr.p[2]
+        self.assertEqual(c.value, 'c', "bad access to parameter")
 
         # unification and grammar
         # f: t2 -> t1
@@ -438,6 +540,9 @@ class Unifying_Test(unittest.TestCase):
         print(txt)
         cnt = Constraints([def1, def2, def3])
         print(cnt)
-        res.populate(cnt)
+        b = Bind(None, cnt)
+        idb = res.populate(cnt, b)
         print(cnt)
+        print('###################')
         cnt.resolve()
+        print('###################')
