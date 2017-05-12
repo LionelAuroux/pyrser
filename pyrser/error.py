@@ -65,7 +65,12 @@ class LocationInfo:
         f = open(self.filepath, 'r')
         lines = list(f)
         f.close()
-        txtline = lines[self.line - 1]
+        # by default the idiom list(f) don't count the last line if the last line is empty (nothing between last \n and EOF)
+        lastindex = self.line - 1
+        if lastindex not in lines:
+            lastindex -= 1
+            self.col = len(lines[lastindex])
+        txtline = lines[lastindex]
         if txtline[-1] != '\n':
             txtline += '\n'
         indent = ' ' * (self.col - 1)
@@ -136,6 +141,7 @@ class Diagnostic(Exception):
         return len(self.logs) - 1
 
     def get_content(self, with_locinfos=True, with_details=False) -> str:
+        # TODO: First an update Error Infos and then get_content only retrieve calculate data
         ls = []
         for v in self.logs:
             ls.append(v.get_content(with_locinfos, with_details))

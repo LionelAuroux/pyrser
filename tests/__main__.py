@@ -18,6 +18,7 @@ from tests import grammar_directive
 from tests import grammar_decorator
 from tests import grammar_file
 from tests import grammar_type
+from tests import hooks
 from tests import gen_dsl
 
 
@@ -33,6 +34,7 @@ test_cases = (
     grammar_decorator.GrammarDecorator_Test,
     grammar_file.GrammarFile_Test,
     grammar_type.GrammarType_Test,
+    hooks.Hooks_Test,
     gen_dsl.GenDsl_Test,
 )
 

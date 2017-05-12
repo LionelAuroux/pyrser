@@ -2,6 +2,9 @@ import unittest
 from pyrser.error import *
 from pyrser.parsing import *
 from pyrser.passes.to_yml import *
+from pyrser import meta, error
+from pyrser.grammar import Grammar
+from pyrser.hooks.predicate import pred_false
 import os
 
 
@@ -107,3 +110,21 @@ class InternalError_Test(unittest.TestCase):
              ),
             "Bad Diagnostic.get_content"
         )
+
+    def test_end_file_03(self):
+        loc = None
+        class Exemple(Grammar):
+            entry = 'exemple'
+            grammar = """
+                exemple = [ id #false ]
+            """
+        
+        ex = Exemple()
+        
+        try:
+            ex.parse('test_file\n')
+        except error.Diagnostic as e:
+            e.logs[0].get_content(with_locinfos=True)
+            loc = e.logs[0].location
+        self.assertEqual(loc.line, 2, "Bad line in Last Empty Line test")
+        self.assertEqual(loc.col, 10, "Bad line in Last Empty Line test")

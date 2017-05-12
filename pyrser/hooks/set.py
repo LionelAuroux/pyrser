@@ -28,6 +28,7 @@ def set_node(self, dst, src):
         if iddst not in self.id_cache:
             print("DST: %s" % repr(dst))
             print("RULE_NODES %s" % repr(self.rule_nodes))
+            print("IDCACHE %s" % repr(self.id_cache))
         if idsrc in self.id_cache:
             k = self.id_cache[idsrc]
             k2 = self.id_cache[iddst]
@@ -35,6 +36,20 @@ def set_node(self, dst, src):
                 self.tag_cache[k2] = self.tag_cache[k]
     return True
 
+
+@meta.hook(BasicParser, "setcapture")
+def set_node_as_int(self, dst, src):
+    """
+        Set a node to a value captured from another node
+
+        example::
+
+            R = [
+                In : node #setcapture(_, node)
+            ]
+    """
+    dst.value = self.value(src)
+    return True
 
 @meta.hook(BasicParser, "setint")
 def set_node_as_int(self, dst, src):

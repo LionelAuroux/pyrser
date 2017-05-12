@@ -211,7 +211,10 @@ class BasicParser(metaclass=MetaBasicParser):
     def eval_rule(self, name: str) -> Node:
         """Evaluate a rule by name."""
         # context created by caller
-        self.rule_nodes['_'] = Node()
+        n = Node()
+        id_n = id(n)
+        self.rule_nodes['_'] = n
+        self.id_cache[id_n] = '_'
         # TODO: other behavior for  empty rules?
         if name not in self.__class__._rules:
             self.diagnostic.notify(
