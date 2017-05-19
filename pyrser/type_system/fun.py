@@ -58,7 +58,7 @@ class Fun(Signature):
         """
         Return the unique internal name
         """
-        unq = super().internal_name()
+        unq = 'f_' + super().internal_name()
         if self.tparams is not None:
             unq += "_" + "_".join(self.tparams)
         if self.tret is not None:

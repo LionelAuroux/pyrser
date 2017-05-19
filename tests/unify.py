@@ -1,7 +1,20 @@
 import unittest
+
 from weakref import ref
+from copy import *
+from itertools import product
+
 from pyrser import meta
 from tests.grammar.tl4t import *
+
+#### For debug
+import subprocess as sp
+
+def to_png(fpng, cnt):
+    fdot = fpng + ".dot"
+    with open(fdot, "w") as f:
+        f.write(str(cnt))
+    sp.run(["dot", "-Tpng", "-o", fpng, fdot])
 
 ### Type Expr component
 
@@ -127,12 +140,14 @@ class Bind:
         self.ast_node = ast_node
         self.cnt = cnt
         # top-down dependence on another Bind object
-        # top-down dependence on another Bind object
         self.td_depend = None
         # bottom-up dependence on another Bind object
         self.bu_depend = None
+        # by default we need to resolve binds, after we need to propagate modification
+        self.flag = {'to_resolve'}
+        # the final type (a Define instance)
         self.final_type = None
-        self.flag = {'to_visit'}
+        self.unify_algo = None
 
     @staticmethod
     def createList(cnt: 'Constraints', parent_bind: 'Bind', size: int) -> ['Bind']:
@@ -188,9 +203,51 @@ class Bind:
     def __repr__(self) -> str:
         return str(self)
 
-    def unify(self):
-        print("Unify %s" % self.ast_node.to_tl4t())
+    def unify_here(self):
+        print("Unify %s" % self.final_type)
+        n = self.ast_node
+        ft = self.final_type
+        if ft is None and self.unify_algo is not None:
+            ft = self.unify_algo()
+        # ast && bind contain final_type
+        n.final_type = ft
+        self.final_type = ft
         return True
+
+    def fit_here(self):
+        print("Fit to %s" % self.final_type)
+        return True
+
+
+class Unifier:
+    def __init__(self, bind_depends):
+        self.alldefs = [it.final_type for it in bind_depends]
+        self.def_f = self.alldefs[0]
+        if len(bind_depends) > 1:
+            self.def_args = self.alldefs[1:]
+
+    ### unify algo
+    # TODO: tres crade
+    def unify_as_fun(self):
+        print("AS FUN: %s / %s" % (self.def_f, self.def_args))
+        fun_args = self.def_args
+        # make the product of all possible signature
+        selected_sig = []
+        arg_pos = [range(len(arg)) for arg in fun_args]
+        for types_tuple in product(*arg_pos):
+            print(types_tuple)
+            # make a proposition
+            possible_sig = [arg[idx] for arg, idx in zip(fun_args, types_tuple)]
+            print(possible_sig)
+            # if is good, take it
+            if possible_sig in self.def_f:
+                selected_sig.append(possible_sig)
+        print("UNIFY %s" % selected_sig)
+        return selected_sig
+
+    def unify_as_term(self):
+        print("AS TERM")
+        return self.def_f
 
 class Constraints:
     def __init__(self, initial_defs: [Define]=None):
@@ -226,15 +283,27 @@ class Constraints:
         self.name2id = self.name2id.parents
 
     def __str__(self) -> str:
-        r = ""
-        r += "\ndefs:\n%s" % str(self.defs)
-        r += "\nname2id: %s" % repr(self.name2id)
+        return self.to_dot()
+
+    def to_dot(self) -> str:
+        r = 'digraph {'
+        r += '\n\tlabel="%s";' % str(self.defs)
         if len(self.mapbind) > 0:
-            r += "\nmapbind:\n"
-            r += "{\n"
             for k in sorted(self.mapbind.keys()):
-                r += "\t%d: %s\n" % (k, self.mapbind[k])
-            r += "}\n"
+                f = self.mapbind[k].flag
+                node_ast = self.mapbind[k].ast_node
+                t = "..."
+                if node_ast is not None:
+                    t = node_ast.to_tl4t()
+                r += '\n\tnode[shape="box", style="rounded", label="{idnode}: {txt} <{flag}>"] _{idnode};'.format(idnode=k, txt=t, flag=f)
+            for k in sorted(self.mapbind.keys()):
+                td = self.mapbind[k].td_depend
+                bu = self.mapbind[k].bu_depend
+                if td is not None:
+                    r += '\n\t_%d -> _%d [label="TU"];' % (k, td)
+                if bu is not None:
+                    r += '\n\t_%d -> _%d [label="BU"];' % (k, bu)
+        r += '\n}'
         return r
 
     def get_def(self, name: str) -> Define:
@@ -270,7 +339,7 @@ class Constraints:
                 b = self.mapbind[it]
                 print("BU %d - %s" % (it, b.ast_node))
                 if 'to_resolve' in b.flag:
-                    if b.unify():
+                    if b.unify_here():
                         if b.bu_depend is not None:
                             self.bottom_up.append(b.bu_depend)
                         b.flag = {'to_resolve'}
@@ -282,11 +351,12 @@ class Constraints:
                 it = self.top_down.pop()
                 b = self.mapbind[it]
                 print("TD %d - %s" % (it, b.ast_node))
-                if 'to_visit' in b.flag:
-                    if b.unify():
+                if 'to_propagate' in b.flag:
+                    # not unify but fit to type
+                    if b.fit_here():
                         if b.td_depend is not None:
                             self.top_down.append(b.td_depend)
-                        b.flag = {'to_resolve'}
+                        b.flag = {'to_propagate'}
                     done_something = True
             if not done_something:
                 break
@@ -303,11 +373,8 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     len_lst = len(self.body)
     sub = Bind.createList(cnt, parent_bind, len_lst)
     parent_bind.ast_node = self
-    bid = cnt.add_TD_cnt(parent_bind)
     for idx, it in zip(range(len_lst), self.body):
         it.populate(cnt, sub[idx])
-    parent_bind.td_depend = cnt.get_id_by_bind(sub[0])
-    sub[0].bu_depend = cnt.get_id_by_bind(bid)
     cnt.pop_context()
 
 @meta.add_method(DeclVar)
@@ -317,12 +384,8 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     cnt.add_defines([d])
     sub = Bind.createList(cnt, parent_bind, 1)
     parent_bind.ast_node = self
-    down_id = self.expr.populate(cnt, sub[0])
-    bid = cnt.add_TD_cnt(parent_bind)
-    parent_bind.td_depend = cnt.get_id_by_bind(sub[0])
-    cnt.get_bind_by_id(down_id).bu_depend = bid
-    return bid
-    
+    self.expr.populate(cnt, sub[0])
+
 
 @meta.add_method(DeclFun)
 def populate(self, cnt: Constraints, parent_bind: 'Bind'):
@@ -334,17 +397,14 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     len_lst = len(self.block)
     sub = Bind.createList(cnt, parent_bind, len_lst)
     parent_bind.ast_node = self
-    bid = cnt.add_TD_cnt(parent_bind)
     for idx, it in zip(range(len_lst), self.block):
         it.populate(cnt, sub[idx])
-    parent_bind.td_depend = cnt.get_id_by_bind(sub[0])
-    sub[0].bu_depend = cnt.get_id_by_bind(bid)
-    return bid
+
 
 @meta.add_method(ExprStmt)
 def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
-    return self.expr.populate(cnt, parent_bind)
+    self.expr.populate(cnt, parent_bind)
 
 @meta.add_method(Expr)
 def populate(self, cnt: Constraints, parent_bind: 'Bind'):
@@ -352,34 +412,35 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     len_lst = len(self.p)
     sub = Bind.createList(cnt, parent_bind, len_lst + 1)
     parent_bind.ast_node = self
-    bid = cnt.add_TD_cnt(parent_bind)
-    down_id = self.call_expr.populate(cnt, sub[0])
+    self.call_expr.populate(cnt, sub[0])
     # TODO: must do a Bind for return?
     for idx, it in zip(range(1, len_lst + 1), self.p):
         it.populate(cnt, sub[idx])
-    parent_bind.td_depend = cnt.get_id_by_bind(sub[0])
-    sub[0].bu_depend = cnt.get_id_by_bind(bid)
-    return bid
+    ualgo = Unifier(sub)
+    parent_bind.unify_algo = ualgo.unify_as_fun
+
 
 @meta.add_method(Id)
 def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
     print(self.value)
     parent_bind.ast_node = self
-    # TODO: Found the definition of self.value
-    bid = cnt.add_BU_cnt(parent_bind)
-    parent_bind.bu_depend = bid
-    return bid
+    # add for future resolution
+    cnt.add_BU_cnt(parent_bind)
+    # DO A DEEP COPY OF DEFINITION TO UPDATE IT?
+    # set type as definition
+    parent_bind.final_type = deepcopy(cnt.get_def(self.value))
+    ualgo = Unifier([parent_bind])
+    parent_bind.unify_algo = ualgo.unify_as_term
+
 
 @meta.add_method(Operator)
 def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
     print(self.value)
     parent_bind.ast_node = self
-    # TODO: Found the definition of operator
-    bid = cnt.add_BU_cnt(parent_bind)
-    parent_bind.bu_depend = bid
-    return bid
+    # TODO: Found the definition of operator, treat as a Fun
+
 
 @meta.add_method(Literal)
 def populate(self, cnt: Constraints, parent_bind: 'Bind'):
@@ -387,9 +448,7 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print(self.value)
     parent_bind.ast_node = self
     # TODO: Found the type of the literal
-    bid = cnt.add_BU_cnt(parent_bind)
-    parent_bind.bu_depend = bid
-    return bid
+
 
 class Unifying_Test(unittest.TestCase):
 
@@ -479,6 +538,7 @@ class Unifying_Test(unittest.TestCase):
         self.assertEqual(lstb[3].td_depend, id(lstb[4]), "List return by createList seems buggy")
         self.assertEqual(id(lstb[3]), lstb[4].bu_depend, "List return by createList seems buggy")
         self.assertEqual(lstb[4].td_depend, None, "List return by createList seems buggy")
+        to_png("ctx0.png", cnt)
         lsbu = list(Bind.bu_walk(lstb[-1]))
         lsburef = []
         what = lstb[-1]
@@ -523,14 +583,13 @@ class Unifying_Test(unittest.TestCase):
         self.assertEqual(b.value, 'b', "bad access to parameter")
         c = funexpr.p[2]
         self.assertEqual(c.value, 'c', "bad access to parameter")
-
         # unification and grammar
         # f: t2 -> t1
         def1 = Define("f", Fun(T("t1"), T("t2")))
         # a: t2
-        def2 = Define("a", T("t2"))
+        def2 = Define("a", Overload(T("t2")))
         # v: t1
-        def3 = Define("v", T("t1"))
+        def3 = Define("v", Overload(T("t1")))
         # Test it with a little grammar
         test = TL4T()
         res = test.parse("""
@@ -539,10 +598,38 @@ class Unifying_Test(unittest.TestCase):
         txt = res.to_tl4t()
         print(txt)
         cnt = Constraints([def1, def2, def3])
-        print(cnt)
         b = Bind(None, cnt)
-        idb = res.populate(cnt, b)
-        print(cnt)
-        print('###################')
+        res.populate(cnt, b)
+        to_png("ctx1.png", cnt)
         cnt.resolve()
-        print('###################')
+
+    def test_04(self):
+        """Basic unification.
+         We assume the Binding (link item to type definition is done.
+         """
+        # just unification for a Fun
+        overloads = Overload(
+                Fun(T("t1"), T("t2"), T("t3")),
+                Fun(T("t4"), T("t2"), T("t5"))
+            )
+        def_f = Define("f", overloads)
+        print(def_f)
+        # v = f(a, b)
+        def_a = Define("a", Overload(T("t1"), T("t2")))
+        def_b = Define("b", Overload(T("t3"), T("t0")))
+        def_v = Define("v", Overload(T("t1"), T("t4")))
+
+        ####
+        fun_args = [def_v, def_a, def_b]
+        # make the product of all possible signature
+        selected_sig = []
+        arg_pos = [range(len(arg)) for arg in fun_args]
+        for types_tuple in product(*arg_pos):
+            print(types_tuple)
+            # make a proposition
+            possible_sig = [arg[idx] for arg, idx in zip(fun_args, types_tuple)]
+            print(possible_sig)
+            # if is good, take it
+            if possible_sig in def_f:
+                selected_sig.append(possible_sig)
+        print("possible sig: %s" % selected_sig)
