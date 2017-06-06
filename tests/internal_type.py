@@ -270,7 +270,7 @@ class InternalType_Test(unittest.TestCase):
         s1.add(Type("t1"))
         f = Fun("f2", "t2")
         s1.add(f)
-        self.assertEqual(f.internal_name(), "coucou_f2_t2", "Internal name of function without prefix")
+        self.assertEqual(f.internal_name(), "f_coucou_f2_t2", "Internal name of function without prefix")
         self.assertEqual(s1.state, StateScope.FREE, "Bad state of Scope")
         self.assertIn(f, s1, "Can't found function with prefix")
         self.assertNotIn(Fun("f2", "t2"), s1, "Shouldn't found function without prefix")

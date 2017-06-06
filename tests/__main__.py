@@ -24,17 +24,17 @@ from tests import gen_dsl
 
 # Test cases in order
 test_cases = (
-    internal_parse.InternalParse_Test,
-    internal_error.InternalError_Test,
-    internal_dsl.InternalDsl_Test,
-    internal_fmt.InternalFmt_Test,
-    internal_type.InternalType_Test,
-    grammar_basic.GrammarBasic_Test,
-    grammar_directive.GrammarDirective_Test,
-    grammar_decorator.GrammarDecorator_Test,
+    internal_parse.InternalParse_Test, #OK
+    internal_error.InternalError_Test, #OK
+    internal_dsl.InternalDsl_Test, #OK
+    internal_fmt.InternalFmt_Test, #OK
+    internal_type.InternalType_Test, #OK
+    grammar_basic.GrammarBasic_Test, #OK
+    grammar_directive.GrammarDirective_Test, #OK
+    grammar_decorator.GrammarDecorator_Test, #OK
     grammar_file.GrammarFile_Test,
     grammar_type.GrammarType_Test,
-    hooks.Hooks_Test,
+    hooks.Hooks_Test, #OK
     gen_dsl.GenDsl_Test,
 )
 

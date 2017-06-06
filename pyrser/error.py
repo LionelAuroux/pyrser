@@ -66,9 +66,14 @@ class LocationInfo:
         lines = list(f)
         f.close()
         # by default the idiom list(f) don't count the last line if the last line is empty (nothing between last \n and EOF)
-        lastindex = self.line - 1
-        if lastindex not in lines:
-            lastindex -= 1
+        if self.line > 1:
+            lastindex = self.line - 1
+        else:
+            lastindex = 0
+            self.line = 1
+        if lastindex >= len(lines):
+            lastindex = len(lines) - 1
+            self.line = lastindex + 1
             self.col = len(lines[lastindex])
         txtline = lines[lastindex]
         if txtline[-1] != '\n':

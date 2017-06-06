@@ -16,6 +16,7 @@ class InternalError_Test(unittest.TestCase):
     def test_locationinfo_01(self):
         li = LocationInfo(current_file, 1, 8)
         s = li.get_content()
+        #print("#####\n%s\n######" % s)
         self.assertEqual(s,
                          ("from {f} at line:1 col:8 :\n".format(f=current_file)
                           + "import unittest\n%s^" % (' ' * 7)),
@@ -30,7 +31,7 @@ class InternalError_Test(unittest.TestCase):
         s = li.get_content()
         self.assertEqual(
             s,
-            ("from {f} at line:26 col:9 :\n".format(f=current_file)
+            ("from {f} at line:30 col:9 :\n".format(f=current_file)
              + "{i}li = LocationInfo.from_here()\n".format(i=(' ' * 8))
              + "{i}^".format(i=(' ' * 8))),
             "Bad LocationInfo.get_content"
@@ -57,7 +58,7 @@ class InternalError_Test(unittest.TestCase):
         s = intern_func()
         self.assertEqual(
             s,
-            ("from {f} at line:54 col:9 :\n".format(f=current_file)
+            ("from {f} at line:58 col:9 :\n".format(f=current_file)
              + "{i}s = intern_func()\n".format(i=(' ' * 8))
              + "{i}^").format(i=(' ' * 8)),
             "Bad LocationInfo.get_content"
@@ -126,5 +127,5 @@ class InternalError_Test(unittest.TestCase):
         except error.Diagnostic as e:
             e.logs[0].get_content(with_locinfos=True)
             loc = e.logs[0].location
-        self.assertEqual(loc.line, 2, "Bad line in Last Empty Line test")
+        self.assertEqual(loc.line, 1, "Bad line in Last Empty Line test")
         self.assertEqual(loc.col, 10, "Bad line in Last Empty Line test")

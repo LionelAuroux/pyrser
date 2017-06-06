@@ -229,6 +229,10 @@ class Unifier:
     ### unify algo
     # TODO: tres crade
     def unify_as_fun(self):
+        """
+        On a pas le type de retour, il viendra par l'unification des types de retour possible
+        de la fonction avec le receveur de la fonction. Et ca sera fit_here
+        """
         print("AS FUN: %s / %s" % (self.def_f, self.def_args))
         fun_args = self.def_args
         # make the product of all possible signature
@@ -240,6 +244,8 @@ class Unifier:
             possible_sig = [arg[idx] for arg, idx in zip(fun_args, types_tuple)]
             print(possible_sig)
             # if is good, take it
+            # unify a tuple or Fun with fun definition
+            # TODO: self.def_f.unify(possible_sig)
             if possible_sig in self.def_f:
                 selected_sig.append(possible_sig)
         print("UNIFY %s" % selected_sig)

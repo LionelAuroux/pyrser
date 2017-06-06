@@ -104,12 +104,12 @@ class GrammarDirective_Test(unittest.TestCase):
         Test @ignore("C/C++") directive
         """
         @meta.hook(IgnoreCPP)
-        def init(self, mylist):
+        def init_ignore(self, mylist):
             mylist.lst = []
             return True
 
         @meta.hook(IgnoreCPP)
-        def add_to(self, mylist, item):
+        def add_to2(self, mylist, item):
             mylist.lst.append(self.value(item))
             return True
 
@@ -128,12 +128,12 @@ class GrammarDirective_Test(unittest.TestCase):
         Test @ignore("C/C++") directive
         """
         @meta.hook(IgnoreCPP)
-        def init(self, mylist):
+        def init_ignore2(self, mylist):
             mylist.lst = []
             return True
 
         @meta.hook(IgnoreCPP)
-        def add_to(self, mylist, item):
+        def add_to3(self, mylist, item):
             mylist.lst.append(self.value(item))
             return True
 
@@ -158,12 +158,12 @@ class GrammarDirective_Test(unittest.TestCase):
         Test @ignore("C/C++") directive
         """
         @meta.hook(IgnoreCPP)
-        def init(self, mylist):
+        def init_ignore4(self, mylist):
             mylist.lst = []
             return True
 
         @meta.hook(IgnoreCPP)
-        def add_to(self, mylist, item):
+        def add_to5(self, mylist, item):
             mylist.lst.append(self.value(item))
             return True
 
