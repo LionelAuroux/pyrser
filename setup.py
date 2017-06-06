@@ -8,8 +8,8 @@ def read(fname):
 
 #long_desc = read('README.md')
 
-version = '0.0'
-release = '0.0.10a2'
+version = '0.2'
+release = '0.2.0'
 
 setuptools.setup(
     name='pyrser',
