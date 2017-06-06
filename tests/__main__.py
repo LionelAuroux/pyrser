@@ -8,34 +8,38 @@ parent_dir = path.join(path.dirname(__file__), os.pardir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from tests import internal_parse
-from tests import internal_dsl
-from tests import internal_fmt
-from tests import internal_type
-from tests import internal_error
+from tests import gen_dsl
 from tests import grammar_basic
-from tests import grammar_directive
 from tests import grammar_decorator
+from tests import grammar_directive
 from tests import grammar_file
 from tests import grammar_type
 from tests import hooks
-from tests import gen_dsl
+from tests import internal_ast
+from tests import internal_dsl
+from tests import internal_error
+from tests import internal_fmt
+from tests import internal_parse
+from tests import internal_type
+from tests import unify
 
 
 # Test cases in order
 test_cases = (
-    internal_parse.InternalParse_Test, #OK
-    internal_error.InternalError_Test, #OK
-    internal_dsl.InternalDsl_Test, #OK
-    internal_fmt.InternalFmt_Test, #OK
-    internal_type.InternalType_Test, #OK
+    #gen_dsl.GenDsl_Test,
     grammar_basic.GrammarBasic_Test, #OK
-    grammar_directive.GrammarDirective_Test, #OK
     grammar_decorator.GrammarDecorator_Test, #OK
-    grammar_file.GrammarFile_Test,
-    grammar_type.GrammarType_Test,
+    grammar_directive.GrammarDirective_Test, #OK
+    #grammar_file.GrammarFile_Test,
+    #grammar_type.GrammarType_Test,
     hooks.Hooks_Test, #OK
-    gen_dsl.GenDsl_Test,
+    #internal_ast.InternalAst_Test, #OK
+    internal_dsl.InternalDsl_Test, #OK
+    internal_error.InternalError_Test, #OK
+    internal_fmt.InternalFmt_Test, #OK
+    internal_parse.InternalParse_Test, #OK
+    internal_type.InternalType_Test, #OK
+    #unify.Unifying_Test,
 )
 
 
