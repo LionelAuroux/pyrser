@@ -137,10 +137,10 @@ class EBNF(parsing.Parser):
             #   [
             #     [ '~' | "!!" | '!' | "->" ]?: mod
             #     [ ns_name : rid #add_ruleclause_name(_, rid)
-            #       | Base.string : txt #add_text(_, txt)
+            #       | Base.string : txt #add_read_dqstring(_, txt)
             #       | Base.char : begin ".." Base.char : end
             #         #add_range(_, begin, end)
-            #       | Base.char : c #add_char(_, c)
+            #       | Base.char : c #add_read_sqstring(_, c)
             #       | '[' alternatives : subsequence ']'
             #         #add_subsequence(_, subsequence)
             #     ] #add_mod(_, mod)
@@ -183,7 +183,7 @@ class EBNF(parsing.Parser):
                             parsing.Seq(
                                 parsing.Capture('txt',
                                                 parsing.Rule('Base.string')),
-                                parsing.Hook('add_text',
+                                parsing.Hook('add_read_dqstring',
                                              [("_", parsing.Node),
                                               ("txt", parsing.Node)])
                             ),
@@ -205,7 +205,7 @@ class EBNF(parsing.Parser):
                                     'c',
                                     parsing.Rule('Base.char')
                                 ),
-                                parsing.Hook('add_char',
+                                parsing.Hook('add_read_sqstring',
                                              [("_", parsing.Node),
                                               ("c", parsing.Node)])
                             ),
@@ -565,17 +565,25 @@ def add_alt(self, alternatives, alt) -> bool:
     return True
 
 
-@meta.hook(EBNF, "EBNF.add_char")
-def add_char(self, sequence, c):
-    """Add a read_char primitive"""
-    sequence.parser_tree = parsing.Char(self.value(c).strip("'"))
+@meta.hook(EBNF, "EBNF.add_read_sqstring")
+def add_read_sqstring(self, sequence, s):
+    """Add a read_char/read_text primitive from simple quote string"""
+    v = self.value(s).strip("'")
+    if len(v) > 1:
+        sequence.parser_tree = parsing.Text(v)
+        return True
+    sequence.parser_tree = parsing.Char(v)
     return True
 
 
-@meta.hook(EBNF, "EBNF.add_text")
-def add_text(self, sequence, txt):
-    """Add a read_text primitive"""
-    sequence.parser_tree = parsing.Text(self.value(txt).strip('"'))
+@meta.hook(EBNF, "EBNF.add_read_dqstring")
+def add_read_dqstring(self, sequence, s):
+    """Add a read_char/read_text primitive from a double quote string"""
+    v = self.value(s).strip('"')
+    if len(v) > 1:
+        sequence.parser_tree = parsing.Text(v)
+        return True
+    sequence.parser_tree = parsing.Char(v)
     return True
 
 

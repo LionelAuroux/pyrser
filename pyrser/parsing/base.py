@@ -439,6 +439,7 @@ def read_eol(self) -> bool:
 @meta.rule(Parser, "Base.hex_num")
 def read_hex_integer(self) -> bool:
     """
+    read a hexadecimal number
     Read the following BNF rule else return False::
 
         readHexInteger = [
@@ -463,6 +464,7 @@ def read_hex_integer(self) -> bool:
 @meta.rule(Parser, "Base.oct_num")
 def read_oct_integer(self) -> bool:
     """
+    read an octal number
     Read the following BNF rule else return False::
 
         readOctInteger = [
@@ -487,6 +489,7 @@ def read_oct_integer(self) -> bool:
 @meta.rule(Parser, "Base.num")
 def read_integer(self) -> bool:
     """
+    read a number
     Read following BNF rule else return False::
 
         readInteger = [
@@ -513,6 +516,7 @@ def read_integer(self) -> bool:
 @meta.rule(Parser, "Base.id")
 def read_identifier(self) -> bool:
     """
+    read an identifier
     Read following BNF rule else return False::
 
         readIdentifier = [
@@ -538,6 +542,7 @@ def read_identifier(self) -> bool:
 @meta.rule(Parser, "Base.string")
 def read_cstring(self) -> bool:
     """
+    read a double quoted string
     Read following BNF rule else return False::
 
         '"' -> ['\\' #char | ~'\\'] '"'
@@ -555,6 +560,22 @@ def read_cstring(self) -> bool:
 def read_cchar(self) -> bool:
     # TODO(iopi): octal digit, hex digit
     """
+    Read following BNF rule else return False::
+
+        "'" -> ['\\' #char | ~'\\'] "'"
+
+    """
+    self._stream.save_context()
+    idx = self._stream.index
+    if self.read_char("\'") and self.read_until("\'", "\\"):
+        txt = self._stream[idx:self._stream.index]
+        return self._stream.validate_context()
+    return self._stream.restore_context()
+
+@meta.rule(Parser, "Base.qstring")
+def read_cchar(self) -> bool:
+    """
+    read a quoted string ''
     Read following BNF rule else return False::
 
         "'" -> ['\\' #char | ~'\\'] "'"
