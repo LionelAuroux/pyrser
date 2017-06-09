@@ -6,7 +6,7 @@ def read(fname):
     import os
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-#long_desc = read('README.md')
+long_desc = read('README.md')
 
 version = '0.2'
 release = '0.2.0'
@@ -14,12 +14,12 @@ release = '0.2.0'
 setuptools.setup(
     name='pyrser',
     version=release,
-    url='https://code.google.com/p/pyrser/',
+    url='https://github.com/LionelAuroux/pyrser/',
     license='GPLv3',
     author='Lionel Auroux',
     author_email='lionel.auroux@gmail.com',
     description="Pyrser a pragmatic PEG parsing tool",
-    #long_description= long_desc,
+    long_description= long_desc,
     keywords="parse parser parsing peg packrat grammar language",
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -33,7 +33,8 @@ setuptools.setup(
             ' GNU General Public License v3 or later (GPLv3+)',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Topic :: Scientific/Engineering :: Information Analysis',
         'Topic :: Software Development :: Code Generators',
         'Topic :: Software Development :: Compilers',

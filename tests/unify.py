@@ -5,6 +5,7 @@ from copy import *
 from itertools import product
 
 from pyrser import meta
+from pyrser.parsing import node
 from tests.grammar.tl4t import *
 
 #### For debug
@@ -25,7 +26,7 @@ class TypeExprComponent(list):
         if self.minarity is not None and len(deflist) < self.minarity:
             raise TypeError("%s take minimum %d parameters" % (type(self).__name__, self.minarity))
         for t in deflist:
-            if type(t).__name__ not in self.contains:
+            if self.contains is not None and type(t).__name__ not in self.contains:
                 raise TypeError("%s can't be put in %s" % (type(t), type(self)))
         list.__init__(self, deflist)
 
@@ -47,6 +48,14 @@ class Define:
         self.name = name
         self.type_def = type_def
 
+    def unify(self, oth_type_def: TypeExprComponent, blhs, brhs) -> TypeExprComponent:
+        """
+        unify a definition with a correspondant type_def
+        """
+        print("DEFINE TRY TO TYPE %s ?? %s" % (type(self.type_def), type(oth_type_def)))
+        print("TRY TO unify %s ?? %s" % (self.type_def, oth_type_def))
+        return self.type_def.unify(oth_type_def, blhs, brhs)
+
     def __len__(self) -> int:
         return len(self.type_def)
 
@@ -59,28 +68,102 @@ class Define:
     def __repr__(self) -> str:
         return str(self)
 
+class UnknownName:
+    """
+    Implement unknown names: ?0, ?1, ?2
+    """
+    count = 0
+    minarity = 1
+    def __init__(self):
+        self.anonname = '?%d' % UnknownName.count
+        self.type_def = None
+        UnknownName.count += 1
+
+    def unify(self, oth_type_def: TypeExprComponent, blhs, brhs) -> TypeExprComponent:
+        """
+        When we unify an Unknown Name vs another type def we always match
+        """
+        print("UNK TRY TO unify %s ?? %s" % (self, oth_type_def))
+        if self.type_def is not None:
+            if type(oth_type_def) is UnknownName:
+                if oth_type_def is None:
+                    oth_type_def.type_def = self.type_def
+                    return self.type_def
+            return self.type_def.unify(oth_type_def, blhs, brhs)
+        # TODO: the type must be fixed by the feedback pass
+        if self.type_def is None:
+            self.type_def = Overload()
+        if oth_type_def not in self.type_def:
+            self.type_def.append(oth_type_def)
+        return oth_type_def
+
+    def __str__(self) -> str:
+        return self.anonname
+
 class AnonDefine(Define):
     """
     Implement the TypeVar: ?0, ?1, ?2, ...
     """
-    count = 0
-    def __init__(self, type_def: TypeExprComponent = None):
+    def __init__(self, cnt: 'Constraints' = None):
         """
         TODO: not really the final version
+        at begin, we create circular type
         """
-        Define.__init__(self, '?%d' % AnonDefine.count, None)
-        AnonDefine.count += 1
+        self.defname = UnknownName()
+        self.defs = self.defname
+        Define.__init__(self, self.defname, Overload(self.defs))
+        if cnt is not None:
+            self.cnt = cnt
+            self.cnt.add_defines([self])
 
 class Overload(TypeExprComponent):
-    contains = {'Fun', 'T', 'N'}
-    minarity = 1
+    contains = {'Fun', 'T', 'N', 'UnknownName'}
+    minarity = 0
+
+    def unify(self, oth_type_def: TypeExprComponent, blhs, brhs) -> TypeExprComponent:
+        """
+        When we unify an overload vs another type def we match each fun and we return the rest.
+    
+        t1 & t2 ?? t1 match and we return t1
+        t1 & t2 ?? t2 match and we return t2
+        """
+        print("OV TRY TO unify %s ?? %s" % (self, oth_type_def))
+        ovres = Overload()
+        for ov in self:
+            if not ov.unify(oth_type_def, blhs, brhs):
+                return None
+            ovres.append(oth_type_def)
+        return ovres
 
     def __str__(self) -> str:
         return "\n& ".join(self.reprlist)
 
 class Fun(TypeExprComponent):
-    contains = {'Union', 'Tuple', 'T', 'N'}
-    minarity = 2
+    contains = {'Fun', 'Union', 'Tuple', 'UnknownName', 'T', 'N'}
+    minarity = 1
+
+    def unify(self, oth_type_def: TypeExprComponent, blhs, brhs) -> TypeExprComponent:
+        """
+        When we unify a function vs another type def we match each term and we return the rest.
+    
+        t1 -> t2 -> t3 ?? t1 -> t2 match and we return t3
+        t1 -> t2 ?? t1 -> t2 -> t3 didn't match
+
+        Note: the first element is the return type
+        """
+        print("FUN TRY TO unify %s ?? %s" % (self, oth_type_def))
+        if type(oth_type_def) is not Fun:
+            if type(oth_type_def) is T:
+                return self[0].unify(oth_type_def, blhs, brhs)
+            raise "not implemented"
+        diff_len = len(self) - len(oth_type_def)
+        if diff_len < 0: ## TODO: ADD ELLIPSIS
+            return None
+        for a, b in zip(reversed(self), reversed(oth_type_def)):
+            if not a.unify(b, blhs, brhs):
+                return None
+        # TODO: what to do with the rest
+        return Fun(*self[:diff_len])
 
     def __str__(self) -> str:
         return " -> ".join(reversed(self.reprlist))
@@ -116,6 +199,17 @@ class T:
         self.parametric = parametric
         self.attributes = attributes
 
+    def unify(self, oth_type_def: TypeExprComponent, blhs, brhs) -> TypeExprComponent:
+        """
+        When we unify a type vs another type def we match each term to term
+        
+        t1 ?? t1 match
+        t1 ?? t2 didn't match
+        TODO: parametric
+        """
+        print("T TRY TO unify %s ?? %s" % (self, oth_type_def))
+        return self.name == oth_type_def
+
     def __eq__(self, oth) -> bool:
         """
         Use by all __contains__ call when we do some 'in' test
@@ -146,7 +240,10 @@ class Bind:
         # by default we need to resolve binds, after we need to propagate modification
         self.flag = {'to_resolve'}
         # the final type (a Define instance)
-        self.final_type = None
+        # by default a polymorphical type: unknownType
+        self.final_type = AnonDefine(cnt)
+        if type(self.final_type) is Bind:
+            raise "C'est la merde"
         self.unify_algo = None
 
     @staticmethod
@@ -207,9 +304,15 @@ class Bind:
         print("Unify %s" % self.final_type)
         n = self.ast_node
         ft = self.final_type
-        if ft is None and self.unify_algo is not None:
+        if self.unify_algo is not None:
             ft = self.unify_algo()
+        if type(ft) is Bind:
+            raise "C'est la merde"
         # ast && bind contain final_type
+        print("FT T %s" % type(ft))
+        print("FINAL TYPE for %s is <%s>" % (self.ast_node.to_tl4t(), ft))
+        if type(ft) is AnonDefine:
+            print("INSTANCIATE AS %s" % ft.defname.type_def)
         n.final_type = ft
         self.final_type = ft
         return True
@@ -218,13 +321,18 @@ class Bind:
         print("Fit to %s" % self.final_type)
         return True
 
+#############
+
+
+#############
 
 class Unifier:
     def __init__(self, bind_depends):
-        self.alldefs = [it.final_type for it in bind_depends]
-        self.def_f = self.alldefs[0]
+        self.cnt_ref = bind_depends[0].cnt
+        self.def_f = bind_depends[0]
         if len(bind_depends) > 1:
-            self.def_args = self.alldefs[1:]
+            self.def_args = bind_depends[1:]
+            print("UNIFIER: %d ?? %d" % (len(bind_depends), len(self.def_args)))
 
     ### unify algo
     # TODO: tres crade
@@ -233,27 +341,28 @@ class Unifier:
         On a pas le type de retour, il viendra par l'unification des types de retour possible
         de la fonction avec le receveur de la fonction. Et ca sera fit_here
         """
-        print("AS FUN: %s / %s" % (self.def_f, self.def_args))
         fun_args = self.def_args
         # make the product of all possible signature
-        selected_sig = []
-        arg_pos = [range(len(arg)) for arg in fun_args]
+        selected_sig = Overload()
+        arg_pos = [range(len(arg.final_type)) for arg in fun_args]
         for types_tuple in product(*arg_pos):
             print(types_tuple)
             # make a proposition
-            possible_sig = [arg[idx] for arg, idx in zip(fun_args, types_tuple)]
+            possible_sig = Fun(*[arg.final_type[idx] for arg, idx in zip(fun_args, types_tuple)])
             print(possible_sig)
             # if is good, take it
             # unify a tuple or Fun with fun definition
-            # TODO: self.def_f.unify(possible_sig)
-            if possible_sig in self.def_f:
-                selected_sig.append(possible_sig)
-        print("UNIFY %s" % selected_sig)
+            t = self.def_f.final_type.unify(possible_sig, self.def_f, self.def_args)
+            if t is not None:
+                selected_sig.append(t)
+        print("END UNIFY %s" % selected_sig)
+        if type(selected_sig[0]) is UnknownName:
+            print("INSTANCIATE ON %s" % selected_sig[0].defname.type_def)
         return selected_sig
 
     def unify_as_term(self):
         print("AS TERM")
-        return self.def_f
+        return self.def_f.final_type
 
 class Constraints:
     def __init__(self, initial_defs: [Define]=None):
@@ -271,8 +380,8 @@ class Constraints:
     def add_defines(self, defs: [Define]):
         if defs is not None and type(defs) is not list:
             raise TypeError("Constraints took a list of Define.")
-        for idx, it in zip(range(len(defs)), defs):
-            if type(it) is not Define:
+        for idx, it in enumerate(defs):
+            if not issubclass(type(it), Define):
                 raise TypeError("Param %d is not a define" % idx)
         nodef = len(self.defs)
         ndef = len(defs)
@@ -343,7 +452,6 @@ class Constraints:
                     break
                 it = self.bottom_up.pop()
                 b = self.mapbind[it]
-                print("BU %d - %s" % (it, b.ast_node))
                 if 'to_resolve' in b.flag:
                     if b.unify_here():
                         if b.bu_depend is not None:
@@ -356,7 +464,6 @@ class Constraints:
                     break
                 it = self.top_down.pop()
                 b = self.mapbind[it]
-                print("TD %d - %s" % (it, b.ast_node))
                 if 'to_propagate' in b.flag:
                     # not unify but fit to type
                     if b.fit_here():
@@ -414,8 +521,9 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
 
 @meta.add_method(Expr)
 def populate(self, cnt: Constraints, parent_bind: 'Bind'):
-    print("Add %s constraint" % type(self).__name__)
+    print("() Add %s constraint" % type(self).__name__)
     len_lst = len(self.p)
+    print("arity: %d" % len_lst)
     sub = Bind.createList(cnt, parent_bind, len_lst + 1)
     parent_bind.ast_node = self
     self.call_expr.populate(cnt, sub[0])
@@ -424,6 +532,10 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
         it.populate(cnt, sub[idx])
     ualgo = Unifier(sub)
     parent_bind.unify_algo = ualgo.unify_as_fun
+    print("CALL EXPR: %s" % sub[0].ast_node.to_tl4t())
+    for idx in range(len_lst):
+        print("CALL P[%d]: %s" % (idx, sub[idx + 1].ast_node.to_tl4t()))
+        print("CALL U[%d]: %s" % (idx, ualgo.def_args[idx].ast_node.to_tl4t()))
 
 
 @meta.add_method(Id)
@@ -435,7 +547,11 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     cnt.add_BU_cnt(parent_bind)
     # DO A DEEP COPY OF DEFINITION TO UPDATE IT?
     # set type as definition
-    parent_bind.final_type = deepcopy(cnt.get_def(self.value))
+    d = cnt.get_def(self.value)
+    print("PUT DEF %s" % d)
+    parent_bind.final_type = cnt.get_def(self.value)
+    if type(parent_bind.final_type) is Bind:
+        raise "C'est la merde"
     ualgo = Unifier([parent_bind])
     parent_bind.unify_algo = ualgo.unify_as_term
 
@@ -446,6 +562,14 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print(self.value)
     parent_bind.ast_node = self
     # TODO: Found the definition of operator, treat as a Fun
+    cnt.add_BU_cnt(parent_bind)
+    d = cnt.get_def(self.value)
+    print("PUT DEF %s" % d)
+    parent_bind.final_type = cnt.get_def(self.value)
+    if type(parent_bind.final_type) is Bind:
+        raise "C'est la merde"
+    ualgo = Unifier([parent_bind])
+    parent_bind.unify_algo = ualgo.unify_as_term
 
 
 @meta.add_method(Literal)
@@ -493,8 +617,6 @@ class Unifying_Test(unittest.TestCase):
             d = Overload(Tuple(T("t2"), T("t3")))
         with self.assertRaises(TypeError):
             d = Fun(Overload(T("t2"), T("t3")))
-        with self.assertRaises(TypeError):
-            d = Fun(Fun(T("t2"), T("t3")))
         with self.assertRaises(TypeError):
             d = Union(Overload(T("t2"), T("t3")))
         with self.assertRaises(TypeError):
@@ -594,18 +716,22 @@ class Unifying_Test(unittest.TestCase):
         def1 = Define("f", Fun(T("t1"), T("t2")))
         # a: t2
         def2 = Define("a", Overload(T("t2")))
-        # v: t1
-        def3 = Define("v", Overload(T("t1")))
+        # g: t1
+        def3 = Define("g", Overload(T("t1")))
+        # f: ?0 -> ?0 -> ?0
+        p1 = UnknownName()
+        def4 = Define("=", Fun(p1, p1, p1))
         # Test it with a little grammar
         test = TL4T()
         res = test.parse("""
-            v = f(a);
+            g = f(a);
         """)
         txt = res.to_tl4t()
         print(txt)
-        cnt = Constraints([def1, def2, def3])
+        cnt = Constraints([def1, def2, def3, def4])
         b = Bind(None, cnt)
         res.populate(cnt, b)
+        print("-" * 10)
         to_png("ctx1.png", cnt)
         cnt.resolve()
 
@@ -639,3 +765,22 @@ class Unifying_Test(unittest.TestCase):
             if possible_sig in def_f:
                 selected_sig.append(possible_sig)
         print("possible sig: %s" % selected_sig)
+
+    def test_05(self):
+        test = TL4T()
+        res = test.parse("""
+            fun toto(x, y, z)
+            {
+                x = sqrt(y) / z * 2;
+            }
+        """)
+        print("-" * 20)
+        def pprint(w):
+            for n in w:
+                print(type(n))
+                if type(n) is list:
+                    print(len(n))
+                    pprint(n)
+                elif issubclass(type(n), node.Node):
+                    pprint(list(n.walk()))
+        pprint(list(res.walk()))

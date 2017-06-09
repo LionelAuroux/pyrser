@@ -14,6 +14,14 @@ WIP:
     * Improvement of Type System
     * Documentation and Tutorials
 
+version 0.2.0: 2017-06-09
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    * Bug fixes: see Issues in github.com
+    * Add wheel package distribution
+    * WIP in Type System (not finish)
+    
+
 version 0.0.10: 2015-10-12
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

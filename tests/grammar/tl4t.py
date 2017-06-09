@@ -20,6 +20,8 @@ class NodeInfo(Node, Inference):
     def __init__(self):
         self.info = None
 
+    def walk(self) -> Node:
+        raise TypeError("Not implemented!")
 
 class BlockStmt(NodeInfo):
     def __init__(self, root=False):
@@ -43,6 +45,12 @@ class BlockStmt(NodeInfo):
     def type_algos(self):
         return (self.infer_block, self.body, self.feedback_block)
 
+    def walk(self) -> Node:
+        """
+        TD descent
+        """
+        yield self
+        yield [it.walk() for it in self.body]
 
 class DeclVar(NodeInfo):
     def __init__(self, name: str, t: str, expr=None):
@@ -98,6 +106,12 @@ class DeclVar(NodeInfo):
     def type_algos(self):
         return (self.declare_var, None)
 
+    def walk(self) -> Node:
+        """
+        TD descent
+        """
+        yield self
+        yield self.expr.walk()
 
 class DeclFun(DeclVar):
     def __init__(self, name: str, t: str, p: [], block=None, variadic=False):
@@ -129,6 +143,13 @@ class DeclFun(DeclVar):
             lsblock = fmt.end(";\n", lsdecl)
         return lsblock
 
+    def walk(self) -> Node:
+        """
+        TD descent
+        """
+        yield self
+        yield [it.walk() for it in self.p]
+        yield [it.walk() for it in self.block]
 
 class Param(NodeInfo):
     def __init__(self, n: str, t: str):
@@ -139,6 +160,11 @@ class Param(NodeInfo):
     def to_tl4t(self):
         return fmt.sep(" ", [self.name, ':', self.t])
 
+    def walk(self) -> Node:
+        """
+        TD descent
+        """
+        yield self
 
 class Terminal(NodeInfo):
     def __init__(self, value):
@@ -147,6 +173,12 @@ class Terminal(NodeInfo):
 
     def to_tl4t(self) -> fmt.indentable:
         return self.value
+
+    def walk(self) -> Node:
+        """
+        TD descent
+        """
+        yield self
 
 
 class Literal(Terminal):
@@ -161,6 +193,12 @@ class Literal(Terminal):
             self.infer_literal, (self.value, self.type), self.feedback_leaf
         )
 
+    def walk(self) -> Node:
+        """
+        TD descent
+        """
+        yield self
+
 
 class Id(Terminal):
 
@@ -168,12 +206,23 @@ class Id(Terminal):
     def type_algos(self):
         return (self.infer_id, self.value, self.feedback_id)
 
+    def walk(self) -> Node:
+        """
+        TD descent
+        """
+        yield self
+
 
 class Operator(Terminal):
     # to connect Inference
     def type_algos(self):
         return (self.infer_id, self.value, self.feedback_leaf)
 
+    def walk(self) -> Node:
+        """
+        TD descent
+        """
+        yield self
 
 def createFunWithTranslator(old: Node, trans: Translator) -> Node:
     """
@@ -205,6 +254,13 @@ class Expr(NodeInfo):
     def type_algos(self):
         return (self.infer_fun, (self.call_expr, self.p), self.feedback_fun)
 
+    def walk(self) -> Node:
+        """
+        TD descent
+        """
+        yield self
+        yield [self.call_expr.walk(), *[it.walk() for it in self.p]]
+
 
 class ExprStmt(NodeInfo):
     def __init__(self, e: Expr):
@@ -218,6 +274,12 @@ class ExprStmt(NodeInfo):
     def type_algos(self):
         return (self.infer_subexpr, self.expr, self.feedback_subexpr)
 
+    def walk(self) -> Node:
+        """
+        TD descent
+        """
+        yield self
+        yield self.expr.walk()
 
 class Binary(Expr):
     def __init__(self, left: Expr, op: Operator, right: Expr):

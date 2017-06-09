@@ -22,13 +22,14 @@ decl_var =
     __scope__:t
     __scope__:e
     #info(i)
-    "var" name:n [ ':' type:t ]? [';' | '=' expr:>e ]? #new_declvar(_, n, t, e, i)
+    "var" name:n [ ':' type:>t ]? [';' | '=' expr:>e ]? #new_declvar(_, n, t, e, i)
 ]
 
 decl_fun =
 [
     #info(i)
-    "fun" name:n params:p ':' type:t implem:b #new_declfun(_, n, t, p, b, i)
+    __scope__:t
+    "fun" name:n params:p [':' type:>t]? implem:b #new_declfun(_, n, t, p, b, i)
 ]
 
 params =
@@ -45,7 +46,8 @@ params =
 param =
 [
     #info(i)
-    name:n ':' type:t #new_param(_, n, t, i)
+    __scope__:t
+    name:n [':' type:>t]? #new_param(_, n, t, i)
 ]
 
 implem =
