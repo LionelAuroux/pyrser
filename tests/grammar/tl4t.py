@@ -1,5 +1,7 @@
 # little grammar for test
 import os
+from itertools import chain
+
 from pyrser import grammar
 from pyrser import meta
 from pyrser import fmt
@@ -49,8 +51,8 @@ class BlockStmt(NodeInfo):
         """
         TD descent
         """
-        yield self
-        yield [it.walk() for it in self.body]
+        yield ('term', self)
+        yield ('block', (it.walk() for it in self.body))
 
 class DeclVar(NodeInfo):
     def __init__(self, name: str, t: str, expr=None):
@@ -110,8 +112,8 @@ class DeclVar(NodeInfo):
         """
         TD descent
         """
-        yield self
-        yield self.expr.walk()
+        yield ('term', self)
+        yield ('block', self.expr.walk())
 
 class DeclFun(DeclVar):
     def __init__(self, name: str, t: str, p: [], block=None, variadic=False):
@@ -120,6 +122,7 @@ class DeclFun(DeclVar):
         self.p = p
         if block is not None:
             self.block = block
+            print("SIZE OF BLOCK %d" % len(block))
 
     def to_tl4t(self) -> fmt.indentable:
         params = []
@@ -147,9 +150,9 @@ class DeclFun(DeclVar):
         """
         TD descent
         """
-        yield self
-        yield [it.walk() for it in self.p]
-        yield [it.walk() for it in self.block]
+        yield ('term', self)
+        yield ('fun', (it.walk() for it in self.p))
+        yield ('block', self.block.walk())
 
 class Param(NodeInfo):
     def __init__(self, n: str, t: str):
@@ -164,7 +167,7 @@ class Param(NodeInfo):
         """
         TD descent
         """
-        yield self
+        yield ('term', self)
 
 class Terminal(NodeInfo):
     def __init__(self, value):
@@ -178,7 +181,7 @@ class Terminal(NodeInfo):
         """
         TD descent
         """
-        yield self
+        yield ('term', self)
 
 
 class Literal(Terminal):
@@ -197,7 +200,7 @@ class Literal(Terminal):
         """
         TD descent
         """
-        yield self
+        yield ('term', self)
 
 
 class Id(Terminal):
@@ -210,7 +213,7 @@ class Id(Terminal):
         """
         TD descent
         """
-        yield self
+        yield ('term', self)
 
 
 class Operator(Terminal):
@@ -222,7 +225,7 @@ class Operator(Terminal):
         """
         TD descent
         """
-        yield self
+        yield ('term', self)
 
 def createFunWithTranslator(old: Node, trans: Translator) -> Node:
     """
@@ -258,8 +261,8 @@ class Expr(NodeInfo):
         """
         TD descent
         """
-        yield self
-        yield [self.call_expr.walk(), *[it.walk() for it in self.p]]
+        yield ('term', self)
+        yield ('fun', (it1 for it1 in chain(self.call_expr.walk(), (it2.walk() for it2 in self.p))))
 
 
 class ExprStmt(NodeInfo):
@@ -278,8 +281,8 @@ class ExprStmt(NodeInfo):
         """
         TD descent
         """
-        yield self
-        yield self.expr.walk()
+        yield ('term', self)
+        yield ('block', self.expr.walk())
 
 class Binary(Expr):
     def __init__(self, left: Expr, op: Operator, right: Expr):
@@ -405,7 +408,7 @@ def new_expr_stmt(self, ast, e, i):
 
 @meta.hook(TL4T)
 def new_lhs_rhs(self, ast, op, right, i):
-    if not hasattr(ast, 'priority') or ast.priority > op.priority:
+    if not hasattr(ast, 'priority') or ast.priority >= op.priority:
         left = Node()
         left.set(ast)
         ast.set(Binary(left, op, right))

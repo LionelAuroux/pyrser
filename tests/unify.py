@@ -5,6 +5,7 @@ from copy import *
 from itertools import product
 
 from pyrser import meta
+from pyrser.passes import to_yml
 from pyrser.parsing import node
 from tests.grammar.tl4t import *
 
@@ -774,13 +775,46 @@ class Unifying_Test(unittest.TestCase):
                 x = sqrt(y) / z * 2;
             }
         """)
+        #print("-" * 20)
+        #print(res.to_tl4t())
+        #print("-" * 20)
+        #print(res.to_yml())
         print("-" * 20)
         def pprint(w):
-            for n in w:
-                print(type(n))
-                if type(n) is list:
-                    print(len(n))
-                    pprint(n)
-                elif issubclass(type(n), node.Node):
-                    pprint(list(n.walk()))
-        pprint(list(res.walk()))
+            print(type(w))
+            if type(w).__name__ == "generator":
+                try:
+                    while (True):
+                        n = w.send(None)
+                        if type(n) is tuple:
+                            t = n[0]
+                            s = len(n)
+                            print(s)
+                            print(t.upper())
+                            if s > 1:
+                                if t == "term":
+                                    node = n[1]
+                                    print(type(node))
+                                    if type(node) is Id:
+                                        print(node.value)
+                                elif t == "block":
+                                    sub = n[1]
+                                    print(type(sub))
+                                    pprint(sub)
+                                elif t == "fun":
+                                    sub = n[1]
+                                    print(type(sub))
+                                    pprint(sub)
+                        elif type(n).__name__ == "generator":
+                            pprint(n)
+                        else:
+                            print("something else")
+                except StopIteration:
+                    # as expected we end the loop
+                    pass
+                except Exception as e:
+                    print("receive :%s" % e)
+            else:
+                print("something else")
+
+        pprint(res.walk())

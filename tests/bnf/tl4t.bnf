@@ -193,7 +193,7 @@ func_arg_list =
 primary_expression =
 [
     #info(i) '(' expr_tree:expr ')' #new_paren(_, expr, i)
-    |[ literal | identifier]:>_
+    | [literal | identifier ]:>_
 ]
 
 identifier =
