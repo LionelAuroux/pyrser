@@ -115,7 +115,8 @@ class DeclFun(DeclVar):
         """
         TD descent
         """
-        yield ('fun', (it.walk() for it in self.p))
+        # TODO: think about declaration!!!
+        #yield ('fun', (it.walk() for it in self.p))
         yield ('block', self.block.walk())
 
 class Param(NodeInfo):

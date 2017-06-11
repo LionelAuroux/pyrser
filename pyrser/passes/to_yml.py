@@ -8,7 +8,7 @@ composed = {'list': list, 'dict': dict, 'set': set}
 
 
 @meta.add_method(node.Node)
-def to_yml(self):
+def to_yml(self, _cache = set()):
     """
     Allow to get the YML string representation of a Node.::
 
@@ -19,7 +19,7 @@ def to_yml(self):
         print(str(t.to_yml()))
     """
     pp = fmt.tab([])
-    to_yml_item(self, pp.lsdata, "")
+    to_yml_item(self, pp.lsdata, "", _cache)
     return str(pp)
 
 
@@ -27,11 +27,22 @@ def yml_attr(k, v):
     return fmt.sep("=", [k, v])
 
 
-def to_yml_item(item, pp, name):
+def to_yml_item(item, pp, name, _cache = set()):
     global scalar
     refcount = weakref.getweakrefcount(item)
     if refcount > 0:
         name += " &" + str(id(item))
+    if isinstance(item, weakref.ref) or id(item) in _cache:
+        if isinstance(item, weakref.ref):
+            name += " *" + str(id(item()))
+            tag = fmt.end('\n', fmt.sep("", [name, " ", repr(item)]))
+        else:
+            name += " *" + str(id(item))
+            tag = fmt.end('\n', fmt.sep("", [name, " ", type(item)]))
+        pp.append(tag)
+        return
+    # handle a cache to avoid cycle in tree
+    _cache |= {id(item)}
     if type(item).__name__ in scalar:
         tag = fmt.end(
             '\n',
@@ -47,11 +58,6 @@ def to_yml_item(item, pp, name):
                 ]
             )
         )
-        pp.append(tag)
-        return
-    if isinstance(item, weakref.ref):
-        name += " *" + str(id(item()))
-        tag = fmt.end('\n', fmt.sep("", [name, " ", repr(item)]))
         pp.append(tag)
         return
     if isinstance(item, bytes) or isinstance(item, bytearray):

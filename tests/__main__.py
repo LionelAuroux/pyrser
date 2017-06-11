@@ -35,7 +35,7 @@ test_cases = (
     internal_error.InternalError_Test, #OK
     internal_fmt.InternalFmt_Test, #OK
     internal_parse.InternalParse_Test, #OK
-    internal_type.InternalType_Test, #OK
+    unify.Unifying_Test, #OK
 )
 
 

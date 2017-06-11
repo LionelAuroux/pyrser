@@ -23,6 +23,8 @@ def to_png(fpng, cnt):
 from collections import ChainMap
 
 class Bind:
+    __slots__ = ['_ast_node', 'cnt', 'td_depend', 'bu_depend', 'flag', 'final_type', 'left_type', 'right_type']
+
     def __init__(self, ast_node, cnt: 'Constraints'):
         self._ast_node = None
         self.ref_ast_node(ast_node)
@@ -35,10 +37,9 @@ class Bind:
         self.flag = {'to_resolve'}
         # the final type (a Define instance)
         # by default a polymorphical type: unknownType
-        self.final_type = AnonDefine(cnt)
-        if type(self.final_type) is Bind:
-            raise "C'est la merde"
-        self.unify_algo = None
+        self.final_type = None
+        self.left_type = AnonDefine(cnt)
+        self.right_type = None
 
     def ref_ast_node(self, ast_node):
         if ast_node is not None and self._ast_node is None:
@@ -50,19 +51,6 @@ class Bind:
     @property
     def ast_node(self) -> object:
         return self._ast_node
-
-    @staticmethod
-    def createList(cnt: 'Constraints', parent_bind: 'Bind', size: int) -> ['Bind']:
-        res = []
-        lastid = cnt.get_id_by_bind(parent_bind)
-        for it in range(size):
-            b = Bind(None, cnt)
-            b.bu_depend = lastid
-            bid = cnt.get_id_by_bind(b)
-            cnt.get_bind_by_id(lastid).td_depend = bid
-            lastid = bid
-            res.append(b)
-        return res
 
     @staticmethod
     def createListNodeItem(cnt: 'Constraints', parent_list_node: node.ListNodeItem = None) -> ['Bind']:
@@ -120,16 +108,16 @@ class Bind:
     def unify_here(self):
         print("Unify %s" % self.final_type)
         n = self.ast_node
-        ft = self.final_type
-        if self.unify_algo is not None:
-            ft = self.unify_algo()
-        if type(ft) is Bind:
-            raise "C'est la merde"
+        if self.left_type is None or self.right_type is None:
+            raise TypeError("Error in Binding object")
+        if self.left_type is not None and self.right_type is not None:
+            # TODO: get lhs & rhs bind object
+            ft = self.left_type.unify(self.right_type, None, None)
         # ast && bind contain final_type
         print("FT T %s" % type(ft))
         print("FINAL TYPE for %s is <%s>" % (self.ast_node.to_tl4t(), ft))
         if type(ft) is AnonDefine:
-            print("INSTANCIATE AS %s" % ft.defname.type_def)
+            print("INSTANCIATE AS %s" % ft.defs.type_def)
         n.final_type = ft
         self.final_type = ft
         return True
@@ -139,47 +127,6 @@ class Bind:
         return True
 
 #############
-
-
-#############
-
-class Unifier:
-    def __init__(self, bind_depends):
-        self.cnt_ref = bind_depends[0].cnt
-        self.def_f = bind_depends[0]
-        if len(bind_depends) > 1:
-            self.def_args = bind_depends[1:]
-            print("UNIFIER: %d ?? %d" % (len(bind_depends), len(self.def_args)))
-
-    ### unify algo
-    # TODO: tres crade
-    def unify_as_fun(self):
-        """
-        On a pas le type de retour, il viendra par l'unification des types de retour possible
-        de la fonction avec le receveur de la fonction. Et ca sera fit_here
-        """
-        fun_args = self.def_args
-        # make the product of all possible signature
-        selected_sig = Overload()
-        arg_pos = [range(len(arg.final_type)) for arg in fun_args]
-        for types_tuple in product(*arg_pos):
-            print(types_tuple)
-            # make a proposition
-            possible_sig = Fun(*[arg.final_type[idx] for arg, idx in zip(fun_args, types_tuple)])
-            print(possible_sig)
-            # if is good, take it
-            # unify a tuple or Fun with fun definition
-            t = self.def_f.final_type.unify(possible_sig, self.def_f, self.def_args)
-            if t is not None:
-                selected_sig.append(t)
-        print("END UNIFY %s" % selected_sig)
-        if type(selected_sig[0]) is UnknownName:
-            print("INSTANCIATE ON %s" % selected_sig[0].defname.type_def)
-        return selected_sig
-
-    def unify_as_term(self):
-        print("AS TERM")
-        return self.def_f.final_type
 
 class Constraints:
     def __init__(self, initial_defs: [Define]=None):
@@ -293,113 +240,8 @@ class Constraints:
             if not done_something:
                 break
 
-#####################
-
-## for each language you must visit your tree and populate the Constraints
-## Create a Bind object and add it in the contraint object
-## Add a TD if need
-@meta.add_method(BlockStmt)
-def populate(self, cnt: Constraints, parent_bind: 'Bind'):
-    print("Add %s constraint" % type(self).__name__)
-    cnt.push_context()
-    len_lst = len(self.body)
-    sub = Bind.createList(cnt, parent_bind, len_lst)
-    parent_bind.ref_ast_node(self)
-    for idx, it in zip(range(len_lst), self.body):
-        it.populate(cnt, sub[idx])
-    cnt.pop_context()
-
-@meta.add_method(DeclVar)
-def populate(self, cnt: Constraints, parent_bind: 'Bind'):
-    print("Add %s constraint" % type(self).__name__)
-    d = Define(self.name, T(self.t))
-    cnt.add_defines([d])
-    sub = Bind.createList(cnt, parent_bind, 1)
-    parent_bind.ref_ast_node(self)
-    self.expr.populate(cnt, sub[0])
-
-
-@meta.add_method(DeclFun)
-def populate(self, cnt: Constraints, parent_bind: 'Bind'):
-    print("Add %s constraint" % type(self).__name__)
-    # TODO: namespace/parametric/variadic...
-    # voir td_depend et bu_depend
-    d = Define(self.name, Fun(T(self.t, *self.p)))
-    cnt.add_defines([d])
-    len_lst = len(self.block)
-    sub = Bind.createList(cnt, parent_bind, len_lst)
-    parent_bind.ref_ast_node(self)
-    for idx, it in zip(range(len_lst), self.block):
-        it.populate(cnt, sub[idx])
-
-
-@meta.add_method(ExprStmt)
-def populate(self, cnt: Constraints, parent_bind: 'Bind'):
-    print("Add %s constraint" % type(self).__name__)
-    self.expr.populate(cnt, parent_bind)
-
-@meta.add_method(Expr)
-def populate(self, cnt: Constraints, parent_bind: 'Bind'):
-    print("() Add %s constraint" % type(self).__name__)
-    len_lst = len(self.p)
-    print("arity: %d" % len_lst)
-    sub = Bind.createList(cnt, parent_bind, len_lst + 1)
-    parent_bind.ref_ast_node(self)
-    self.call_expr.populate(cnt, sub[0])
-    # TODO: must do a Bind for return?
-    for idx, it in zip(range(1, len_lst + 1), self.p):
-        it.populate(cnt, sub[idx])
-    ualgo = Unifier(sub)
-    parent_bind.unify_algo = ualgo.unify_as_fun
-    print("CALL EXPR: %s" % sub[0].ast_node.to_tl4t())
-    for idx in range(len_lst):
-        print("CALL P[%d]: %s" % (idx, sub[idx + 1].ast_node.to_tl4t()))
-        print("CALL U[%d]: %s" % (idx, ualgo.def_args[idx].ast_node.to_tl4t()))
-
-
-@meta.add_method(Id)
-def populate(self, cnt: Constraints, parent_bind: 'Bind'):
-    print("Add %s constraint" % type(self).__name__)
-    print(self.value)
-    parent_bind.ref_ast_node(self)
-    # add for future resolution
-    cnt.add_BU_cnt(parent_bind)
-    # DO A DEEP COPY OF DEFINITION TO UPDATE IT?
-    # set type as definition
-    d = cnt.get_def(self.value)
-    print("PUT DEF %s" % d)
-    parent_bind.final_type = cnt.get_def(self.value)
-    if type(parent_bind.final_type) is Bind:
-        raise "C'est la merde"
-    ualgo = Unifier([parent_bind])
-    parent_bind.unify_algo = ualgo.unify_as_term
-
-
-@meta.add_method(Operator)
-def populate(self, cnt: Constraints, parent_bind: 'Bind'):
-    print("Add %s constraint" % type(self).__name__)
-    print(self.value)
-    parent_bind.ref_ast_node(self)
-    # TODO: Found the definition of operator, treat as a Fun
-    cnt.add_BU_cnt(parent_bind)
-    d = cnt.get_def(self.value)
-    print("PUT DEF %s" % d)
-    parent_bind.final_type = cnt.get_def(self.value)
-    if type(parent_bind.final_type) is Bind:
-        raise "C'est la merde"
-    ualgo = Unifier([parent_bind])
-    parent_bind.unify_algo = ualgo.unify_as_term
-
-
-@meta.add_method(Literal)
-def populate(self, cnt: Constraints, parent_bind: 'Bind'):
-    print("Add %s constraint" % type(self).__name__)
-    print(self.value)
-    parent_bind.ref_ast_node(self)
-    # TODO: Found the type of the literal
-
 ############## Must replace populate
-
+## As static function of Bind
 def bind_ast(root_node, cnt: Constraints, parent_list_node: node.ListNodeItem):
     print(type(root_node))
     parent_bind = parent_list_node.data
@@ -415,28 +257,30 @@ def bind_ast(root_node, cnt: Constraints, parent_list_node: node.ListNodeItem):
                     if s > 1:
                         if t == "term":
                             node = n[1]
+                            name = n[2]
                             print(type(node))
                             parent_bind = parent_list_node.data
                             parent_bind.ref_ast_node(node)
-                            d = cnt.get_def(n[2])
-                            parent_bind.final_type = d
+                            d = cnt.get_def(name)
+                            parent_bind.left_type = AnonDefine(cnt=cnt)
+                            parent_bind.right_type = d
+                            # must resolve it
                             cnt.add_BU_cnt(parent_bind)
                             if type(parent_bind.final_type) is Bind:
                                 raise "c'est la merde"
-                            ualgo = Unifier([parent_bind])
-                            parent_bind.unify_algo = ualgo.unify_as_term
                         elif t == "literal":
                             node = n[1]
+                            deflit = n[2]
                             parent_bind = parent_list_node.data
                             parent_bind.ref_ast_node(node)
                             # User must provide type for literal
-                            parent_bind.final_type = n[2]
+                            parent_bind.left_type = AnonDefine(cnt=cnt)
+                            parent_bind.right_type = deflit
                             cnt.add_BU_cnt(parent_bind)
-                            ualgo = Unifier([parent_bind])
-                            parent_bind.unify_algo = ualgo.unify_as_term
                         elif t == "block":
                             block = n[1]
                             print(type(block))
+                            # TODO: push context???
                             cnt.push_context()
                             # need linked list
                             item_list = Bind.createListNodeItem(cnt, parent_list_node)
@@ -450,8 +294,27 @@ def bind_ast(root_node, cnt: Constraints, parent_list_node: node.ListNodeItem):
                             parent_bind.ref_ast_node(fun)
                             item_list = Bind.createListNodeItem(cnt, parent_list_node)
                             bind_ast(fun, cnt, item_list)
-                            ualgo = Unifier(item_list.thelist())
-                            parent_bind.unify_algo = ualgo.unify_as_fun
+                            # we have bind all sub definition
+                            # so know we prepare Overloads that need to be resolved
+                            bind_depends = item_list.thelist()
+                            def_f = bind_depends[0].left_type
+                            fun_args = bind_depends[1:]
+                            parent_bind.left_type = def_f
+                            print("DEF F %s" % type(def_f))
+                            print("UNIFIER: %d ?? %d" % (len(bind_depends), len(fun_args)))
+                            for f in fun_args:
+                                print("funargs %s" % to_yml(f.left_type))
+                            # make the product of all possible signature
+                            selected_sig = Overload()
+                            arg_pos = [range(len(arg.left_type)) for arg in fun_args]
+                            for types_tuple in product(*arg_pos):
+                                print(types_tuple)
+                                # store all proposition
+                                possible_sig = Fun(*[arg.left_type[idx] for arg, idx in zip(fun_args, types_tuple)])
+                                print(possible_sig)
+                                selected_sig.append(t)
+                            parent_bind.right_type = selected_sig
+                            cnt.add_BU_cnt(parent_bind)
                         # TODO: add defines
                 elif type(n).__name__ == "generator":
                     bind_ast(n, cnt, parent_list_node)
@@ -460,7 +323,7 @@ def bind_ast(root_node, cnt: Constraints, parent_list_node: node.ListNodeItem):
         except StopIteration:
             # as expected we end the loop
             pass
-        except ValueError as e:
+        except (ValueError, TypeError) as e:
             raise e
         except Exception as e:
             print("receive :%s" % e)
@@ -541,90 +404,91 @@ class Unifying_Test(unittest.TestCase):
         self.assertEqual(cnt.get_def("A"), basic_a, "Can't find a basic define")
 
     def test_003(self):
-        """Bind object and list
-        """
-        cnt = Constraints()
-        b = Bind(None, cnt)
-        lstb = Bind.createList(cnt, b, 5)
-        self.assertEqual(b.td_depend, id(lstb[0]), "List return by createList seems buggy")
-        self.assertEqual(id(b), lstb[0].bu_depend, "List return by createList seems buggy")
-        self.assertEqual(lstb[0].td_depend, id(lstb[1]), "List return by createList seems buggy")
-        self.assertEqual(id(lstb[0]), lstb[1].bu_depend, "List return by createList seems buggy")
-        self.assertEqual(lstb[1].td_depend, id(lstb[2]), "List return by createList seems buggy")
-        self.assertEqual(id(lstb[1]), lstb[2].bu_depend, "List return by createList seems buggy")
-        self.assertEqual(lstb[2].td_depend, id(lstb[3]), "List return by createList seems buggy")
-        self.assertEqual(id(lstb[2]), lstb[3].bu_depend, "List return by createList seems buggy")
-        self.assertEqual(lstb[3].td_depend, id(lstb[4]), "List return by createList seems buggy")
-        self.assertEqual(id(lstb[3]), lstb[4].bu_depend, "List return by createList seems buggy")
-        self.assertEqual(lstb[4].td_depend, None, "List return by createList seems buggy")
-        to_png("ctx0.png", cnt)
-        lsbu = list(Bind.bu_walk(lstb[-1]))
-        lsburef = []
-        what = lstb[-1]
-        while what is not None:
-            (bid, nid) = (id(what), what.bu_depend)
-            lsburef.append((bid, nid))
-            if nid is not None:
-                what = what.cnt.get_bind_by_id(nid)
-            else:
-                what = None
-        self.assertEqual(lsbu, lsburef, "List walked by bu_walk seems buggy")
-        lstd = list(Bind.td_walk(b))
-        lstdref = []
-        what = b
-        while what is not None:
-            (bid, nid) = (id(what), what.td_depend)
-            lstdref.append((bid, nid))
-            if nid is not None:
-                what = what.cnt.get_bind_by_id(nid)
-            else:
-                what = None
-        self.assertEqual(lstd, lstdref, "List walked by bu_walk seems buggy")
-        # Test it with a little grammar
-        test = TL4T()
-        res = test.parse("""
-            v = f(a, b, c, d);
-        """)
-        # get AST nodes
-        blockstmt = res
-        exprstmt = blockstmt.body[0]
-        eqexpr = exprstmt.expr
-        eq = eqexpr.call_expr
-        self.assertEqual(eq.value, '=', "bad access to parameter")
-        v = eqexpr.p[0]
-        self.assertEqual(v.value, 'v', "bad access to parameter")
-        funexpr = eqexpr.p[1]
-        f = funexpr.call_expr
-        self.assertEqual(f.value, 'f', "bad access to parameter")
-        a = funexpr.p[0]
-        self.assertEqual(a.value, 'a', "bad access to parameter")
-        b = funexpr.p[1]
-        self.assertEqual(b.value, 'b', "bad access to parameter")
-        c = funexpr.p[2]
-        self.assertEqual(c.value, 'c', "bad access to parameter")
-        # unification and grammar
-        # f: t2 -> t1
-        def1 = Define("f", Fun(T("t1"), T("t2")))
-        # a: t2
-        def2 = Define("a", Overload(T("t2")))
-        # g: t1
-        def3 = Define("g", Overload(T("t1")))
-        # f: ?0 -> ?0 -> ?0
-        p1 = UnknownName()
-        def4 = Define("=", Fun(p1, p1, p1))
-        # Test it with a little grammar
-        test = TL4T()
-        res = test.parse("""
-            g = f(a);
-        """)
-        txt = res.to_tl4t()
-        print(txt)
-        cnt = Constraints([def1, def2, def3, def4])
-        b = Bind(None, cnt)
-        res.populate(cnt, b)
-        print("-" * 10)
-        to_png("ctx1.png", cnt)
-        cnt.resolve()
+        pass
+        #"""Bind object and list
+        #"""
+        #cnt = Constraints()
+        #b = Bind(None, cnt)
+        #lstb = Bind.createList(cnt, b, 5)
+        #self.assertEqual(b.td_depend, id(lstb[0]), "List return by createList seems buggy")
+        #self.assertEqual(id(b), lstb[0].bu_depend, "List return by createList seems buggy")
+        #self.assertEqual(lstb[0].td_depend, id(lstb[1]), "List return by createList seems buggy")
+        #self.assertEqual(id(lstb[0]), lstb[1].bu_depend, "List return by createList seems buggy")
+        #self.assertEqual(lstb[1].td_depend, id(lstb[2]), "List return by createList seems buggy")
+        #self.assertEqual(id(lstb[1]), lstb[2].bu_depend, "List return by createList seems buggy")
+        #self.assertEqual(lstb[2].td_depend, id(lstb[3]), "List return by createList seems buggy")
+        #self.assertEqual(id(lstb[2]), lstb[3].bu_depend, "List return by createList seems buggy")
+        #self.assertEqual(lstb[3].td_depend, id(lstb[4]), "List return by createList seems buggy")
+        #self.assertEqual(id(lstb[3]), lstb[4].bu_depend, "List return by createList seems buggy")
+        #self.assertEqual(lstb[4].td_depend, None, "List return by createList seems buggy")
+        #to_png("ctx0.png", cnt)
+        #lsbu = list(Bind.bu_walk(lstb[-1]))
+        #lsburef = []
+        #what = lstb[-1]
+        #while what is not None:
+        #    (bid, nid) = (id(what), what.bu_depend)
+        #    lsburef.append((bid, nid))
+        #    if nid is not None:
+        #        what = what.cnt.get_bind_by_id(nid)
+        #    else:
+        #        what = None
+        #self.assertEqual(lsbu, lsburef, "List walked by bu_walk seems buggy")
+        #lstd = list(Bind.td_walk(b))
+        #lstdref = []
+        #what = b
+        #while what is not None:
+        #    (bid, nid) = (id(what), what.td_depend)
+        #    lstdref.append((bid, nid))
+        #    if nid is not None:
+        #        what = what.cnt.get_bind_by_id(nid)
+        #    else:
+        #        what = None
+        #self.assertEqual(lstd, lstdref, "List walked by bu_walk seems buggy")
+        ## Test it with a little grammar
+        #test = TL4T()
+        #res = test.parse("""
+        #    v = f(a, b, c, d);
+        #""")
+        ## get AST nodes
+        #blockstmt = res
+        #exprstmt = blockstmt.body[0]
+        #eqexpr = exprstmt.expr
+        #eq = eqexpr.call_expr
+        #self.assertEqual(eq.value, '=', "bad access to parameter")
+        #v = eqexpr.p[0]
+        #self.assertEqual(v.value, 'v', "bad access to parameter")
+        #funexpr = eqexpr.p[1]
+        #f = funexpr.call_expr
+        #self.assertEqual(f.value, 'f', "bad access to parameter")
+        #a = funexpr.p[0]
+        #self.assertEqual(a.value, 'a', "bad access to parameter")
+        #b = funexpr.p[1]
+        #self.assertEqual(b.value, 'b', "bad access to parameter")
+        #c = funexpr.p[2]
+        #self.assertEqual(c.value, 'c', "bad access to parameter")
+        ## unification and grammar
+        ## f: t2 -> t1
+        #def1 = Define("f", Fun(T("t1"), T("t2")))
+        ## a: t2
+        #def2 = Define("a", Overload(T("t2")))
+        ## g: t1
+        #def3 = Define("g", Overload(T("t1")))
+        ## f: ?0 -> ?0 -> ?0
+        #p1 = UnknownName()
+        #def4 = Define("=", Fun(p1, p1, p1))
+        ## Test it with a little grammar
+        #test = TL4T()
+        #res = test.parse("""
+        #    g = f(a);
+        #""")
+        #txt = res.to_tl4t()
+        #print(txt)
+        #cnt = Constraints([def1, def2, def3, def4])
+        #b = Bind(None, cnt)
+        ##res.populate(cnt, b)
+        #print("-" * 10)
+        #to_png("ctx1.png", cnt)
+        #cnt.resolve()
 
     def test_04(self):
         """Basic unification.
@@ -670,14 +534,14 @@ class Unifying_Test(unittest.TestCase):
         #print("-" * 20)
         #print(res.to_yml())
         print("-" * 20)
-        def_x = Define("x", UnknownName())
-        def_y = Define("y", UnknownName())
-        def_z = Define("z", UnknownName())
         def_sqrt = Define("sqrt", Fun(T("float"), T("float")))
         p = UnknownName()
         def_eq = Define("=", Fun(p, p, p))
         def_mul = Define("*", Fun(p, p, p))
         def_div = Define("/", Fun(p, p, p))
-        cnt = Constraints([def_x, def_y, def_z, def_sqrt, def_eq, def_mul, def_div])
+        cnt = Constraints([def_sqrt, def_eq, def_mul, def_div])
+        def_x = AnonDefine("x", cnt)
+        def_y = AnonDefine("y", cnt)
+        def_z = AnonDefine("z", cnt)
         b = Bind.createListNodeItem(cnt)
         bind_ast(res.walk(), cnt, b)
