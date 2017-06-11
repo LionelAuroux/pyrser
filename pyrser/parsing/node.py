@@ -60,7 +60,7 @@ class Node(dict):
                 if hasattr(self, 'keys'):
                     keys = list(self.keys())
                     for k in keys:
-                        ndict["['" + k + "']"] = id(self[k])
+                        ndict["[" + repr(k) + "]"] = id(self[k])
                         res |= recurs(self[k], ndict, "%s[%s]" % (info, k))
             keys = list(vars(self).keys())
             for k in keys:
@@ -134,13 +134,23 @@ class ListNode:
         else:
             self.begin = self.begin.prepend(d)
 
+    def __eq__(self, oth) -> bool:
+        s1 = len(self)
+        s2 = len(oth)
+        if s1 != s2:
+            return False
+        for i1, i2 in zip(self, oth):
+            if i1 != i2:
+                return False
+        return True
+
     def __str__(self) -> str:
         return repr(self)
 
     def __repr__(self) -> str:
         txt = []
         for it in self.begin._fwd():
-            txt.append(str(it))
+            txt.append(it)
         return repr(txt)
 
     def dump(self) -> str:
@@ -208,13 +218,28 @@ class ListNode:
 
     # []
     def __getitem__(self, k) -> object:
-        if type(k) is not int:
-            raise ValueError('Key must be an int')
+        if type(k) is not int and type(k) is not slice:
+            raise ValueError('Key must be an int or a slice receive %s' % type(k))
         self._update()
-        k = self._trueindex(k)
-        if k not in self.cache:
-            raise IndexError("list index out of range")
-        return self.cache[k].data
+        if type(k) is int:
+            k = self._trueindex(k)
+            if k not in self.cache:
+                raise IndexError("list index out of range")
+            return self.cache[k].data
+        if type(k) is slice:
+            start = k.start
+            if start is None:
+                start = 0
+            stop = k.stop
+            if stop is None:
+                stop = len(self.cache)
+            step = k.step
+            if step is None:
+                step = 1
+            lstmp = []
+            for it in range(start, stop, step):
+                lstmp.append(self.cache[it].data)
+            return ListNode(lstmp)
 
     # [] =
     def __setitem__(self, k, d):
@@ -246,10 +271,10 @@ class ListNodeItem:
         self.thelist = None
 
     def __str__(self) -> str:
-        return str(self.data)
+        return repr(self.data)
 
     def __repr__(self) -> str:
-        return str(self.data)
+        return repr(self.data)
 
     def dump(self) -> str:
         txt = "{\n"
@@ -362,12 +387,18 @@ class ListNodeItem:
         return new
 
     def values(self):
+        """
+        in order
+        """
         tmp = self
         while tmp is not None:
             yield tmp.data
             tmp = tmp.next
 
     def rvalues(self):
+        """ 
+        in reversed order
+        """
         tmp = self
         while tmp is not None:
             yield tmp.data

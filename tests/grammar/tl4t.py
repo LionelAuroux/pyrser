@@ -51,7 +51,6 @@ class BlockStmt(NodeInfo):
         """
         TD descent
         """
-        yield ('term', self)
         yield ('block', (it.walk() for it in self.body))
 
 class DeclVar(NodeInfo):
@@ -112,7 +111,6 @@ class DeclVar(NodeInfo):
         """
         TD descent
         """
-        yield ('term', self)
         yield ('block', self.expr.walk())
 
 class DeclFun(DeclVar):
@@ -150,7 +148,6 @@ class DeclFun(DeclVar):
         """
         TD descent
         """
-        yield ('term', self)
         yield ('fun', (it.walk() for it in self.p))
         yield ('block', self.block.walk())
 
@@ -167,7 +164,7 @@ class Param(NodeInfo):
         """
         TD descent
         """
-        yield ('term', self)
+        yield ('term', self, self.name)
 
 class Terminal(NodeInfo):
     def __init__(self, value):
@@ -181,7 +178,7 @@ class Terminal(NodeInfo):
         """
         TD descent
         """
-        yield ('term', self)
+        yield ('term', self, self.value)
 
 
 class Literal(Terminal):
@@ -200,8 +197,7 @@ class Literal(Terminal):
         """
         TD descent
         """
-        yield ('term', self)
-
+        yield ('literal', self, T('int'))
 
 class Id(Terminal):
 
@@ -209,23 +205,10 @@ class Id(Terminal):
     def type_algos(self):
         return (self.infer_id, self.value, self.feedback_id)
 
-    def walk(self) -> Node:
-        """
-        TD descent
-        """
-        yield ('term', self)
-
-
 class Operator(Terminal):
     # to connect Inference
     def type_algos(self):
         return (self.infer_id, self.value, self.feedback_leaf)
-
-    def walk(self) -> Node:
-        """
-        TD descent
-        """
-        yield ('term', self)
 
 def createFunWithTranslator(old: Node, trans: Translator) -> Node:
     """
@@ -261,7 +244,6 @@ class Expr(NodeInfo):
         """
         TD descent
         """
-        yield ('term', self)
         yield ('fun', (it1 for it1 in chain(self.call_expr.walk(), (it2.walk() for it2 in self.p))))
 
 
@@ -281,7 +263,6 @@ class ExprStmt(NodeInfo):
         """
         TD descent
         """
-        yield ('term', self)
         yield ('block', self.expr.walk())
 
 class Binary(Expr):

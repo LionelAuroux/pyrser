@@ -145,8 +145,8 @@ class InternalAst_Test(unittest.TestCase):
             if idx == 2:
                 it.popitem()
             idx += 1
-        self.assertEqual(str(lbegin.thelist()), "['a', 'b', 'd', 'e', 'f']", "Bad construction of l")
-        self.assertEqual(l.thelist().must_update, True, "Bad construction of l")
+        self.assertEqual(lbegin.thelist(), ['a', 'b', 'd', 'e', 'f'], "Bad construction of l")
+        self.assertEqual(l.thelist().must_update, False, "Bad construction of l")
         lbegin = ListNodeItem('a')
         l = lbegin
         l = l.append('b')
@@ -204,6 +204,10 @@ class InternalAst_Test(unittest.TestCase):
         self.assertEqual(node.data, 4, "Bad construction of ls")
         self.assertEqual(node.next.data, 5, "Bad construction of ls")
         self.assertEqual(node.prev.data, 3, "Bad construction of ls")
+        # slice
+        s1 = ls[4:]
+        self.assertEqual(s1, [1, 2, 3, 4, 5, 6][4:], "Bad slice of ls")
+        # del
         del ls[3]
         self.assertEqual(ls[3], 5, "Bad construction of ls")
         self.assertEqual(id(ls.get(3).prev), id(ls.get(2)), "Bad construction of ls")
@@ -558,7 +562,7 @@ class InternalAst_Test(unittest.TestCase):
         t = normalize(t)
         in_test = False
         print("WALK BEGIN")
-        pdb.set_trace()
+        #pdb.set_trace()
         walk(t, lc, (id(t[1]), self))
         self.assertTrue(in_test, "Expect the Hook checkMatch is called")
         #self.assertTrue(lc.is_in_stable_state(), "LivingContext not in correct state")

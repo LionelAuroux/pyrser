@@ -1,5 +1,5 @@
 import unittest
-
+import sys
 from weakref import ref
 from copy import *
 from itertools import product
@@ -232,7 +232,8 @@ from collections import ChainMap
 
 class Bind:
     def __init__(self, ast_node, cnt: 'Constraints'):
-        self.ast_node = ast_node
+        self._ast_node = None
+        self.ref_ast_node(ast_node)
         self.cnt = cnt
         # top-down dependence on another Bind object
         self.td_depend = None
@@ -247,6 +248,17 @@ class Bind:
             raise "C'est la merde"
         self.unify_algo = None
 
+    def ref_ast_node(self, ast_node):
+        if ast_node is not None and self._ast_node is None:
+            bid = id(self)
+            if bid not in self.cnt.bind2node:
+                self.cnt.bind2node[bid] = ast_node
+                self._ast_node = ast_node
+
+    @property
+    def ast_node(self) -> object:
+        return self._ast_node
+
     @staticmethod
     def createList(cnt: 'Constraints', parent_bind: 'Bind', size: int) -> ['Bind']:
         res = []
@@ -259,6 +271,18 @@ class Bind:
             lastid = bid
             res.append(b)
         return res
+
+    @staticmethod
+    def createListNodeItem(cnt: 'Constraints', parent_list_node: node.ListNodeItem = None) -> ['Bind']:
+        b = Bind(None, cnt)
+        if parent_list_node is not None:
+            parent_bind = parent_list_node.data
+            lastid = cnt.get_id_by_bind(parent_bind)
+            b.bu_depend = lastid
+            bid = cnt.get_id_by_bind(b)
+            parent_bind.td_depend = bid
+            return parent_list_node.append(b)
+        return node.ListNodeItem(b)
 
     @staticmethod
     def bu_walk(b: 'Bind'):
@@ -369,6 +393,8 @@ class Constraints:
     def __init__(self, initial_defs: [Define]=None):
         # store definitions
         self.defs = []
+        # store bind->ast_node
+        self.bind2node = {}
         # map name -> idx in defs
         self.name2id = ChainMap()
         if initial_defs is not None:
@@ -486,7 +512,7 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     cnt.push_context()
     len_lst = len(self.body)
     sub = Bind.createList(cnt, parent_bind, len_lst)
-    parent_bind.ast_node = self
+    parent_bind.ref_ast_node(self)
     for idx, it in zip(range(len_lst), self.body):
         it.populate(cnt, sub[idx])
     cnt.pop_context()
@@ -497,7 +523,7 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     d = Define(self.name, T(self.t))
     cnt.add_defines([d])
     sub = Bind.createList(cnt, parent_bind, 1)
-    parent_bind.ast_node = self
+    parent_bind.ref_ast_node(self)
     self.expr.populate(cnt, sub[0])
 
 
@@ -510,7 +536,7 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     cnt.add_defines([d])
     len_lst = len(self.block)
     sub = Bind.createList(cnt, parent_bind, len_lst)
-    parent_bind.ast_node = self
+    parent_bind.ref_ast_node(self)
     for idx, it in zip(range(len_lst), self.block):
         it.populate(cnt, sub[idx])
 
@@ -526,7 +552,7 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     len_lst = len(self.p)
     print("arity: %d" % len_lst)
     sub = Bind.createList(cnt, parent_bind, len_lst + 1)
-    parent_bind.ast_node = self
+    parent_bind.ref_ast_node(self)
     self.call_expr.populate(cnt, sub[0])
     # TODO: must do a Bind for return?
     for idx, it in zip(range(1, len_lst + 1), self.p):
@@ -543,7 +569,7 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
 def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
     print(self.value)
-    parent_bind.ast_node = self
+    parent_bind.ref_ast_node(self)
     # add for future resolution
     cnt.add_BU_cnt(parent_bind)
     # DO A DEEP COPY OF DEFINITION TO UPDATE IT?
@@ -561,7 +587,7 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
 def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
     print(self.value)
-    parent_bind.ast_node = self
+    parent_bind.ref_ast_node(self)
     # TODO: Found the definition of operator, treat as a Fun
     cnt.add_BU_cnt(parent_bind)
     d = cnt.get_def(self.value)
@@ -577,9 +603,81 @@ def populate(self, cnt: Constraints, parent_bind: 'Bind'):
 def populate(self, cnt: Constraints, parent_bind: 'Bind'):
     print("Add %s constraint" % type(self).__name__)
     print(self.value)
-    parent_bind.ast_node = self
+    parent_bind.ref_ast_node(self)
     # TODO: Found the type of the literal
 
+############## Must replace populate
+
+def bind_ast(root_node, cnt: Constraints, parent_list_node: node.ListNodeItem):
+    print(type(root_node))
+    parent_bind = parent_list_node.data
+    if type(root_node).__name__ == "generator":
+        try:
+            while (True):
+                n = root_node.send(None)
+                if type(n) is tuple:
+                    t = n[0]
+                    s = len(n)
+                    print(s)
+                    print(t.upper())
+                    if s > 1:
+                        if t == "term":
+                            node = n[1]
+                            print(type(node))
+                            parent_bind = parent_list_node.data
+                            parent_bind.ref_ast_node(node)
+                            d = cnt.get_def(n[2])
+                            parent_bind.final_type = d
+                            cnt.add_BU_cnt(parent_bind)
+                            if type(parent_bind.final_type) is Bind:
+                                raise "c'est la merde"
+                            ualgo = Unifier([parent_bind])
+                            parent_bind.unify_algo = ualgo.unify_as_term
+                        elif t == "literal":
+                            node = n[1]
+                            parent_bind = parent_list_node.data
+                            parent_bind.ref_ast_node(node)
+                            # User must provide type for literal
+                            parent_bind.final_type = n[2]
+                            cnt.add_BU_cnt(parent_bind)
+                            ualgo = Unifier([parent_bind])
+                            parent_bind.unify_algo = ualgo.unify_as_term
+                        elif t == "block":
+                            block = n[1]
+                            print(type(block))
+                            cnt.push_context()
+                            # need linked list
+                            item_list = Bind.createListNodeItem(cnt, parent_list_node)
+                            bind_ast(block, cnt, item_list)
+                            cnt.pop_context()
+                        elif t == "fun":
+                            fun = n[1]
+                            print(type(fun))
+                            # need linked list
+                            parent_bind = parent_list_node.data
+                            parent_bind.ref_ast_node(fun)
+                            item_list = Bind.createListNodeItem(cnt, parent_list_node)
+                            bind_ast(fun, cnt, item_list)
+                            ualgo = Unifier(item_list.thelist())
+                            parent_bind.unify_algo = ualgo.unify_as_fun
+                        # TODO: add defines
+                elif type(n).__name__ == "generator":
+                    bind_ast(n, cnt, parent_list_node)
+                else:
+                    print("something else")
+        except StopIteration:
+            # as expected we end the loop
+            pass
+        except ValueError as e:
+            raise e
+        except Exception as e:
+            print("receive :%s" % e)
+            print("detail: %s" % repr(sys.exc_info()))
+    else:
+        raise TypeError("walk() return something wrong! get %s expect a generator" % type(root_node))
+
+
+#########################
 
 class Unifying_Test(unittest.TestCase):
 
@@ -780,41 +878,14 @@ class Unifying_Test(unittest.TestCase):
         #print("-" * 20)
         #print(res.to_yml())
         print("-" * 20)
-        def pprint(w):
-            print(type(w))
-            if type(w).__name__ == "generator":
-                try:
-                    while (True):
-                        n = w.send(None)
-                        if type(n) is tuple:
-                            t = n[0]
-                            s = len(n)
-                            print(s)
-                            print(t.upper())
-                            if s > 1:
-                                if t == "term":
-                                    node = n[1]
-                                    print(type(node))
-                                    if type(node) is Id:
-                                        print(node.value)
-                                elif t == "block":
-                                    sub = n[1]
-                                    print(type(sub))
-                                    pprint(sub)
-                                elif t == "fun":
-                                    sub = n[1]
-                                    print(type(sub))
-                                    pprint(sub)
-                        elif type(n).__name__ == "generator":
-                            pprint(n)
-                        else:
-                            print("something else")
-                except StopIteration:
-                    # as expected we end the loop
-                    pass
-                except Exception as e:
-                    print("receive :%s" % e)
-            else:
-                print("something else")
-
-        pprint(res.walk())
+        def_x = Define("x", UnknownName())
+        def_y = Define("y", UnknownName())
+        def_z = Define("z", UnknownName())
+        def_sqrt = Define("sqrt", Fun(T("float"), T("float")))
+        p = UnknownName()
+        def_eq = Define("=", Fun(p, p, p))
+        def_mul = Define("*", Fun(p, p, p))
+        def_div = Define("/", Fun(p, p, p))
+        cnt = Constraints([def_x, def_y, def_z, def_sqrt, def_eq, def_mul, def_div])
+        b = Bind.createListNodeItem(cnt)
+        bind_ast(res.walk(), cnt, b)
