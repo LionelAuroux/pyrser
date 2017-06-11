@@ -11,14 +11,14 @@ from pyrser.hooks.vars import *
 from pyrser.hooks.set import *
 from pyrser.hooks.predicate import *
 from pyrser.hooks.dump_nodes import *
-from pyrser.type_system import *
+from pyrser.type_system.type_expr import *
 from pyrser.error import *
 from pyrser.passes.to_yml import *
 
 ### ABSTRACTION
 
 
-class NodeInfo(Node, Inference):
+class NodeInfo(Node):
     def __init__(self):
         self.info = None
 
@@ -42,10 +42,6 @@ class BlockStmt(NodeInfo):
         else:
             lsblock = fmt.block('{\n', '}', [fmt.tab(lssub)])
         return lsblock
-
-    # to connect Inference
-    def type_algos(self):
-        return (self.infer_block, self.body, self.feedback_block)
 
     def walk(self) -> Node:
         """
@@ -79,34 +75,6 @@ class DeclVar(NodeInfo):
             lsdecl[-1] += ";\n"
         return fmt.sep(" ", lsdecl)
 
-    def declare_var(self, args, diagnostic=None):
-        parent_scope = self.type_node.parent()
-        typ = self.t
-        if self.t is None:
-            typ = '?1'
-        var = Var(self.name, typ)
-        parent_scope.add(var)
-        # try to infer type or check type
-        if self.expr is not None:
-            tn = Scope(sig=[Fun('=', typ, [typ, typ])])
-            tn.set_parent(parent_scope)
-            # create a fake Expr Node to infer expression with var type
-            rhs = Expr(Id('='), [Id(self.name), self.expr])
-            rhs.type_node = Scope()
-            rhs.type_node.set_parent(tn)
-            rhs.infer_type(diagnostic)
-            # TODO: scope surrounded only one sig !!!!!
-            print("RHS: [%s]" % rhs.type_node)
-            print("TRET %s" % rhs.type_node.last())
-            self.t = rhs.type_node.last().compute_tret
-            self.type_node = rhs.type_node
-            #var.tret = rhs.type_node.last()
-            var.tret = TypeName(self.t)
-
-    # to connect Inference
-    def type_algos(self):
-        return (self.declare_var, None)
-
     def walk(self) -> Node:
         """
         TD descent
@@ -120,7 +88,6 @@ class DeclFun(DeclVar):
         self.p = p
         if block is not None:
             self.block = block
-            print("SIZE OF BLOCK %d" % len(block))
 
     def to_tl4t(self) -> fmt.indentable:
         params = []
@@ -187,12 +154,6 @@ class Literal(Terminal):
         self.value = value
         self.type = t
 
-    # to connect Inference
-    def type_algos(self):
-        return (
-            self.infer_literal, (self.value, self.type), self.feedback_leaf
-        )
-
     def walk(self) -> Node:
         """
         TD descent
@@ -200,24 +161,10 @@ class Literal(Terminal):
         yield ('literal', self, T('int'))
 
 class Id(Terminal):
-
-    # to connect Inference
-    def type_algos(self):
-        return (self.infer_id, self.value, self.feedback_id)
+    pass
 
 class Operator(Terminal):
-    # to connect Inference
-    def type_algos(self):
-        return (self.infer_id, self.value, self.feedback_leaf)
-
-def createFunWithTranslator(old: Node, trans: Translator) -> Node:
-    """
-    To alter AST when apply a translator
-    """
-    f = trans.fun
-    n = trans.notify
-    return Expr(Id(f.name), [old])
-
+    pass
 
 class Expr(NodeInfo):
     def __init__(self, ce: 'expr', p: ['expr']):
@@ -236,10 +183,6 @@ class Expr(NodeInfo):
         ])
         return lsblock
 
-    # to connect Inference
-    def type_algos(self):
-        return (self.infer_fun, (self.call_expr, self.p), self.feedback_fun)
-
     def walk(self) -> Node:
         """
         TD descent
@@ -254,10 +197,6 @@ class ExprStmt(NodeInfo):
 
     def to_tl4t(self):
         return fmt.end(";\n", [self.expr.to_tl4t()])
-
-    # to connect Inference
-    def type_algos(self):
-        return (self.infer_subexpr, self.expr, self.feedback_subexpr)
 
     def walk(self) -> Node:
         """
