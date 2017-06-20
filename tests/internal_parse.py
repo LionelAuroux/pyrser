@@ -8,6 +8,34 @@ from pyrser import grammar
 
 class InternalParse_Test(unittest.TestCase):
 
+    def test_0000_unquote(self):
+        r = parsing.unquote_string("toto")
+        self.assertEqual(r, "toto")
+        r = parsing.unquote_string("'toto'")
+        self.assertEqual(r, "toto")
+        r = parsing.unquote_string("'t\'oto'")
+        self.assertEqual(r, "t'oto")
+        r = parsing.unquote_string("'t\\\oto'")
+        self.assertEqual(r, "t\oto")
+        r = parsing.unquote_string(r"'t\noto'")
+        self.assertEqual(r, "t\noto")
+        r = parsing.unquote_string(r"'t\toto'")
+        self.assertEqual(r, "t\toto")
+        r = parsing.unquote_string(r"'t\voto'")
+        self.assertEqual(r, "t\voto")
+        r = parsing.unquote_string(r"'t\boto'")
+        self.assertEqual(r, "t\boto")
+        r = parsing.unquote_string(r"'t\roto'")
+        self.assertEqual(r, "t\roto")
+        r = parsing.unquote_string(r"'t\foto'")
+        self.assertEqual(r, "t\foto")
+        r = parsing.unquote_string(r"'t\x33oto'")
+        self.assertEqual(r, "t\x33oto")
+        r = parsing.unquote_string(r"'t\u5566oto'")
+        self.assertEqual(r, "t\u5566oto")
+        r = parsing.unquote_string(r"'t\U00000394oto'")
+        self.assertEqual(r, "t\U00000394oto")
+
     def test_000_Node(self):
         d = parsing.Node()
         d.tata = [1, 2, 3, 4, 5]

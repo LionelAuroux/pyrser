@@ -101,7 +101,10 @@ class DictNode(dict):
     pass
 
 
-class TupleNode(list):
+class TupleNode(tuple):
+    pass
+
+class SetNode(set):
     pass
 
 
@@ -442,19 +445,24 @@ def normalize(ast: Node) -> Node:
     all builtins containers are replace by referencable subclasses
     """
     res = ast
-    typemap = {DictNode, ListNode, TupleNode}
+    typemap = {DictNode, ListNode, TupleNode, SetNode}
     if type(ast) is dict:
+        print(">dict")
         res = DictNode(ast)
     elif type(ast) is list:
         res = ListNode(ast)
     elif type(ast) is tuple:
         res = TupleNode(ast)
+    elif type(ast) is set:
+        res = SetNode(ast)
     # in-depth change
     if hasattr(res, 'items'):
         for k, v in res.items():
+            print("%s" % k)
             res[k] = normalize(v)
-    elif hasattr(res, '__getitem__'):
-        for idx, v in zip(range(len(res)), res):
+    elif hasattr(res, '__iter__') and type(res) is not str:
+        for idx, v in enumerate(res):
+            print("%d" % idx)
             res[idx] = normalize(v)
     if type(res) not in typemap and hasattr(res, '__dict__'):
         subattr = vars(res)

@@ -29,10 +29,11 @@ def yml_attr(k, v):
 
 def to_yml_item(item, pp, name, _cache = set()):
     global scalar
+    not_loop = {int, str, float, bytes, tuple}
     refcount = weakref.getweakrefcount(item)
-    if refcount > 0:
+    if refcount > 0 and type(item) not in not_loop:
         name += " &" + str(id(item))
-    if isinstance(item, weakref.ref) or id(item) in _cache:
+    if isinstance(item, weakref.ref) or id(item) in _cache and type(item) not in not_loop:
         if isinstance(item, weakref.ref):
             name += " *" + str(id(item()))
             tag = fmt.end('\n', fmt.sep("", [name, " ", repr(item)]))

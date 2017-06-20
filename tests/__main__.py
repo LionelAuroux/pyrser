@@ -14,7 +14,7 @@ from tests import grammar_decorator
 from tests import grammar_directive
 from tests import grammar_file
 from tests import hooks
-from tests import internal_ast
+from tests import psl
 from tests import internal_dsl
 from tests import internal_error
 from tests import internal_fmt
@@ -30,7 +30,7 @@ test_cases = (
     grammar_directive.GrammarDirective_Test, #OK
     #grammar_file.GrammarFile_Test,
     hooks.Hooks_Test, #OK
-    #internal_ast.InternalAst_Test, #OK
+    #psl.PSL_Test, #OK
     internal_dsl.InternalDsl_Test, #OK
     internal_error.InternalError_Test, #OK
     internal_fmt.InternalFmt_Test, #OK

@@ -12,6 +12,51 @@ from pyrser.parsing.node import Node
 _MetaBasicParser = {}
 
 
+def unquote_string(s) -> str:
+    c = s[0]
+    if c not in ['"', "'"] and s[-1] != c:
+        return s
+    res = ""
+    sub = s[1:-1]
+    idx = 0
+    while True:
+        if sub[idx] != "\\":
+            res += sub[idx]
+        else:
+            import struct
+            idx += 1
+            c = sub[idx]
+            if c == 't':
+                res += '\t'
+            elif c == 'b':
+                res += '\b'
+            elif c == 'v':
+                res += '\v'
+            elif c == 'n':
+                res += '\n'
+            elif c == 'r':
+                res += '\r'
+            elif c == 'f':
+                res += '\f'
+            elif c == 'x':
+                n = bytes.fromhex(sub[idx + 1: idx + 3]).decode('utf-8')
+                res += n
+                idx += 2
+            elif c == 'u':
+                n = struct.unpack(">H", bytes.fromhex(sub[idx + 1: idx + 5]))[0]
+                res += chr(n)
+                idx += 4
+            elif c == 'U':
+                n = struct.unpack(">I", bytes.fromhex(sub[idx + 1: idx + 9]))[0]
+                res += chr(n)
+                idx += 8
+            else:
+                res += c
+        idx += 1
+        if idx >= len(sub):
+            break
+    return res
+
 class MetaBasicParser(type):
     """Metaclass for all parser."""
     def __new__(metacls, name, bases, namespace):
@@ -545,7 +590,7 @@ def read_cstring(self) -> bool:
     read a double quoted string
     Read following BNF rule else return False::
 
-        '"' -> ['\\' #char | ~'\\'] '"'
+        '"' [-> ['\\' #char | ~'\\']]* '"'
 
     """
     self._stream.save_context()
@@ -562,7 +607,7 @@ def read_cchar(self) -> bool:
     """
     Read following BNF rule else return False::
 
-        "'" -> ['\\' #char | ~'\\'] "'"
+        "'" [-> ['\\' #char | ~'\\']]* "'"
 
     """
     self._stream.save_context()
@@ -578,7 +623,7 @@ def read_cchar(self) -> bool:
     read a quoted string ''
     Read following BNF rule else return False::
 
-        "'" -> ['\\' #char | ~'\\'] "'"
+        "'" [-> ['\\' #char | ~'\\']]* "'"
 
     """
     self._stream.save_context()

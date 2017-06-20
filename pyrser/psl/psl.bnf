@@ -1,0 +1,119 @@
+/*
+    This is the PSL grammar
+*/
+
+psl = [
+    [
+        __scope__:blck
+        psl_block
+        #new_MatchBlock(_, blck)
+    ]+
+    eof
+]
+
+psl_block = [
+   id? '{' [ psl_stmt:s #new_MatchHook(blck, s) ]+ '}'
+]
+
+psl_stmt = [
+    node_seq:ns "->" action:a #new_Action(_, a, ns) ';'
+]
+
+action = [
+    event | hook:>_
+]
+
+event = [
+    id
+]
+
+hook = [
+   @ignore('null') ['#' id:i #new_text(_, i)]
+]
+
+node_seq = [
+    [type_node:>_
+    | val_node:>_
+    ]
+    precond?
+]
+
+precond = [
+   ['??' | '?'] '<' id '>'
+]
+
+val_scalar = [
+    num:n #is_num(_, n)
+    | float:f #is_float(_, f)
+    | string:s #is_str(_, s)
+    | qstring:s #is_str(_, s)
+]
+
+val_node = [
+    val_scalar:v #new_MatchValue(_, v)
+    | dict_def:>_
+    | list_def:>_
+    | '*'
+]
+
+type_node = [
+    id:n '^'? '(' node_def:nd ')' #new_MatchType(_, n, nd)
+]
+
+node_def = [
+    [attrs_def:ad #add_into(_, ad) ]? [dict_def:dd #add_into(_, dd) | list_def:ld #add_into(_, ld)]?
+]
+
+attrs_def = [
+    attr_def:ad #add_into(_, ad) [',' attr_def:ad #add_into(_, ad) ]*
+    '...'?
+]
+
+attr_def = [
+    @ignore('null') ['.' id:n] '=' node_seq:ns #new_MatchAttr(_, n, ns)
+]
+
+dict_def = [
+    '{' __scope__:ls
+        kv_pair:kp #add_into(ls, kp) [',' kv_pair:kp #add_into(ls, kp) ]*
+        #new_MatchDict(_, ls)
+    '}'
+]
+
+kv_pair = [
+    [val_scalar | '*']:v ':' node_seq:ns #new_MatchKey(_, v, ns)
+]
+
+list_def = [
+    '[' __scope__:ls
+        idx_pair:ip #add_into(ls, ip) [',' idx_pair:ip #add_into(ls, ip) ]* 
+        #new_MatchList(_, ls)
+    ']'
+]
+
+idx_pair = [
+    [num | '*']:n ':' node_seq:ns #new_MatchIndice(_, n, ns)
+]
+
+float = [ @ignore("null") [[int frac? | frac] exp?] ]
+
+int = [ '-'?
+    [
+        digit1_9s
+        | digit
+    ]
+]
+
+frac = [ '.' digits ]
+
+exp = [ e digits ]
+
+digit = [ '0'..'9' ]
+
+digit1_9 = [ '1'..'9' ]
+
+digits = [ digit+ ]
+
+digit1_9s = [ digit1_9 digits ]
+
+e = [ ['e'|'E'] ['+'|'-']? ]
