@@ -4,7 +4,7 @@ This module provide the Pyrser Selector Language
 import os
 from pyrser import grammar
 from pyrser import meta
-from pyrser.psl.match import *
+from pyrser.ast.match import *
 from pyrser.parsing import unquote_string
 
 # PARSING
@@ -72,12 +72,26 @@ def is_str(self, ast, s):
     return True
 
 @meta.hook(PSL)
-def new_MatchType(self, ast, n, nd):
+def new_MatchType(self, ast, n, nd, idef, strict):
     tname = self.value(n)
     if tname not in self.psl_types:
         raise TypeError("PSL Type '%s' is not defined! Use set_psl_types() before parse() an PSL Expression" % tname)
     t = self.psl_types[tname]
-    ast.node = MatchType(t, nd.node)
+    is_strict = True
+    if len(self.value(strict)) > 1:
+        is_strict = False
+    ast.node = MatchType(t, nd.node, idef, is_strict)
+    return True
+
+@meta.hook(PSL)
+def add_def_into(self, ast, it, strict):
+    if not hasattr(ast, 'node'):
+        ast.node = []
+    is_strict = True
+    if len(self.value(strict)) > 1:
+        is_strict = False
+    it.node.strict = is_strict
+    ast.node.append(it.node)
     return True
 
 @meta.hook(PSL)

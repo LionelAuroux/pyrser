@@ -447,7 +447,6 @@ def normalize(ast: Node) -> Node:
     res = ast
     typemap = {DictNode, ListNode, TupleNode, SetNode}
     if type(ast) is dict:
-        print(">dict")
         res = DictNode(ast)
     elif type(ast) is list:
         res = ListNode(ast)
@@ -458,11 +457,9 @@ def normalize(ast: Node) -> Node:
     # in-depth change
     if hasattr(res, 'items'):
         for k, v in res.items():
-            print("%s" % k)
             res[k] = normalize(v)
     elif hasattr(res, '__iter__') and type(res) is not str:
         for idx, v in enumerate(res):
-            print("%d" % idx)
             res[idx] = normalize(v)
     if type(res) not in typemap and hasattr(res, '__dict__'):
         subattr = vars(res)

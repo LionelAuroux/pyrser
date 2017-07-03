@@ -6,10 +6,10 @@ import pdb
 from pyrser.parsing.node import *
 from pyrser.passes.to_yml import *
 
-from pyrser.psl.state import *
-from pyrser.psl.walk import *
-from pyrser.psl.match import *
-from pyrser.psl.psl import *
+from pyrser.ast.state import *
+from pyrser.ast.walk import *
+from pyrser.ast.match import *
+from pyrser.ast.psl import *
 
 # prepare path
 import os
@@ -222,26 +222,41 @@ class InternalAst_Test(unittest.TestCase):
         self.assertEqual(id(ls.get(sz).next), id(None), "Bad construction of ls")
 
 
-    def test_1_walk(self):
+    def test_1_normalize(self):
         tree = {'a': 12, 'b':[2, 3, 5, 'tata'], 'c':'toto'}
         tree = normalize(tree)
-        print(list(walk(tree)))
+        self.assertIs(type(tree), DictNode, "Bad normalization of Dict")
+        self.assertIs(type(tree['b']), ListNode, "Bad normalization of Dict")
+        match(tree)
 
     def test_2_match_classes(self):
-        m = MatchList([MatchIndice(1, MatchValue(12)), MatchIndice(3, MatchValue('toto')), MatchIndice(5, MatchValue(13))])
-        r = "[1: 12, 3: 'toto', 5: 13]"
+        # []
+        m = MatchList([MatchIndice(1, MatchValue(12)), MatchIndice(3, MatchValue('toto')), MatchIndice(5, MatchValue(13))], strict=False)
+        r = "[1: 12, 3: 'toto', 5: 13, ...]"
         self.assertEqual(str(m), r, "Can't format MatchList")
-        m = MatchDict([MatchKey('a', MatchValue(12)), MatchKey('b', MatchValue('toto')), MatchKey('c', MatchValue(13))])
-        r = "{'a': 12, 'b': 'toto', 'c': 13}"
+        # {}
+        m = MatchDict([MatchKey('a', MatchValue(12)), MatchKey('b', MatchValue('toto')), MatchKey('c', MatchValue(13))], strict=False)
+        r = "{'a': 12, 'b': 'toto', 'c': 13, ...}"
         self.assertEqual(str(m), r, "Can't format MatchDict")
+        # type base
         m = MatchType(A, [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False)
         r = "A(.a='toto', .b=12, .c='lolo', ...)"
         self.assertEqual(str(m), r, "Can't format MatchType")
+        # type list
+        m = MatchType(A, subs=MatchList([MatchIndice(1, MatchValue(12)), MatchIndice(3, MatchValue('toto')), MatchIndice(5, MatchValue(13))], strict=False), strict=False)
+        r = "A([1: 12, 3: 'toto', 5: 13, ...] ...)"
+        self.assertEqual(str(m), r, "Can't format MatchType")
+        # type dict
+        m = MatchType(A, subs=MatchDict([MatchKey('a', MatchValue(12)), MatchKey('b', MatchValue('toto')), MatchKey('c', MatchValue(13))], strict=False), strict=False)
+        r = "A({'a': 12, 'b': 'toto', 'c': 13, ...} ...)"
+        self.assertEqual(str(m), r, "Can't format MatchType")
+        # -> hook
         def hook():
             pass
         m = MatchHook(hook, MatchType(A, [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
         r = "A(.a='toto', .b=12, .c='lolo', ...) -> #hook;"
         self.assertEqual(str(m), r, "Can't format MatchHook")
+        # BLOCK
         m = MatchBlock([MatchHook(hook, MatchType(A, [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))])
         r = "{\n    A(.a='toto', .b=12, .c='lolo', ...) -> #hook;\n}"
         self.assertEqual(str(m), r, "Can't format MatchBlock")
@@ -252,17 +267,20 @@ class InternalAst_Test(unittest.TestCase):
         def hook2():
             pass
         m = MatchBlock([
-            MatchHook(hook1, MatchType(A, [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False)),
-            MatchHook(hook2, MatchType(A, [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('d', MatchValue('lolo'))], strict=False)),
+            MatchHook(hook1, MatchType(A, [MatchAttr('a', MatchValue('toto')),
+                                            MatchAttr('b', MatchValue(12)),
+                                            MatchAttr('c', MatchValue('lolo'))], strict=False)),
+            MatchHook(hook2, MatchType(A, [MatchAttr('a', MatchValue('toto')),
+                                            MatchAttr('b', MatchValue(12)),
+                                            MatchAttr('d', MatchValue('lolo'))], strict=False)),
             ])
         tree = []
         m.get_match_tree(tree)
-        print(to_yml(tree))
-        self.assertEqual(len(tree), 5, "Bad tree construction")
-        self.assertEqual(tree[6][0][1], 'A', "Bad tree construction")
-        self.assertEqual(len(tree[5]), 2, "Bad tree construction")
-        self.assertEqual(len(tree[6]), 1, "Bad tree construction")
-        self.assertEqual(len(tree[7]), 2, "Bad tree construction")
+        self.assertEqual(len(tree), 4, "Bad tree construction")
+        self.assertEqual(tree[1][0][1], 'A', "Bad tree construction")
+        self.assertEqual(len(tree[2]), 2, "Bad tree construction")
+        self.assertEqual(len(tree[3]), 2, "Bad tree construction")
+        self.assertEqual(len(tree[0]), 2, "Bad tree construction")
 
     def test_4_psl_syntax(self):
         class A:
@@ -276,7 +294,7 @@ class InternalAst_Test(unittest.TestCase):
         p.set_psl_types({'A': A})
         res = p.parse("""
             {
-                A(.a='toto', .b=12, .c='lolo') -> #hook1;
+                A(.a='toto', .c='lolo', .b=12) -> #hook1;
             }
         """)
         self.assertEqual(type(res.node), MatchBlock, "Bad parsing of PSL expression")

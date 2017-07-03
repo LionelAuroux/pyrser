@@ -57,16 +57,26 @@ val_node = [
 ]
 
 type_node = [
-    id:n '^'? '(' node_def:nd ')' #new_MatchType(_, n, nd)
+    id:n '^'?
+    __scope__:idef
+    '('
+        [
+            '{' dict_def:dd [',' '...']?:strict #add_def_into(idef, dd, strict) '}'
+            |'[' list_def:id [',' '...']?:strict #add_def_into(idef, ld, strict) ']'
+        ]?
+        node_def:nd
+        [',' '...']?:strict
+    ')'
+    #new_MatchType(_, n, nd, idef, strict)
 ]
 
 node_def = [
-    [attrs_def:ad #add_into(_, ad) ]? [dict_def:dd #add_into(_, dd) | list_def:ld #add_into(_, ld)]?
+    [ attrs_def:ad  #add_into(_, ad)
+    ]*
 ]
 
 attrs_def = [
     attr_def:ad #add_into(_, ad) [',' attr_def:ad #add_into(_, ad) ]*
-    '...'?
 ]
 
 attr_def = [
@@ -74,10 +84,9 @@ attr_def = [
 ]
 
 dict_def = [
-    '{' __scope__:ls
-        kv_pair:kp #add_into(ls, kp) [',' kv_pair:kp #add_into(ls, kp) ]*
-        #new_MatchDict(_, ls)
-    '}'
+    __scope__:ls
+    kv_pair:kp #add_into(ls, kp) [',' kv_pair:kp #add_into(ls, kp) ]*
+    #new_MatchDict(_, ls)
 ]
 
 kv_pair = [
@@ -85,10 +94,9 @@ kv_pair = [
 ]
 
 list_def = [
-    '[' __scope__:ls
-        idx_pair:ip #add_into(ls, ip) [',' idx_pair:ip #add_into(ls, ip) ]* 
-        #new_MatchList(_, ls)
-    ']'
+    __scope__:ls
+    idx_pair:ip #add_into(ls, ip) [',' idx_pair:ip #add_into(ls, ip) ]* 
+    #new_MatchList(_, ls)
 ]
 
 idx_pair = [
