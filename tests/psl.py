@@ -227,7 +227,6 @@ class InternalAst_Test(unittest.TestCase):
         tree = normalize(tree)
         self.assertIs(type(tree), DictNode, "Bad normalization of Dict")
         self.assertIs(type(tree['b']), ListNode, "Bad normalization of Dict")
-        match(tree)
 
     def test_2_match_classes(self):
         # []
@@ -274,13 +273,8 @@ class InternalAst_Test(unittest.TestCase):
                                             MatchAttr('b', MatchValue(12)),
                                             MatchAttr('d', MatchValue('lolo'))], strict=False)),
             ])
-        tree = []
-        m.get_match_tree(tree)
-        self.assertEqual(len(tree), 4, "Bad tree construction")
-        self.assertEqual(tree[1][0][1], 'A', "Bad tree construction")
-        self.assertEqual(len(tree[2]), 2, "Bad tree construction")
-        self.assertEqual(len(tree[3]), 2, "Bad tree construction")
-        self.assertEqual(len(tree[0]), 2, "Bad tree construction")
+        tree = m.get_match_tree()
+        print(to_yml(tree))
 
     def test_4_psl_syntax(self):
         class A:
@@ -304,6 +298,24 @@ class InternalAst_Test(unittest.TestCase):
         self.assertEqual(res.node.stmts[0].v.attrs[0].name, 'a', "Bad parsing of PSL expression")
         self.assertEqual(type(res.node.stmts[0].v.attrs[0].v), MatchValue, "Bad parsing of PSL expression")
         self.assertEqual(res.node.stmts[0].v.attrs[0].v.v, 'toto', "Bad parsing of PSL expression")
-        tree = []
-        res.node.get_match_tree(tree)
+        tree = res.node.get_match_tree()
         print(to_yml(tree))
+
+    def test_5_psl_stack(self):
+        class A:
+            pass
+        t = A()
+        t.a = 12
+        ls = get_events_list(t)
+        for it in ls:
+            print(it)
+        event = [
+            EventBeginNode(42, None),
+            EventBeginAttrs(42, None),
+            EventAttr('a', None),
+            EventEndAttrs(42, None),
+        ]
+        stack = [
+            [('begin_node', 1), ('value', 12), ('type', 'int'), ('end_node', 1), ('attr', 'a'), ('set_event', 0)],
+            [('begin_node', 1), ('check_attr_len', 1), ('check_clean_event', [0]), ('type', 'A'), ('end_node', 1)],
+        ]

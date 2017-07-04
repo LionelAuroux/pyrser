@@ -11,7 +11,7 @@ def walk(self):
     Work only on normalized tree
     """
     not_normalized = {set, list, dict, tuple}
-    not_value = {node.SetNode, node.ListNode, node.DictNode, node.TupleNode}
+    match_value = {int, float, str, bytes}
 
     if type(self) in not_normalized:
         raise TypeError("Not a normalized tree! User node.normalize() function!")
@@ -34,9 +34,9 @@ def walk(self):
             yield from walk(self[idx])
             yield EventIndice(idx, item)
         yield EventEndIndices(id(self), self)
-    yield EventType(type(self), self)
-    if type(self) not in not_value:
+    if type(self) in match_value:
         yield EventValue(self, self)
+    yield EventType(type(self), self)
     yield EventEndNode(id(self), self)
 
 class Event:

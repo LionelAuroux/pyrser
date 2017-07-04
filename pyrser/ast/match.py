@@ -21,11 +21,24 @@ def match(tree) -> bool:
         return res
     return False
 
+def get_events_list(tree) -> []:
+    from pyrser.ast.walk import walk
+
+    res = []
+    try:
+        g = walk(tree)
+        while True:
+            ev = g.send(None)
+            res.append(ev)
+    except StopIteration as e:
+        return res
+    return None
+
 class MatchExpr:
     """
     Ast Node for all match expression.
     """
-    def get_match_tree(self, tree, idx, uid) -> []:
+    def get_match_tree(self, uid=0):
         raise TypeError("Not implemented")
 
     def ref_me(self, attr: str):
@@ -81,22 +94,11 @@ class MatchIndice(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_match_tree(self, tree, idx, uid) -> []:
-        lastidx = 0
-        if self.v is not None:
-            lastidx = self.v.get_match_tree(tree, idx, uid)
-        idx = lastidx + 1
-        sz = len(tree)
-        t = ('indice', self.idx, uid)
-        if idx >= sz:
-            tree.append(t)
-            return idx
-        elif type(tree[idx]) is not list:
-            # add alternatives
-            tree[idx] = [tree[idx]]
-        if t not in tree[idx]:
-            tree[idx].append(t)
-        return idx
+    def get_match_tree(self, uid):
+        tree = self.v.get_match_tree(uid)
+        t = ('indice', self.idx)
+        tree[-1].append(t)
+        return tree
 
 class MatchList(MatchExpr):
     """
@@ -123,22 +125,24 @@ class MatchList(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_match_tree(self, tree, idx, uid) -> []:
-        lastidx = idx
+    def get_match_tree(self, uid):
+        tree = []
+        list_ev = []
         for item in self.ls:
-            lastidx = item.get_match_tree(tree, lastidx, uid)
-        idx = lastidx + 1
-        sz = len(tree)
-        t = ('list', None, uid)
-        if idx >= sz:
-            tree.append(t)
-            return idx
-        elif type(tree[idx]) is not list:
-            # add alternatives
-            tree[idx] = [tree[idx]]
-        if t not in tree[idx]:
-            tree[idx].append(t)
-        return idx
+            subtree = item.get_match_tree(id(self))
+            unkev = self.create_unknown_event()
+            subtree[-1].append(('set_event', unkev, id(self)))
+            tree += subtree
+            list_ev.append(unkev)
+        # final checks
+        tree.append([])
+        t = ('begin_indices', id(self))
+        tree[-1].append(t)
+        t = ('check_clean_event', list_ev)
+        tree[-1].append(t)
+        t = ('end_indices', id(self))
+        tree[-1].append(t)
+        return tree
 
 class MatchKey(MatchExpr):
     """
@@ -164,21 +168,11 @@ class MatchKey(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_match_tree(self, tree, idx, uid) -> []:
-        if self.v is not None:
-            idx = self.v.get_match_tree(tree, idx, uid)
-        idx += 1
-        sz = len(tree)
-        t = ('key', self.key, uid)
-        if idx >= sz:
-            tree.append(t)
-            return idx
-        elif type(tree[idx]) is not list:
-            # add alternatives
-            tree[idx] = [tree[idx]]
-        if t not in tree[idx]:
-            tree[idx].append(t)
-        return idx
+    def get_match_tree(self, uid):
+        tree = self.v.get_match_tree(uid)
+        t = ('key', self.key)
+        tree[-1].append(t)
+        return tree
 
 class MatchDict(MatchExpr):
     """
@@ -205,22 +199,24 @@ class MatchDict(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_match_tree(self, tree, idx, uid) -> []:
-        lastidx = idx
+    def get_match_tree(self, uid):
+        tree = []
+        list_ev = []
         for item in self.d:
-            lastidx = item.get_match_tree(tree, lastidx, uid)
-        idx = lastidx + 1
-        sz = len(tree)
-        t = ('dict', None, uid)
-        if idx >= sz:
-            tree.append(t)
-            return idx
-        elif type(tree[idx]) is not list:
-            # add alternatives
-            tree[idx] = [tree[idx]]
-        if t not in tree[idx]:
-            tree[idx].append(t)
-        return idx
+            subtree = item.get_match_tree(id(self))
+            unkev = self.create_unknown_event()
+            subtree[-1].append(('set_event', unkev, id(self)))
+            tree += subtree
+            list_ev.append(unkev)
+        # final checks
+        tree.append([])
+        t = ('begin_keys', id(self))
+        tree[-1].append(t)
+        t = ('check_clean_event', list_ev)
+        tree[-1].append(t)
+        t = ('end_keys', id(self))
+        tree[-1].append(t)
+        return tree
 
 class MatchAttr(MatchExpr):
     """
@@ -230,6 +226,8 @@ class MatchAttr(MatchExpr):
         self.name = name
         if v is None:
             v = MatchValue()
+        if type(v) in {int, str, float, bytes}:
+            raise "Not literal"
         self.v = v
         self.ref_me('v')
 
@@ -250,23 +248,11 @@ class MatchAttr(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_match_tree(self, tree, idx, uid) -> []:
-        #subtree = []
-        if self.v is not None:
-            idx = self.v.get_match_tree(tree, -1, (id(self), uid))
-        idx += 1
-        sz = len(tree)
-        t = ('attr', self.name, (id(self), uid))
-        if idx >= sz:
-            tree.append(t)
-            return idx
-        elif type(tree[idx]) is not list:
-            # add alternatives
-            tree[idx] = [tree[idx]]
-        if t not in tree[idx]:
-            tree[idx].append(t)
-        return idx
-
+    def get_match_tree(self, uid):
+        tree = self.v.get_match_tree(uid)
+        t = ('attr', self.name)
+        tree[-1].append(t)
+        return tree
 
 class MatchValue(MatchExpr):
     """
@@ -290,19 +276,17 @@ class MatchValue(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_match_tree(self, tree, idx, uid) -> []:
-        idx += 1
-        sz = len(tree)
-        t = ('value', self.v, uid)
-        if idx >= sz:
-            tree.append(t)
-            return idx
-        elif type(tree[idx]) is not list:
-            # add alternatives
-            tree[idx] = [tree[idx]]
-        if t not in tree[idx]:
-            tree[idx].append(t)
-        return idx
+    def get_match_tree(self, uid):
+        tree = [[]]
+        t = ('begin_node', uid)
+        tree[-1].append(t)
+        t = ('value', self.v)
+        tree[-1].append(t)
+        t = ('type', type(self.v).__name__)
+        tree[-1].append(t)
+        t = ('end_node', uid)
+        tree[-1].append(t)
+        return tree
 
 class MatchType(MatchExpr):
     """
@@ -363,40 +347,36 @@ class MatchType(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_match_tree(self, tree, idx, uid) -> []:
-        subtree = []
+    def get_match_tree(self, uid):
+        tree = []
+        list_ev = []
         # TODO: self.subs
-        # ...
+        if self.subs is not None:
+            print("SUBS %s" % type(self.subs))
+            tree = self.subs.get_match_tree(id(self))
+            unkev = self.create_unknown_event()
+            tree[-1].append(('set_event', unkev, id(self)))
+            list_ev.append(unkev)
         # TODO: first elem of subtree
         for item in self.attrs:
-            lastidx = item.get_match_tree(subtree, -1, id(self))
+            subtree = item.get_match_tree(id(self))
             unkev = self.create_unknown_event()
-            subtree.insert(lastidx + 1, ('event', '_%d' % unkev, id(item)))
+            subtree[-1].append(('set_event', unkev, id(self)))
+            tree += subtree
+            list_ev.append(unkev)
+        # final checks
+        tree.append([])
+        t = ('begin_node', id(self))
+        tree[-1].append(t)
         if self.strict:
-            subtree.append(('check_attr_len', len(self.attrs), (id(self), uid)))
-            idx += 1
-        idx += 1
-        sz = len(tree)
-        t = ('attr_non_strict', subtree, (id(self), uid))
-        if idx >= sz:
-            tree.append(t)
-        elif type(tree[idx]) is not list:
-            tree[idx] = [tree[idx]]
-        if idx < sz and t not in tree[idx]:
-            tree[idx].append(t)
-        lastidx = idx
-        idx = lastidx + 1
-        sz = len(tree)
-        t = ('type', self.t.__name__, uid)
-        if idx >= sz:
-            tree.append(t)
-            return idx
-        elif type(tree[idx]) is not list:
-            # add alternatives
-            tree[idx] = [tree[idx]]
-        if t not in tree[idx]:
-            tree[idx].append(t)
-        return idx
+            tree[-1].append(('check_attr_len', len(self.attrs)))
+        t = ('check_clean_event', list_ev)
+        tree[-1].append(t)
+        t = ('type', self.t.__name__)
+        tree[-1].append(t)
+        t = ('end_node', id(self))
+        tree[-1].append(t)
+        return tree
 
 #class MatchPrecond(MatchExpr):
 #    """
@@ -456,21 +436,11 @@ class MatchEvent(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_match_tree(self, tree, idx, uid = 0) -> []:
-        idx = self.v.get_match_tree(tree, idx, id(self))
-        idx += 1
-        sz = len(tree)
-        t = ('event', self.n, id(self))
-        if idx >= sz:
-            tree.append(t)
-            return idx
-        elif type(tree[idx]) is not list:
-            # add alternatives
-            tree[idx] = [tree[idx]]
-        if t not in tree[idx]:
-            tree[idx].append(t)
-        return idx
-
+    #def get_match_tree(self, tree):
+    #    print("%s" % tree)
+    #    self.v.get_match_tree(tree)
+    #    t = ('event', self.n, id(self))
+    #    tree.append(t)
 
 class MatchHook(MatchExpr):
     """
@@ -494,20 +464,11 @@ class MatchHook(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_match_tree(self, tree, idx, uid = 0) -> []:
-        idx = self.v.get_match_tree(tree, idx, id(self))
-        idx += 1
-        sz = len(tree)
-        t = ('hook', self.n, id(self))
-        if idx >= sz:
-            tree.append(t)
-            return idx
-        elif type(tree[idx]) is not list:
-            # add alternatives
-            tree[idx] = [tree[idx]]
-        if t not in tree[idx]:
-            tree[idx].append(t)
-        return idx
+    def get_match_tree(self, uid):
+        tree = self.v.get_match_tree(uid)
+        t = ('hook', self.n)
+        tree[-1].append(t)
+        return tree
 
 class MatchBlock(MatchExpr):
     """ Ast Node for a block of PSL statement. """
@@ -526,10 +487,8 @@ class MatchBlock(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_match_tree(self, tree, idx = -1, uid = 0) -> []:
-        lastidx = 0
-        for item in self.stmts:
-            lastidx = item.get_match_tree(tree, idx, uid)
-        idx = lastidx + 1
-        tree.append(('block', None))
-        return idx
+    def get_match_tree(self, uid=0):
+        tree = []
+        for s in self.stmts:
+            tree += s.get_match_tree(uid)
+        return tree

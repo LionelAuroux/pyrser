@@ -80,7 +80,10 @@ def new_MatchType(self, ast, n, nd, idef, strict):
     is_strict = True
     if len(self.value(strict)) > 1:
         is_strict = False
-    ast.node = MatchType(t, nd.node, idef, is_strict)
+    defsub = None
+    if type(idef) in {MatchDict, MatchList}:
+        defsub = idef
+    ast.node = MatchType(t, nd.node, defsub, is_strict)
     return True
 
 @meta.hook(PSL)
