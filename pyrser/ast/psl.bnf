@@ -35,6 +35,9 @@ node_seq = [
     [type_node:>_
     | val_node:>_
     ]
+    ['/' id:i
+        #new_MatchCapture(_, i)
+    ]?
     precond?
 ]
 

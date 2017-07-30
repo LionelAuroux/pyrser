@@ -10,19 +10,6 @@ from pyrser.parsing import unquote_string
 # PARSING
 PSL = grammar.from_file(os.path.dirname(__file__) + "/psl.bnf", 'psl') 
 
-# PSL FUNCTIONS
-@meta.add_method(PSL)
-def set_psl_hooks(self, map_str_fun):
-    if not hasattr(self, 'psl_hooks'):
-        self.psl_hooks = {}
-    self.psl_hooks.update(map_str_fun)
-
-@meta.add_method(PSL)
-def set_psl_types(self, map_str_type):
-    if not hasattr(self, 'psl_types'):
-        self.psl_types = {}
-    self.psl_types.update(map_str_type)
-
 # hooks
 
 @meta.hook(PSL)
@@ -39,10 +26,12 @@ def new_MatchHook(self, blck, s):
 
 @meta.hook(PSL)
 def new_Action(self, ast, a, ns):
-    if a.node not in self.psl_hooks:
-        raise TypeError("PSL Hook '%s' is not defined! Use set_psl_hooks() before parse() an PSL Expression" % a.node)
-    fun = self.psl_hooks[a.node]
-    ast.node = MatchHook(fun, ns.node)
+    ast.node = MatchHook(a.node, ns.node)
+    return True
+
+@meta.hook(PSL)
+def new_MatchCapture(self, ast, i):
+    ast.node = MatchCapture(self.value(i), ast.node)
     return True
 
 @meta.hook(PSL)
@@ -74,16 +63,13 @@ def is_str(self, ast, s):
 @meta.hook(PSL)
 def new_MatchType(self, ast, n, nd, idef, strict):
     tname = self.value(n)
-    if tname not in self.psl_types:
-        raise TypeError("PSL Type '%s' is not defined! Use set_psl_types() before parse() an PSL Expression" % tname)
-    t = self.psl_types[tname]
     is_strict = True
     if len(self.value(strict)) > 1:
         is_strict = False
     defsub = None
     if type(idef) in {MatchDict, MatchList}:
         defsub = idef
-    ast.node = MatchType(t, nd.node, defsub, is_strict)
+    ast.node = MatchType(tname, nd.node, defsub, is_strict)
     return True
 
 @meta.hook(PSL)

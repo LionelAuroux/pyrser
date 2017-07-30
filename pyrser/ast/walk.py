@@ -15,63 +15,80 @@ def walk(self):
 
     if type(self) in not_normalized:
         raise TypeError("Not a normalized tree! User node.normalize() function!")
-    yield EventBeginNode(id(self), self)
     if hasattr(self, '__dict__') and not isinstance(self, node.ListNode):
-        yield EventBeginAttrs(id(self), self)
         for k in sorted(vars(self).keys()):
             yield from walk(getattr(self, k))
             yield EventAttr(k, getattr(self, k))
         yield EventEndAttrs(id(self), self)
     if hasattr(self, 'keys'):
-        yield EventBeginKeys(id(self), self)
         for k in sorted(self.keys()):
             yield from walk(self[k])
             yield EventKey(k, self[k])
         yield EventEndKeys(id(self), self)
     elif not isinstance(self, str) and hasattr(self, '__iter__'):
-        yield EventBeginIndices(id(self), self)
         for idx, item in enumerate(self):
             yield from walk(self[idx])
             yield EventIndice(idx, item)
         yield EventEndIndices(id(self), self)
     if type(self) in match_value:
         yield EventValue(self, self)
-    yield EventType(type(self), self)
+    yield EventType(type(self).__name__, self)
     yield EventEndNode(id(self), self)
 
 class Event:
     def __init__(self, attr, ref):
         self.attr = attr
-        self.ref = ref
+        self.node = ref
 
     def __repr__(self) -> str:
-        return "%s(%r, %r)" % (type(self).__name__, self.attr, self.ref)
+        return "%s(%r, %r)" % (type(self).__name__, self.attr, self.node)
 
-class EventBeginNode(Event):
-    pass
+    def check_event(self, action) -> bool:
+        return False
+
 class EventType(Event):
-    pass
+    def check_event(self, action) -> bool:
+        if action[0] == 'type':
+            if action[1] == self.attr:
+                print("ok type")
+                return True
+        return False
+
 class EventValue(Event):
-    pass
+    def check_event(self, action) -> bool:
+        if action[0] == 'value':
+            if action[1] == self.attr:
+                print("ok value")
+                return True
+        return False
+
 class EventEndNode(Event):
-    pass
+    def check_event(self, action) -> bool:
+        if action[0] == 'end_node':
+            print("ok end_node")
+            return True
+        return False
 
-class EventBeginAttrs(Event):
-    pass
 class EventAttr(Event):
-    pass
-class EventEndAttrs(Event):
-    pass
+    def check_event(self, action) -> bool:
+        if action[0] == 'attr':
+            if action[1] == self.attr:
+                print("ok attr")
+                return True
+        return False
 
-class EventBeginKeys(Event):
-    pass
+class EventEndAttrs(Event):
+    def check_event(self, action) -> bool:
+        if action[0] == 'end_attrs':
+            print("ok end_attrs")
+            return True
+        return False
+
 class EventKey(Event):
     pass
 class EventEndKeys(Event):
     pass
 
-class EventBeginIndices(Event):
-    pass
 class EventIndice(Event):
     pass
 class EventEndIndices(Event):

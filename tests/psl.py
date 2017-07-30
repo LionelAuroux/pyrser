@@ -6,9 +6,9 @@ import pdb
 from pyrser.parsing.node import *
 from pyrser.passes.to_yml import *
 
-from pyrser.ast.state import *
 from pyrser.ast.walk import *
 from pyrser.ast.match import *
+from pyrser.ast.stack_action import *
 from pyrser.ast.psl import *
 
 # prepare path
@@ -238,26 +238,26 @@ class InternalAst_Test(unittest.TestCase):
         r = "{'a': 12, 'b': 'toto', 'c': 13, ...}"
         self.assertEqual(str(m), r, "Can't format MatchDict")
         # type base
-        m = MatchType(A, [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False)
+        m = MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False)
         r = "A(.a='toto', .b=12, .c='lolo', ...)"
         self.assertEqual(str(m), r, "Can't format MatchType")
         # type list
-        m = MatchType(A, subs=MatchList([MatchIndice(1, MatchValue(12)), MatchIndice(3, MatchValue('toto')), MatchIndice(5, MatchValue(13))], strict=False), strict=False)
+        m = MatchType('A', subs=MatchList([MatchIndice(1, MatchValue(12)), MatchIndice(3, MatchValue('toto')), MatchIndice(5, MatchValue(13))], strict=False), strict=False)
         r = "A([1: 12, 3: 'toto', 5: 13, ...] ...)"
         self.assertEqual(str(m), r, "Can't format MatchType")
         # type dict
-        m = MatchType(A, subs=MatchDict([MatchKey('a', MatchValue(12)), MatchKey('b', MatchValue('toto')), MatchKey('c', MatchValue(13))], strict=False), strict=False)
+        m = MatchType('A', subs=MatchDict([MatchKey('a', MatchValue(12)), MatchKey('b', MatchValue('toto')), MatchKey('c', MatchValue(13))], strict=False), strict=False)
         r = "A({'a': 12, 'b': 'toto', 'c': 13, ...} ...)"
         self.assertEqual(str(m), r, "Can't format MatchType")
         # -> hook
         def hook():
             pass
-        m = MatchHook(hook, MatchType(A, [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
+        m = MatchHook('hook', MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
         r = "A(.a='toto', .b=12, .c='lolo', ...) -> #hook;"
         self.assertEqual(str(m), r, "Can't format MatchHook")
         # BLOCK
-        m = MatchBlock([MatchHook(hook, MatchType(A, [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))])
-        r = "{\n    A(.a='toto', .b=12, .c='lolo', ...) -> #hook;\n}"
+        m = MatchBlock([MatchHook('hook', MatchCapture('y', MatchType('A', [MatchAttr('a', MatchCapture('x', MatchValue('toto'))), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False)))])
+        r = "{\n    A(.a='toto'/x, .b=12, .c='lolo', ...)/y -> #hook;\n}"
         self.assertEqual(str(m), r, "Can't format MatchBlock")
 
     def test_3_match_tree_event(self):
@@ -273,7 +273,7 @@ class InternalAst_Test(unittest.TestCase):
                                             MatchAttr('b', MatchValue(12)),
                                             MatchAttr('d', MatchValue('lolo'))], strict=False)),
             ])
-        tree = m.get_match_tree()
+        tree = m.get_stack_action()
         print(to_yml(tree))
 
     def test_4_psl_syntax(self):
@@ -284,38 +284,111 @@ class InternalAst_Test(unittest.TestCase):
         def hook2():
             pass
         p = PSL()
-        p.set_psl_hooks({'hook1': hook1, 'hook2': hook2})
-        p.set_psl_types({'A': A})
         res = p.parse("""
             {
-                A(.a='toto', .c='lolo', .b=12) -> #hook1;
+                A(.a='toto'/x, .c='lolo', .b=12)/y -> #hook1;
             }
         """)
         self.assertEqual(type(res.node), MatchBlock, "Bad parsing of PSL expression")
         self.assertEqual(type(res.node.stmts[0]), MatchHook, "Bad parsing of PSL expression")
-        self.assertEqual(type(res.node.stmts[0].v), MatchType, "Bad parsing of PSL expression")
-        self.assertEqual(type(res.node.stmts[0].v.attrs[0]), MatchAttr, "Bad parsing of PSL expression")
-        self.assertEqual(res.node.stmts[0].v.attrs[0].name, 'a', "Bad parsing of PSL expression")
-        self.assertEqual(type(res.node.stmts[0].v.attrs[0].v), MatchValue, "Bad parsing of PSL expression")
-        self.assertEqual(res.node.stmts[0].v.attrs[0].v.v, 'toto', "Bad parsing of PSL expression")
-        tree = res.node.get_match_tree()
+        self.assertEqual(type(res.node.stmts[0].v), MatchCapture, "Bad parsing of PSL expression")
+        self.assertEqual(type(res.node.stmts[0].v.v.attrs[0]), MatchAttr, "Bad parsing of PSL expression")
+        self.assertEqual(res.node.stmts[0].v.v.attrs[0].name, 'a', "Bad parsing of PSL expression")
+        self.assertEqual(type(res.node.stmts[0].v.v.attrs[0].v.v), MatchValue, "Bad parsing of PSL expression")
+        self.assertEqual(res.node.stmts[0].v.v.attrs[0].v.v.v, 'toto', "Bad parsing of PSL expression")
+        tree = res.node.get_stack_action()
         print(to_yml(tree))
 
     def test_5_psl_stack(self):
         class A:
             pass
+
+        def hook1(capture, user_data):
+            user_data.nbhook += 1
+            user_data.assertIn('a', capture, "Not captured")
+            user_data.assertIn('b', capture, "Not captured")
+            a = capture['a']
+            b = capture['b']
+            user_data.assertEqual(b, 12, "Not captured")
+
+        hook_fun = {'hook1': hook1}
+
+        # stack for matching: A(.a=12)
+        stack = [
+        [(1, 1), # block id, stmt id
+            [
+            [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('attr', 'a'), ('set_event', 0)],
+            [
+                ('end_attrs', ),
+                ('check_attr_len', 1),
+                ('check_clean_event', [0]),
+                ('type', 'A'),
+                ('capture', 'a'),
+            ('end_node', ),
+            ('hook', 'hook1')],
+            ]
+        ]
+        ]
+        #
         t = A()
         t.a = 12
+        #
+        self.nbhook = 0
+        dict_stack = {}
+        action_stack_ctx = []
         ls = get_events_list(t)
-        for it in ls:
-            print(it)
-        event = [
-            EventBeginNode(42, None),
-            EventBeginAttrs(42, None),
-            EventAttr('a', None),
-            EventEndAttrs(42, None),
-        ]
+        chk = Checker(hook_fun, self)
+        sz = len(ls)
+        for idx in range(sz):
+            chk.check_event_and_action(idx, ls, stack)
+        self.assertEqual(self.nbhook, 1, "Bad number of hook call")
+        
+        # counter example
+        print("###############")
+        #
+        t = A()
+        t.b = 12
+        #
+        self.nbhook = 0
+        dict_stack = {}
+        action_stack_ctx = []
+        ls = get_events_list(t)
+        chk = Checker(hook_fun, self)
+        sz = len(ls)
+        for idx in range(sz):
+            chk.check_event_and_action(idx, ls, stack)
+        self.assertEqual(self.nbhook, 0, "Bad number of hook call")
+
+        # stack for matching: A(.a=12, .b='toto')
         stack = [
-            [('begin_node', 1), ('value', 12), ('type', 'int'), ('end_node', 1), ('attr', 'a'), ('set_event', 0)],
-            [('begin_node', 1), ('check_attr_len', 1), ('check_clean_event', [0]), ('type', 'A'), ('end_node', 1)],
+        [(1, 1), # block id, stmt id
+            [
+            [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('attr', 'a'), ('set_event', 0)],
+            [('value', 'toto'), ('check_event', [0]), ('type', 'str'), ('capture', 'c'),
+                ('end_node', ), ('attr', 'b'), ('set_event', 1)],
+            [
+                ('end_attrs', ),
+                ('check_attr_len', 2),
+                ('check_clean_event', [0, 1]),
+                ('type', 'A'),
+                ('capture', 'a'),
+            ('end_node', ),
+            ('hook', 'hook1')],
+            ]
         ]
+        ]
+        print("###############")
+        #
+        t = A()
+        t.a = 12
+        t.b = 'toto'
+        #
+        self.nbhook = 0
+        dict_stack = {}
+        action_stack_ctx = []
+        ls = get_events_list(t)
+        chk = Checker(hook_fun, self)
+        sz = len(ls)
+        for idx in range(sz):
+            chk.check_event_and_action(idx, ls, stack)
+        self.assertEqual(self.nbhook, 1, "Bad number of hook call")
