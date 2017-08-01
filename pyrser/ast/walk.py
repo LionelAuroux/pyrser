@@ -85,11 +85,31 @@ class EventEndAttrs(Event):
         return False
 
 class EventKey(Event):
-    pass
+    def check_event(self, action) -> bool:
+        if action[0] == 'key':
+            if action[1] == self.attr:
+                print("ok key")
+                return True
+        return False
+
 class EventEndKeys(Event):
-    pass
+    def check_event(self, action) -> bool:
+        if action[0] == 'end_keys':
+            print("ok end_keys")
+            return True
+        return False
 
 class EventIndice(Event):
-    pass
+    def check_event(self, action) -> bool:
+        if action[0] == 'indice':
+            if action[1] == self.attr:
+                print("ok indice")
+                return True
+        return False
+
 class EventEndIndices(Event):
-    pass
+    def check_event(self, action) -> bool:
+        if action[0] == 'end_indices':
+            print("ok end_indices")
+            return True
+        return False

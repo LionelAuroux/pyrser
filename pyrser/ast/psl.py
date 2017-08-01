@@ -10,11 +10,19 @@ from pyrser.parsing import unquote_string
 # PARSING
 PSL = grammar.from_file(os.path.dirname(__file__) + "/psl.bnf", 'psl') 
 
+# new methods
+@meta.add_method(PSL)
+def compile(self, txt) -> MatchExpr:
+    res = self.parse(txt)
+    return res.node
+
 # hooks
 
 @meta.hook(PSL)
 def new_MatchBlock(self, ast, blck):
-    ast.node = MatchBlock(blck.node)
+    if not hasattr(ast, 'node'):
+        ast.node = []
+    ast.node.append(MatchBlock(blck.node))
     return True
 
 @meta.hook(PSL)

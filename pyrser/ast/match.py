@@ -10,7 +10,7 @@ class MatchExpr:
     """
     Ast Node for all match expression.
     """
-    def get_stack_action(self, uid=0):
+    def get_stack_action(self) -> list:
         raise TypeError("Not implemented")
 
     def ref_me(self, attr: str):
@@ -66,9 +66,9 @@ class MatchIndice(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_stack_action(self, uid):
-        tree = self.v.get_stack_action(uid)
-        t = ('indice', self.idx)
+    def get_stack_action(self):
+        tree = self.v.get_stack_action()
+        t = ('indice',)
         tree[-1].append(t)
         return tree
 
@@ -97,26 +97,24 @@ class MatchList(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_stack_action(self, uid):
-        myuid = id(self)
-        if uid != 0:
-            myuid = (uid, myuid)
+    def get_stack_action(self):
         tree = []
         list_ev = []
         for item in self.ls:
-            subtree = item.get_stack_action(myuid)
+            subtree = item.get_stack_action()
             unkev = self.create_unknown_event()
-            subtree[-1].append(('set_event', unkev, myuid))
+            subtree[-1].append(('set_event', unkev))
             tree += subtree
             list_ev.append(unkev)
         # final checks
         tree.append([])
-        t = ('begin_indices', myuid)
+        t = ('end_indices',)
         tree[-1].append(t)
         t = ('check_clean_event', list_ev)
         tree[-1].append(t)
-        t = ('end_indices', myuid)
-        tree[-1].append(t)
+        if self.strict:
+            t = ('check_len', len(self.d))
+            tree[-1].append(t)
         return tree
 
 class MatchKey(MatchExpr):
@@ -143,8 +141,8 @@ class MatchKey(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_stack_action(self, uid):
-        tree = self.v.get_stack_action(uid)
+    def get_stack_action(self):
+        tree = self.v.get_stack_action()
         t = ('key', self.key)
         tree[-1].append(t)
         return tree
@@ -174,26 +172,24 @@ class MatchDict(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_stack_action(self, uid):
-        myuid = id(self)
-        if uid != 0:
-            myuid = (uid, myuid)
+    def get_stack_action(self):
         tree = []
         list_ev = []
         for item in self.d:
-            subtree = item.get_stack_action(myuid)
+            subtree = item.get_stack_action()
             unkev = self.create_unknown_event()
-            subtree[-1].append(('set_event', unkev, myuid))
+            subtree[-1].append(('set_event', unkev))
             tree += subtree
             list_ev.append(unkev)
         # final checks
         tree.append([])
-        t = ('begin_keys', myuid)
+        t = ('end_keys',)
         tree[-1].append(t)
         t = ('check_clean_event', list_ev)
         tree[-1].append(t)
-        t = ('end_keys', myuid)
-        tree[-1].append(t)
+        if self.strict:
+            t = ('check_len', len(self.d))
+            tree[-1].append(t)
         return tree
 
 class MatchAttr(MatchExpr):
@@ -226,8 +222,8 @@ class MatchAttr(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_stack_action(self, uid):
-        tree = self.v.get_stack_action(uid)
+    def get_stack_action(self):
+        tree = self.v.get_stack_action()
         t = ('attr', self.name)
         tree[-1].append(t)
         return tree
@@ -254,15 +250,13 @@ class MatchValue(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_stack_action(self, uid):
+    def get_stack_action(self):
         tree = [[]]
-        t = ('begin_node', uid)
-        tree[-1].append(t)
         t = ('value', self.v)
         tree[-1].append(t)
         t = ('type', type(self.v).__name__)
         tree[-1].append(t)
-        t = ('end_node', uid)
+        t = ('end_node',)
         tree[-1].append(t)
         return tree
 
@@ -322,43 +316,38 @@ class MatchType(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_stack_action(self, uid):
-        myuid = id(self)
-        if uid != 0:
-            myuid = (uid, myuid)
+    def get_stack_action(self):
         tree = []
         list_ev = []
-        # TODO: self.subs
+        # subs are Dict or List
         if self.subs is not None:
             print("SUBS %s" % type(self.subs))
-            tree = self.subs.get_stack_action(myuid)
+            tree = self.subs.get_stack_action()
             unkev = self.create_unknown_event()
-            tree[-1].append(('set_event', unkev, myuid))
+            tree[-1].append(('set_event', unkev))
             list_ev.append(unkev)
         # TODO: first elem of subtree
         for idx, item in enumerate(self.attrs):
-            subtree = item.get_stack_action(myuid)
+            subtree = item.get_stack_action()
             unkev = self.create_unknown_event()
             if idx == 0:
                 subtree[-1].insert(0, ('no_event', ))
             else:
                 subtree[-1].insert(0, ('check_event', list_ev.copy()))
-            subtree[-1].append(('set_event', unkev, myuid))
+            subtree[-1].append(('set_event', unkev))
             tree += subtree
             list_ev.append(unkev)
         # final checks
         tree.append([])
-        t = ('wait_end_attrs', myuid)
+        t = ('end_attrs',)
         tree[-1].append(t)
-        t = ('end_attrs', myuid)
+        t = ('check_clean_event', list_ev)
         tree[-1].append(t)
         if self.strict:
             tree[-1].append(('check_attr_len', len(self.attrs)))
-        t = ('check_clean_event', list_ev)
-        tree[-1].append(t)
         t = ('type', self.t)
         tree[-1].append(t)
-        t = ('end_node', myuid)
+        t = ('end_node',)
         tree[-1].append(t)
         return tree
 
@@ -381,8 +370,8 @@ class MatchCapture(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_stack_action(self, uid):
-        tree = self.v.get_stack_action(uid)
+    def get_stack_action(self):
+        tree = self.v.get_stack_action()
         if tree[-1][-1][0] != 'end_node':
             raise TypeError("Bad postion of Capture in MatchObject")
         # we add capture before leaving the node
@@ -472,8 +461,8 @@ class MatchHook(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_stack_action(self, uid):
-        tree = self.v.get_stack_action(uid)
+    def get_stack_action(self):
+        tree = self.v.get_stack_action()
         t = ('hook', self.n)
         tree[-1].append(t)
         return tree
@@ -495,8 +484,8 @@ class MatchBlock(MatchExpr):
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    def get_stack_action(self, uid=0):
+    def get_stack_action(self):
         tree = []
-        for s in self.stmts:
-            tree += s.get_stack_action(uid)
+        for idx, s in enumerate(self.stmts):
+            tree += [(1, idx), s.get_stack_action()]
         return tree
