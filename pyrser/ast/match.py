@@ -330,10 +330,10 @@ class MatchType(MatchExpr):
         for idx, item in enumerate(self.attrs):
             subtree = item.get_stack_action()
             unkev = self.create_unknown_event()
-            if idx == 0:
-                subtree[-1].insert(0, ('no_event', ))
-            else:
-                subtree[-1].insert(0, ('check_event', list_ev.copy()))
+            #if idx == 0:
+            #    subtree[-1].insert(1, ('no_event', ))
+            #else:
+            #    subtree[-1].insert(1, ('check_event', list_ev.copy()))
             subtree[-1].append(('set_event', unkev))
             tree += subtree
             list_ev.append(unkev)

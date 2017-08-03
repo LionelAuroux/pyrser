@@ -357,6 +357,7 @@ class InternalAst_Test(unittest.TestCase):
         ls = get_events_list(t)
         chk = Checker(hook_fun, self)
         sz = len(ls)
+        print("CHHHHHHHHH")
         for idx in range(sz):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 0, "Bad number of hook call")
@@ -508,6 +509,7 @@ class InternalAst_Test(unittest.TestCase):
         expr = "{ A(.a=12)/a -> #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
+        print("## MATCH EXPR")
         match(t, psl_comp, {'hook1': test1}, res)
         print("##########\n RES: %s" % repr(res))
         self.assertEqual(len(res), 2, "Can't match: %s" % expr)
