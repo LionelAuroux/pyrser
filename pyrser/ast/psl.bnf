@@ -16,7 +16,7 @@ psl_block = [
 ]
 
 psl_stmt = [
-    node_seq:ns "->" action:a #new_Action(_, a, ns) ';'
+    node_seq:ns "=>" action:a #new_Action(_, a, ns) ';'
 ]
 
 action = [
@@ -33,9 +33,20 @@ hook = [
 
 node_seq = [
     [type_node:>_
+    | '{' dict_def:dd [','? '...']?:strict #def_into(_, dd, strict) '}'
+    | '[' #echo("HERE") list_def:ld [','? '...']?:strict #def_into(_, ld, strict) ']'
+    ]
+    ["->" id:i
+        #new_MatchCapture(_, i)
+    ]?
+    precond?
+]
+
+node_val = [
+    [type_node:>_
     | val_node:>_
     ]
-    ['/' id:i
+    ["->" id:i
         #new_MatchCapture(_, i)
     ]?
     precond?
@@ -50,13 +61,13 @@ val_scalar = [
     | float:f #is_float(_, f)
     | string:s #is_str(_, s)
     | qstring:s #is_str(_, s)
+    | '*'
 ]
 
 val_node = [
     val_scalar:v #new_MatchValue(_, v)
-    | dict_def:>_
-    | list_def:>_
-    | '*'
+    | '{' dict_def:dd [','? '...']?:strict #def_into(_, dd, strict) '}'
+    | '[' list_def:ld [','? '...']?:strict #def_into(_, ld, strict) ']'
 ]
 
 type_node = [
@@ -64,11 +75,11 @@ type_node = [
     __scope__:idef
     '('
         [
-            '{' dict_def:dd [',' '...']?:strict #add_def_into(idef, dd, strict) '}'
-            |'[' list_def:id [',' '...']?:strict #add_def_into(idef, ld, strict) ']'
+            '{' dict_def:dd [','? '...']?:strict #add_def_into(idef, dd, strict) '}'
+            |'[' list_def:ld [','? '...']?:strict #add_def_into(idef, ld, strict) ']'
         ]?
         node_def:nd
-        [',' '...']?:strict
+        [','? '...']?:strict
     ')'
     #new_MatchType(_, n, nd, idef, strict)
 ]
@@ -83,7 +94,7 @@ attrs_def = [
 ]
 
 attr_def = [
-    @ignore('null') ['.' id:n] '=' node_seq:ns #new_MatchAttr(_, n, ns)
+    @ignore('null') ['.' id:n] '=' node_val:ns #new_MatchAttr(_, n, ns)
 ]
 
 dict_def = [
@@ -93,7 +104,7 @@ dict_def = [
 ]
 
 kv_pair = [
-    [val_scalar | '*']:v ':' node_seq:ns #new_MatchKey(_, v, ns)
+    [val_scalar | '*']:v ':' node_val:ns #new_MatchKey(_, v, ns)
 ]
 
 list_def = [
@@ -103,7 +114,7 @@ list_def = [
 ]
 
 idx_pair = [
-    [num | '*']:n ':' node_seq:ns #new_MatchIndice(_, n, ns)
+    [num | '*']:n ':' node_val:ns #new_MatchIndice(_, n, ns)
 ]
 
 float = [ @ignore("null") [[int frac? | frac] exp?] ]

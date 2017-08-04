@@ -113,7 +113,7 @@ class MatchList(MatchExpr):
         t = ('check_clean_event', list_ev)
         tree[-1].append(t)
         if self.strict:
-            t = ('check_len', len(self.d))
+            t = ('check_len', len(self.ls))
             tree[-1].append(t)
         return tree
 
@@ -252,9 +252,17 @@ class MatchValue(MatchExpr):
 
     def get_stack_action(self):
         tree = [[]]
-        t = ('value', self.v)
+        tname = type(self.v).__name__
+        if self.v is not None:
+            t = ('value', self.v)
+        else:
+            t = ('value', )
+            tname = ''
         tree[-1].append(t)
-        t = ('type', type(self.v).__name__)
+        if tname != '':
+            t = ('type', tname)
+        else:
+            t = ('type', )
         tree[-1].append(t)
         t = ('end_node',)
         tree[-1].append(t)
@@ -293,8 +301,6 @@ class MatchType(MatchExpr):
             subs = self.subs.to_fmt()
         iparen = fmt.sep(', ', [])
         if self.attrs is not None:
-            # TODO: render unknown attr (.?) at the end befor ', ...'
-            # also unknown attr implie 'unstrict' mode
             for a in self.attrs:
                 iparen.lsdata.append(a.to_fmt())
         if not self.strict:
@@ -362,7 +368,7 @@ class MatchCapture(MatchExpr):
         self.v = v
 
     def to_fmt(self) -> fmt.indentable:
-        res = fmt.sep('/', [])
+        res = fmt.sep('->', [])
         res.lsdata.append(self.v.to_fmt())
         res.lsdata.append(self.name)
         return res
@@ -455,7 +461,7 @@ class MatchHook(MatchExpr):
         return id(self.call) == id(other.call)
 
     def to_fmt(self) -> fmt.indentable:
-        res = fmt.sep(' -> ', [self.v.to_fmt(), '#' + self.n + ';'])
+        res = fmt.sep(' => ', [self.v.to_fmt(), '#' + self.n + ';'])
         return res
 
     def __repr__(self) -> str:
@@ -487,5 +493,5 @@ class MatchBlock(MatchExpr):
     def get_stack_action(self):
         tree = []
         for idx, s in enumerate(self.stmts):
-            tree += [(1, idx), s.get_stack_action()]
+            tree += [(0, idx), s.get_stack_action()]
         return tree

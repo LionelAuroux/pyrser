@@ -253,11 +253,11 @@ class InternalAst_Test(unittest.TestCase):
         def hook():
             pass
         m = MatchHook('hook', MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
-        r = "A(.a='toto', .b=12, .c='lolo', ...) -> #hook;"
+        r = "A(.a='toto', .b=12, .c='lolo', ...) => #hook;"
         self.assertEqual(str(m), r, "Can't format MatchHook")
         # BLOCK
         m = MatchBlock([MatchHook('hook', MatchCapture('y', MatchType('A', [MatchAttr('a', MatchCapture('x', MatchValue('toto'))), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False)))])
-        r = "{\n    A(.a='toto'/x, .b=12, .c='lolo', ...)/y -> #hook;\n}"
+        r = "{\n    A(.a='toto'->x, .b=12, .c='lolo', ...)->y => #hook;\n}"
         self.assertEqual(str(m), r, "Can't format MatchBlock")
 
     def test_3_match_tree_event(self):
@@ -286,7 +286,7 @@ class InternalAst_Test(unittest.TestCase):
         p = PSL()
         res = p.parse("""
             {
-                A(.a='toto'/x, .c='lolo', .b=12)/y -> #hook1;
+                A(.a='toto'->x, .c='lolo', .b=12)->y => #hook1;
             }
         """)
         self.assertEqual(type(res.node[0]), MatchBlock, "Bad parsing of PSL expression")
@@ -297,7 +297,34 @@ class InternalAst_Test(unittest.TestCase):
         self.assertEqual(type(res.node[0].stmts[0].v.v.attrs[0].v.v), MatchValue, "Bad parsing of PSL expression")
         self.assertEqual(res.node[0].stmts[0].v.v.attrs[0].v.v.v, 'toto', "Bad parsing of PSL expression")
         tree = res.node[0].get_stack_action()
-        print(to_yml(tree))
+        p = PSL()
+        res = p.parse("""
+            {
+                A(.a=*, ...) => #hook1;
+            }
+        """)
+        self.assertIs(res.node[0].stmts[0].v.attrs[0].v.v, None, "Can't see the star")
+        self.assertEqual(res.node[0].stmts[0].v.strict, False, "Can't see the ellipsis")
+        res = p.parse("""
+            {
+                A([*:* , ...] ...) => #hook1;
+            }
+        """)
+        self.assertIs(res.node[0].stmts[0].v.attrs, None, "Can't see the ellipsis")
+        self.assertEqual(res.node[0].stmts[0].v.strict, False, "Can't see the ellipsis")
+        self.assertIs(type(res.node[0].stmts[0].v.subs), MatchList, "Can't see the ellipsis")
+        self.assertIs(res.node[0].stmts[0].v.subs.ls[0].idx, None, "Can't see the star")
+        self.assertIs(res.node[0].stmts[0].v.subs.ls[0].v.v, None, "Can't see the star")
+        res = p.parse("""
+            {
+                A({*:* , ...} ...) => #hook1;
+            }
+        """)
+        self.assertIs(res.node[0].stmts[0].v.attrs, None, "Can't see the ellipsis")
+        self.assertEqual(res.node[0].stmts[0].v.strict, False, "Can't see the ellipsis")
+        self.assertIs(type(res.node[0].stmts[0].v.subs), MatchDict, "Can't see the ellipsis")
+        self.assertIs(res.node[0].stmts[0].v.subs.d[0].key, None, "Can't see the star")
+        self.assertIs(res.node[0].stmts[0].v.subs.d[0].v.v, None, "Can't see the star")
 
     def test_5_psl_stack_basic(self):
         class A:
@@ -321,7 +348,7 @@ class InternalAst_Test(unittest.TestCase):
 
         # stack for matching: A(.a=12)
         stack = [
-        [(1, 1), # block id, stmt id
+        [(0, 0), # block id, stmt id
             [
             [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('attr', 'a'), ('set_event', 0)],
             [
@@ -364,7 +391,7 @@ class InternalAst_Test(unittest.TestCase):
 
         # stack for matching: A(.a=12, .b='toto')
         stack = [
-        [(1, 1), # block id, stmt id
+        [(0, 0), # block id, stmt id
             [
             [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('attr', 'a'), ('set_event', 0)],
             [('value', 'toto'), ('check_event', [0]), ('type', 'str'), ('capture', 'c'),
@@ -408,9 +435,9 @@ class InternalAst_Test(unittest.TestCase):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 0, "Bad number of hook call")
 
-        # stack for matching: B([0: 12/b, 1: 42, 2: 'toto'])/a
+        # stack for matching: B([0: 12->b, 1: 42, 2: 'toto'])->a
         stack = [
-        [(1, 1), # block id, stmt id
+        [(0, 0), # block id, stmt id
             [
             [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('indice', 0), ('set_event', 0)],
             [('value', 42), ('type', 'int'), ('end_node', ), ('indice', 1), ('set_event', 1)],
@@ -450,9 +477,9 @@ class InternalAst_Test(unittest.TestCase):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 0, "Bad number of hook call")
 
-        # stack for matching: C({'toto': 12/b, 'totu': 42, 'tutu': 'toto'})/a
+        # stack for matching: C({'toto': 12->b, 'totu': 42, 'tutu': 'toto'})->a
         stack = [
-        [(1, 1), # block id, stmt id
+        [(0, 0), # block id, stmt id
             [
             [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('key', 'toto'), ('set_event', 0)],
             [('value', 42), ('type', 'int'), ('end_node', ), ('key', 'totu'), ('set_event', 1)],
@@ -501,15 +528,26 @@ class InternalAst_Test(unittest.TestCase):
                 return "A(%s)" % ', '.join(["%s=%s" % (k, repr(v)) for k, v in vars(self).items()])
         def test1(capture, user_data):
             a = capture['a']
-            print(repr(a))
             user_data.append(a)
         t = {'toto':A(a=12), 'd':[1, 2, A(b=12), 3, A(a=12, b=A(a=12))]}
         ### 
         comp_psl = PSL()
-        expr = "{ A(.a=12)/a -> #hook1; }"
+        expr = "{ A(.a=12)->a => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
+        match(t, psl_comp, {'hook1': test1}, res)
+        self.assertEqual(len(res), 2, "Can't match: %s" % expr)
+        ##
+        expr = "{ A(.a=*, ...)->a => #hook1; }"
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook1': test1}, res)
+        self.assertEqual(len(res), 3, "Can't match: %s" % expr)
+        ##
         print("## MATCH EXPR")
+        expr = "{ [*:*, ...] => #hook1; }"
+        psl_comp = comp_psl.compile(expr)
+        res = []
         match(t, psl_comp, {'hook1': test1}, res)
         print("##########\n RES: %s" % repr(res))
-        self.assertEqual(len(res), 2, "Can't match: %s" % expr)
+        self.assertEqual(len(res), 5, "Can't match: %s" % expr)

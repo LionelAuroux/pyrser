@@ -49,6 +49,8 @@ class Event:
 class EventType(Event):
     def check_event(self, action) -> bool:
         if action[0] == 'type':
+            if len(action) == 1:
+                return True
             if action[1] == self.attr:
                 print("ok type")
                 return True
@@ -57,6 +59,8 @@ class EventType(Event):
 class EventValue(Event):
     def check_event(self, action) -> bool:
         if action[0] == 'value':
+            if len(action) == 1:
+                return True
             if action[1] == self.attr:
                 print("ok value")
                 return True
@@ -72,6 +76,8 @@ class EventEndNode(Event):
 class EventAttr(Event):
     def check_event(self, action) -> bool:
         if action[0] == 'attr':
+            if len(action) == 1:
+                return True
             if action[1] == self.attr:
                 print("ok attr")
                 return True
@@ -87,6 +93,8 @@ class EventEndAttrs(Event):
 class EventKey(Event):
     def check_event(self, action) -> bool:
         if action[0] == 'key':
+            if len(action) == 1:
+                return True
             if action[1] == self.attr:
                 print("ok key")
                 return True
@@ -102,6 +110,8 @@ class EventEndKeys(Event):
 class EventIndice(Event):
     def check_event(self, action) -> bool:
         if action[0] == 'indice':
+            if len(action) == 1:
+                return True
             if action[1] == self.attr:
                 print("ok indice")
                 return True

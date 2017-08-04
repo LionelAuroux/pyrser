@@ -7,6 +7,8 @@ from pyrser import meta
 from pyrser.ast.match import *
 from pyrser.parsing import unquote_string
 
+from pyrser.hooks.echo import *
+
 # PARSING
 PSL = grammar.from_file(os.path.dirname(__file__) + "/psl.bnf", 'psl') 
 
@@ -50,7 +52,12 @@ def new_text(self, ast, i):
 
 @meta.hook(PSL)
 def new_MatchValue(self, ast, v):
-    ast.node = MatchValue(v.node)
+    vnode = None
+    if hasattr(v, 'node'):
+        vnode = v.node
+    elif self.value(v) == '*':
+        vnode = None
+    ast.node = MatchValue(vnode)
     return True
 
 @meta.hook(PSL)
@@ -75,9 +82,12 @@ def new_MatchType(self, ast, n, nd, idef, strict):
     if len(self.value(strict)) > 1:
         is_strict = False
     defsub = None
-    if type(idef) in {MatchDict, MatchList}:
-        defsub = idef
-    ast.node = MatchType(tname, nd.node, defsub, is_strict)
+    if hasattr(idef, 'node') and type(idef.node[0]) in {MatchDict, MatchList}:
+        defsub = idef.node[0]
+    attrs = None
+    if hasattr(nd, 'node'):
+        attrs = nd.node
+    ast.node = MatchType(tname, attrs, defsub, is_strict)
     return True
 
 @meta.hook(PSL)
@@ -89,6 +99,17 @@ def add_def_into(self, ast, it, strict):
         is_strict = False
     it.node.strict = is_strict
     ast.node.append(it.node)
+    return True
+
+@meta.hook(PSL)
+def def_into(self, ast, it, strict):
+    if not hasattr(ast, 'node'):
+        ast.node = None
+    is_strict = True
+    if len(self.value(strict)) > 1:
+        is_strict = False
+    it.node.strict = is_strict
+    ast.node = it.node
     return True
 
 @meta.hook(PSL)
@@ -113,7 +134,12 @@ def new_MatchDict(self, ast, ls):
 
 @meta.hook(PSL)
 def new_MatchKey(self, ast, k, ns):
-    ast.node = MatchKey(k.node, ns.node)
+    key = self.value(k)
+    if key == '*':
+        key = None
+    else:
+        key = k.node
+    ast.node = MatchKey(key, ns.node)
     return True
 
 @meta.hook(PSL)
@@ -123,5 +149,10 @@ def new_MatchList(self, ast, ls):
 
 @meta.hook(PSL)
 def new_MatchIndice(self, ast, i, ns):
-    ast.node = MatchIndice(int(self.value(i)), ns.node)
+    idx = self.value(i)
+    if idx == '*':
+        idx = None
+    else:
+        idx = int(idx)
+    ast.node = MatchIndice(idx, ns.node)
     return True
