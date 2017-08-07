@@ -351,6 +351,8 @@ class MatchType(MatchExpr):
         tree[-1].append(t)
         if self.strict:
             tree[-1].append(('check_attr_len', len(self.attrs)))
+        t = ('value', )
+        tree[-1].append(t)
         t = ('type', self.t)
         tree[-1].append(t)
         t = ('end_node',)
@@ -363,9 +365,15 @@ class MatchCapture(MatchExpr):
     """
     Ast Node for capturing the current node during matching
     """
-    def __init__(self, n: str, v: MatchExpr):
+    def __init__(self, n: str, v: MatchExpr, capture_pair=False):
         self.name = n
         self.v = v
+        self.capture_pair = capture_pair
+        if capture_pair:
+            if type(v) is MatchIndice:
+                self.idx = v.idx
+            elif type(v) is MatchKey:
+                self.key = v.key
 
     def to_fmt(self) -> fmt.indentable:
         res = fmt.sep('->', [])
@@ -378,10 +386,12 @@ class MatchCapture(MatchExpr):
 
     def get_stack_action(self):
         tree = self.v.get_stack_action()
-        if tree[-1][-1][0] != 'end_node':
-            raise TypeError("Bad postion of Capture in MatchObject")
         # we add capture before leaving the node
-        tree[-1].insert(-1, ('capture', self.name))
+        if self.capture_pair:
+            tree[-1].insert(-1, ('capture_pair_second', self.name))
+            tree[-1].append(('capture_pair_first', self.name))
+        else:
+            tree[-1].insert(-1, ('capture', self.name))
         return tree
 
 #class MatchPrecond(MatchExpr):

@@ -45,6 +45,11 @@ def new_MatchCapture(self, ast, i):
     return True
 
 @meta.hook(PSL)
+def new_MatchCapturePair(self, ast, i):
+    ast.node = MatchCapture(self.value(i), ast.node, capture_pair=True)
+    return True
+
+@meta.hook(PSL)
 def new_text(self, ast, i):
     ast.node = self.value(i)
     return True

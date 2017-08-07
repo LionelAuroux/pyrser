@@ -355,6 +355,7 @@ class InternalAst_Test(unittest.TestCase):
                 ('end_attrs', ),
                 ('check_attr_len', 1),
                 ('check_clean_event', [0]),
+                ('value', ),
                 ('type', 'A'),
                 ('capture', 'a'),
             ('end_node', ),
@@ -400,6 +401,7 @@ class InternalAst_Test(unittest.TestCase):
                 ('end_attrs', ),
                 ('check_attr_len', 2),
                 ('check_clean_event', [0, 1]),
+                ('value', ),
                 ('type', 'A'),
                 ('capture', 'a'),
             ('end_node', ),
@@ -446,6 +448,7 @@ class InternalAst_Test(unittest.TestCase):
                 ('end_indices', ),
                 ('check_len', 3),
                 ('check_clean_event', [0, 1, 2]),
+                ('value', ),
                 ('type', 'B'),
                 ('capture', 'a'),
             ('end_node', ),
@@ -488,6 +491,7 @@ class InternalAst_Test(unittest.TestCase):
                 ('end_keys', ),
                 ('check_len', 3),
                 ('check_clean_event', [0, 1, 2]),
+                ('value', ),
                 ('type', 'C'),
                 ('capture', 'a'),
             ('end_node', ),
@@ -526,9 +530,15 @@ class InternalAst_Test(unittest.TestCase):
                 self.__dict__.update(k)
             def __repr__(self):
                 return "A(%s)" % ', '.join(["%s=%s" % (k, repr(v)) for k, v in vars(self).items()])
+
         def test1(capture, user_data):
             a = capture['a']
             user_data.append(a)
+
+        def testpair(capture, user_data):
+            a = capture['a']
+            user_data += a
+
         t = {'toto':A(a=12), 'd':[1, 2, A(b=12), 3, A(a=12, b=A(a=12))]}
         ### 
         comp_psl = PSL()
@@ -545,9 +555,9 @@ class InternalAst_Test(unittest.TestCase):
         self.assertEqual(len(res), 3, "Can't match: %s" % expr)
         ##
         print("## MATCH EXPR")
-        expr = "{ [*:*, ...] => #hook1; }"
+        expr = "{ [*:* -> a, ...] => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
-        match(t, psl_comp, {'hook1': test1}, res)
+        match(t, psl_comp, {'hook1': testpair}, res)
         print("##########\n RES: %s" % repr(res))
         self.assertEqual(len(res), 5, "Can't match: %s" % expr)

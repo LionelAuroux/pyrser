@@ -34,7 +34,7 @@ hook = [
 node_seq = [
     [type_node:>_
     | '{' dict_def:dd [','? '...']?:strict #def_into(_, dd, strict) '}'
-    | '[' #echo("HERE") list_def:ld [','? '...']?:strict #def_into(_, ld, strict) ']'
+    | '[' list_def:ld [','? '...']?:strict #def_into(_, ld, strict) ']'
     ]
     ["->" id:i
         #new_MatchCapture(_, i)
@@ -104,7 +104,15 @@ dict_def = [
 ]
 
 kv_pair = [
-    [val_scalar | '*']:v ':' node_val:ns #new_MatchKey(_, v, ns)
+    [val_scalar | '*']:v
+    ':'
+    [type_node
+    | val_node
+    ]:ns
+    #new_MatchKey(_, v, ns)
+    ["->" id:i
+        #new_MatchCapturePair(_, i)
+    ]?
 ]
 
 list_def = [
@@ -114,7 +122,15 @@ list_def = [
 ]
 
 idx_pair = [
-    [num | '*']:n ':' node_val:ns #new_MatchIndice(_, n, ns)
+    [num | '*']:n
+    ':'
+    [type_node
+    | val_node
+    ]:ns
+    #new_MatchIndice(_, n, ns)
+    ["->" id:i
+        #new_MatchCapturePair(_, i)
+    ]?
 ]
 
 float = [ @ignore("null") [[int frac? | frac] exp?] ]
