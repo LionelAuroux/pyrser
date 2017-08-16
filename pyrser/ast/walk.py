@@ -9,7 +9,7 @@ not_normalized = {set, list, dict, tuple}
 match_value = {int, float, str, bytes}
 
 @meta.add_method(node.Node)
-def walk(self):
+def walk(self, depth=0):
     """
     Work only on normalized tree
     """
@@ -18,27 +18,28 @@ def walk(self):
         raise TypeError("Not a normalized tree! User node.normalize() function!")
     if hasattr(self, '__dict__') and not isinstance(self, node.ListNode):
         for k in sorted(vars(self).keys()):
-            yield from walk(getattr(self, k))
-            yield EventAttr(k, getattr(self, k))
-        yield EventEndAttrs(id(self), self)
+            yield from walk(getattr(self, k), depth + 1)
+            yield EventAttr(getattr(self, k), k, depth)
+        yield EventEndAttrs(self)
     if hasattr(self, 'keys'):
         for k in sorted(self.keys()):
-            yield from walk(self[k])
-            yield EventKey(k, self[k])
-        yield EventEndKeys(id(self), self)
+            yield from walk(self[k], depth + 1)
+            yield EventKey(self[k], k, depth)
+        yield EventEndKeys(self)
     elif not isinstance(self, str) and hasattr(self, '__iter__'):
         for idx, item in enumerate(self):
-            yield from walk(self[idx])
-            yield EventIndice(idx, item)
-        yield EventEndIndices(id(self), self)
-    yield EventValue(self, self)
-    yield EventType(type(self).__name__, self)
-    yield EventEndNode(id(self), self)
+            yield from walk(self[idx], depth + 1)
+            yield EventIndice(self[idx], idx, depth)
+        yield EventEndIndices(self)
+    yield EventValue(self, None, depth)
+    yield EventType(self, type(self).__name__, depth)
+    yield EventEndNode(self)
 
 class Event:
-    def __init__(self, attr, ref):
+    def __init__(self, node=None, attr=None, depth=None):
+        self.node = node
         self.attr = attr
-        self.node = ref
+        self.depth = depth
 
     def __repr__(self) -> str:
         return "%s(%r, %r)" % (type(self).__name__, self.attr, self.node)
@@ -62,7 +63,7 @@ class EventValue(Event):
         if action[0] == 'value':
             if len(action) == 1:
                 return True
-            if type(self.attr) in match_value and action[1] == self.attr:
+            if type(self.node) in match_value and action[1] == self.node:
                 print("ok value")
                 return True
         return False
@@ -98,7 +99,7 @@ class EventKey(Event):
             if len(action) == 1:
                 print("ok key: %s" % repr(chk.first))
                 return True
-            if action[1] == self.attr:
+            if action[1] == chk.first:
                 print("ok key: %s" % repr(chk.first))
                 return True
         return False
@@ -117,7 +118,7 @@ class EventIndice(Event):
             if len(action) == 1:
                 print("ok indice: %s" % repr(chk.first))
                 return True
-            if action[1] == self.attr:
+            if action[1] == chk.first:
                 print("ok indice: %s" % repr(chk.first))
                 return True
         return False

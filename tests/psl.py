@@ -354,9 +354,9 @@ class InternalAst_Test(unittest.TestCase):
             [
                 ('end_attrs', ),
                 ('check_attr_len', 1),
-                ('check_clean_event', [0]),
                 ('value', ),
                 ('type', 'A'),
+                ('check_clean_event', [0]),
                 ('capture', 'a'),
             ('end_node', ),
             ('hook', 'hook1')],
@@ -385,7 +385,6 @@ class InternalAst_Test(unittest.TestCase):
         ls = get_events_list(t)
         chk = Checker(hook_fun, self)
         sz = len(ls)
-        print("CHHHHHHHHH")
         for idx in range(sz):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 0, "Bad number of hook call")
@@ -400,16 +399,15 @@ class InternalAst_Test(unittest.TestCase):
             [
                 ('end_attrs', ),
                 ('check_attr_len', 2),
-                ('check_clean_event', [0, 1]),
                 ('value', ),
                 ('type', 'A'),
+                ('check_clean_event', [0, 1]),
                 ('capture', 'a'),
             ('end_node', ),
             ('hook', 'hook1')],
             ]
         ]
         ]
-        print("###############")
         #
         t = A()
         t.a = 12
@@ -423,7 +421,6 @@ class InternalAst_Test(unittest.TestCase):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 1, "Bad number of hook call")
         # counter example
-        print("###############")
         #
         t = A()
         t.a = 12
@@ -447,16 +444,15 @@ class InternalAst_Test(unittest.TestCase):
             [
                 ('end_indices', ),
                 ('check_len', 3),
-                ('check_clean_event', [0, 1, 2]),
                 ('value', ),
                 ('type', 'B'),
+                ('check_clean_event', [0, 1, 2]),
                 ('capture', 'a'),
             ('end_node', ),
             ('hook', 'hook1')],
             ]
         ]
         ]
-        print("###############")
         #
         t = B([12, 42, 'toto'])
         #
@@ -468,7 +464,6 @@ class InternalAst_Test(unittest.TestCase):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 1, "Bad number of hook call")
         # counter example
-        print("###############")
         #
         t = B([12, 42, 'tota'])
         #
@@ -490,16 +485,15 @@ class InternalAst_Test(unittest.TestCase):
             [
                 ('end_keys', ),
                 ('check_len', 3),
-                ('check_clean_event', [0, 1, 2]),
                 ('value', ),
                 ('type', 'C'),
+                ('check_clean_event', [0, 1, 2]),
                 ('capture', 'a'),
             ('end_node', ),
             ('hook', 'hook1')],
             ]
         ]
         ]
-        print("###############")
         #
         t = C({'toto': 12, 'totu': 42, 'tutu': 'toto'})
         #
@@ -511,7 +505,6 @@ class InternalAst_Test(unittest.TestCase):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 1, "Bad number of hook call")
         # counter example
-        print("###############")
         #
         t = C({'toto': 12, 'totu': 42, 'tutu': 'tota'})
         #

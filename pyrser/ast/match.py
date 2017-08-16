@@ -336,10 +336,6 @@ class MatchType(MatchExpr):
         for idx, item in enumerate(self.attrs):
             subtree = item.get_stack_action()
             unkev = self.create_unknown_event()
-            #if idx == 0:
-            #    subtree[-1].insert(1, ('no_event', ))
-            #else:
-            #    subtree[-1].insert(1, ('check_event', list_ev.copy()))
             subtree[-1].append(('set_event', unkev))
             tree += subtree
             list_ev.append(unkev)
@@ -347,13 +343,13 @@ class MatchType(MatchExpr):
         tree.append([])
         t = ('end_attrs',)
         tree[-1].append(t)
-        t = ('check_clean_event', list_ev)
-        tree[-1].append(t)
         if self.strict:
             tree[-1].append(('check_attr_len', len(self.attrs)))
         t = ('value', )
         tree[-1].append(t)
         t = ('type', self.t)
+        tree[-1].append(t)
+        t = ('check_clean_event', list_ev)
         tree[-1].append(t)
         t = ('end_node',)
         tree[-1].append(t)
