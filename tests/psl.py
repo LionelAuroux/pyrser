@@ -554,10 +554,17 @@ class InternalAst_Test(unittest.TestCase):
         match(t, psl_comp, {'hook1': test1}, res)
         self.assertEqual(len(res), 3, "Can't match: %s" % expr)
         ##
-        print("## MATCH EXPR")
         expr = "{ [*:* -> a, ...] => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': testpair}, res)
-        print("##########\n RES: %s" % repr(res))
         self.assertEqual(len(res), 5, "Can't match: %s" % expr)
+        ##
+        print("## MATCH EXPR")
+        t = {'toto':A(a=12), 'd':{1:2, 2:3}}
+        expr = "{ {*:* -> a, ...} => #hook1; }"
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook1': testpair}, res)
+        print("##########\n RES: %s" % repr(res))
+        self.assertEqual(len(res), 4, "Can't match: %s" % expr)

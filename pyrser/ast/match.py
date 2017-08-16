@@ -68,7 +68,7 @@ class MatchIndice(MatchExpr):
 
     def get_stack_action(self):
         tree = self.v.get_stack_action()
-        t = ('indice',)
+        t = ('indice', )
         tree[-1].append(t)
         return tree
 
@@ -143,7 +143,7 @@ class MatchKey(MatchExpr):
 
     def get_stack_action(self):
         tree = self.v.get_stack_action()
-        t = ('key', self.key)
+        t = ('key', )
         tree[-1].append(t)
         return tree
 
