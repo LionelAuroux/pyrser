@@ -19,21 +19,21 @@ def walk(self, depth=0):
     if hasattr(self, '__dict__') and not isinstance(self, node.ListNode):
         for k in sorted(vars(self).keys()):
             yield from walk(getattr(self, k), depth + 1)
-            yield EventAttr(getattr(self, k), k, depth)
-        yield EventEndAttrs(self)
+            yield EventAttr(getattr(self, k), k, depth + 1)
+        yield EventEndAttrs(self, depth=depth + 1)
     if hasattr(self, 'keys'):
         for k in sorted(self.keys()):
             yield from walk(self[k], depth + 1)
-            yield EventKey(self[k], k, depth)
-        yield EventEndKeys(self)
+            yield EventKey(self[k], k, depth + 1)
+        yield EventEndKeys(self, depth=depth + 1)
     elif not isinstance(self, str) and hasattr(self, '__iter__'):
         for idx, item in enumerate(self):
             yield from walk(self[idx], depth + 1)
-            yield EventIndice(self[idx], idx, depth)
-        yield EventEndIndices(self)
+            yield EventIndice(self[idx], idx, depth + 1)
+        yield EventEndIndices(self, depth=depth + 1)
     yield EventValue(self, None, depth)
     yield EventType(self, type(self).__name__, depth)
-    yield EventEndNode(self)
+    yield EventEndNode(self, depth=depth)
 
 class Event:
     def __init__(self, node=None, attr=None, depth=None):

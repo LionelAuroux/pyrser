@@ -528,9 +528,14 @@ class InternalAst_Test(unittest.TestCase):
             a = capture['a']
             user_data.append(a)
 
-        def testpair(capture, user_data):
+        def testlist(capture, user_data):
             a = capture['a']
             user_data += a
+
+        def testdict(capture, user_data):
+            a = capture['a']
+            user_data.clear()
+            user_data.extend(a)
 
         t = {'toto':A(a=12), 'd':[1, 2, A(b=12), 3, A(a=12, b=A(a=12))]}
         ### 
@@ -546,18 +551,31 @@ class InternalAst_Test(unittest.TestCase):
         res = []
         match(t, psl_comp, {'hook1': test1}, res)
         self.assertEqual(len(res), 3, "Can't match: %s" % expr)
+        # List Match
         ##
         expr = "{ [*:* -> a, ...] => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
-        match(t, psl_comp, {'hook1': testpair}, res)
+        match(t, psl_comp, {'hook1': testlist}, res)
         self.assertEqual(len(res), 5, "Can't match: %s" % expr)
         ##
-        print("## MATCH EXPR")
+        expr = "{ [*:A(...) -> a, ...] => #hook1; }"
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook1': testlist}, res)
+        self.assertEqual(len(res), 2, "Can't match: %s" % expr)
+        # Dict Match
+        ##
         t = {'toto':A(a=12), 'd':{1:2, 2:3}}
         expr = "{ {*:* -> a, ...} => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
-        match(t, psl_comp, {'hook1': testpair}, res)
-        print("##########\n RES: %s" % repr(res))
+        match(t, psl_comp, {'hook1': testdict}, res)
         self.assertEqual(len(res), 4, "Can't match: %s" % expr)
+        ##
+        t = {'toto':A(a=12), 'd':{1:A(), 2:A(a=3), 3:A(b=12, a=13), 4:A(b=13, a=12)}}
+        expr = "{ {*:A(.a=12, ...) -> a, ...} => #hook1; }"
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook1': testdict}, res)
+        self.assertEqual(len(res), 2, "Can't match: %s" % expr)

@@ -82,6 +82,7 @@ def is_str(self, ast, s):
 
 @meta.hook(PSL)
 def new_MatchType(self, ast, n, nd, idef, strict):
+    print("MatchTYpe !!!!")
     tname = self.value(n)
     is_strict = True
     if len(self.value(strict)) > 1:
