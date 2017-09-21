@@ -32,6 +32,20 @@ hook = [
 ]
 
 node_seq = [
+    node_item:>_
+    [
+        '/'
+        '+'?:flags
+        num?:depth
+        node_item:subn
+        #new_MatchAncestor(_, subn, depth, flags)
+        | '-'
+        node_item:subn
+        #new_MatchSibling(_, subn)
+    ]*
+]
+
+node_item = [
     [type_node:>_
     | '{' dict_def:dd [','? '...']?:strict #def_into(_, dd, strict) '}'
     | '[' list_def:ld [','? '...']?:strict #def_into(_, ld, strict) ']'
@@ -40,6 +54,7 @@ node_seq = [
         #new_MatchCapture(_, i)
     ]?
     precond?
+    | '<' node_seq:>_  '>'
 ]
 
 node_val = [

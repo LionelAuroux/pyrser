@@ -42,6 +42,16 @@ class MatchExpr:
         r.max_unkev += 1
         return uid
 
+    def create_depthreg(self) -> int:
+        r = self.get_root()
+        if not hasattr(r, 'max_depthreg'):
+            r.max_depthreg = 0
+            r.mapdreg = dict()
+        uid = r.max_depthreg
+        r.mapdreg[uid] = '_%d' % uid
+        r.max_depthreg += 1
+        return uid
+
 class MatchIndice(MatchExpr):
     """
     Ast Node for matching one indice.
@@ -358,6 +368,84 @@ class MatchType(MatchExpr):
         return tree
 
 ######### SPECIAL
+
+class MatchAncestor(MatchExpr):
+    """
+    Ast Node for capturing sequence of ancestors
+    """
+    def __init__(self, left, right, depth=1, is_min=False):
+        self.left = left
+        self.right = right
+        self.ref_me('left')
+        self.ref_me('right')
+        if depth < 1:
+            raise TypeError("Subnodes can't be at a depth < 1")
+        self.depth = depth
+        # is_min have meaning only if depth > 1
+        self.is_min = is_min
+    
+    def to_fmt(self) -> fmt.indentable:
+        def get_with_bracket(tree):
+            if type(tree) is MatchSibling:
+                return fmt.block('< ', ' >', [tree.to_fmt()])
+            return tree.to_fmt()
+        thesep = ' /'
+        if self.is_min:
+            thesep += '+'
+        if self.depth > 1:
+            thesep += '%d' % self.depth
+        thesep += ' '
+        res = fmt.sep(thesep, [])
+        res.lsdata.append(get_with_bracket(self.left))
+        res.lsdata.append(get_with_bracket(self.right))
+        return res
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
+
+    def get_stack_action(self):
+        tree = self.right.get_stack_action()
+        # store depth
+        regdepth = self.create_depthreg()
+        tree[-1].append(('store_depth', regdepth))
+        tree += self.left.get_stack_action()
+        # check depth
+        tree[-1].append(('check_depth', regdepth, self.depth, self.is_min))
+        return tree
+
+class MatchSibling(MatchExpr):
+    """
+    Ast Node for capturing sequence of siblings
+    """
+
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+        self.ref_me('left')
+        self.ref_me('right')
+    
+    def to_fmt(self) -> fmt.indentable:
+        def get_with_bracket(tree):
+            if type(tree) is MatchAncestor:
+                return fmt.block('< ', ' >', [tree.to_fmt()])
+            return tree.to_fmt()
+        res = fmt.sep(' - ', [])
+        res.lsdata.append(get_with_bracket(self.left))
+        res.lsdata.append(get_with_bracket(self.right))
+        return res
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
+
+    def get_stack_action(self):
+        tree = self.right.get_stack_action()
+        rregd = self.create_depthreg()
+        tree[-1].append(('store_depth', rregd))
+        tree += self.left.get_stack_action()
+        lregd = self.create_depthreg()
+        tree[-1].append(('store_depth', lregd))
+        tree[-1].append(('check_depth_sibling', [lregd, rregd]))
+        return tree
 
 class MatchCapture(MatchExpr):
     """

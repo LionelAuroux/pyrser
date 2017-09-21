@@ -7,7 +7,10 @@ from pyrser import meta
 from pyrser.ast.match import *
 from pyrser.parsing import unquote_string
 
+from pyrser.passes.to_yml import *
+
 from pyrser.hooks.echo import *
+from pyrser.hooks.vars import *
 
 # PARSING
 PSL = grammar.from_file(os.path.dirname(__file__) + "/psl.bnf", 'psl') 
@@ -37,6 +40,22 @@ def new_MatchHook(self, blck, s):
 @meta.hook(PSL)
 def new_Action(self, ast, a, ns):
     ast.node = MatchHook(a.node, ns.node)
+    return True
+
+@meta.hook(PSL)
+def new_MatchAncestor(self, ast, n, depth, flags):
+    d = 1
+    f = False
+    if self.value(depth) != "":
+        d = int(self.value(depth))
+    if self.value(flags) != "":
+        f = True
+    ast.node = MatchAncestor(ast.node, n.node, d, f)
+    return True
+
+@meta.hook(PSL)
+def new_MatchSibling(self, ast, n):
+    ast.node = MatchSibling(ast.node, n.node)
     return True
 
 @meta.hook(PSL)
@@ -82,7 +101,6 @@ def is_str(self, ast, s):
 
 @meta.hook(PSL)
 def new_MatchType(self, ast, n, nd, idef, strict):
-    print("MatchTYpe !!!!")
     tname = self.value(n)
     is_strict = True
     if len(self.value(strict)) > 1:
