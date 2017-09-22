@@ -267,24 +267,20 @@ class InternalAst_Test(unittest.TestCase):
         r = "{\n    A(...) /3 B(...) /+2 C(...) => #hook;\n}"
         self.assertEqual(str(m), r, "Can't format MatchAncestor")
         m = MatchBlock([MatchHook('hook', MatchAncestor(MatchSibling(MatchType('A', strict=False), MatchType('B', strict=False)), MatchType('C', strict=False), 2, True))])
-        r = "{}"
-        print("PPRINT %s" % str(m))
+        r = "{\n    < A(...) ~~ B(...) > /+2 C(...) => #hook;\n}"
+        self.assertEqual(str(m), r, "Can't format MatchAncestor")
 
     def test_3_match_tree_event(self):
-        def hook1():
-            pass
-        def hook2():
-            pass
         m = MatchBlock([
-            MatchHook(hook1, MatchType(A, [MatchAttr('a', MatchValue('toto')),
+            MatchHook('hook1', MatchType(A, [MatchAttr('a', MatchValue('toto')),
                                             MatchAttr('b', MatchValue(12)),
                                             MatchAttr('c', MatchValue('lolo'))], strict=False)),
-            MatchHook(hook2, MatchType(A, [MatchAttr('a', MatchValue('toto')),
+            MatchHook('hook2', MatchType(A, [MatchAttr('a', MatchValue('toto')),
                                             MatchAttr('b', MatchValue(12)),
                                             MatchAttr('d', MatchValue('lolo'))], strict=False)),
             ])
         tree = m.get_stack_action()
-        print(to_yml(tree))
+        self.assertEqual(len(tree), 4, "Can't get a good stack action len")
 
     def test_4_psl_syntax(self):
         class A:
@@ -352,31 +348,31 @@ class InternalAst_Test(unittest.TestCase):
         self.assertIs(type(res.node[0].stmts[0].v.left.right), MatchType, "Can't see the ancestor")
         res = p.parse("""
             {
-                A(...) - B(...) - C(...) - D(...) => #hook1;
+                A(...) ~~ B(...) ~~ C(...) ~~ D(...) => #hook1;
             }
         """)
         self.assertIs(type(res.node[0].stmts[0].v), MatchSibling, "Can't see the sibling")
-        self.assertIs(type(res.node[0].stmts[0].v.left), MatchSibling, "Can't see the sibling")
-        self.assertIs(type(res.node[0].stmts[0].v.left.left), MatchSibling, "Can't see the sibling")
-        self.assertIs(type(res.node[0].stmts[0].v.left.left.left), MatchType, "Can't see the type")
-        self.assertEqual(res.node[0].stmts[0].v.left.left.left.t, 'A', "Can't see the type A")
-        self.assertEqual(res.node[0].stmts[0].v.left.left.right.t, 'B', "Can't see the type B")
-        self.assertEqual(res.node[0].stmts[0].v.left.right.t, 'C', "Can't see the type C")
-        self.assertEqual(res.node[0].stmts[0].v.right.t, 'D', "Can't see the type D")
+        self.assertIs(type(res.node[0].stmts[0].v.ls[0]), MatchType, "Can't see the type")
+        self.assertIs(type(res.node[0].stmts[0].v.ls[1]), MatchType, "Can't see the type")
+        self.assertIs(type(res.node[0].stmts[0].v.ls[2]), MatchType, "Can't see the type")
+        self.assertIs(type(res.node[0].stmts[0].v.ls[3]), MatchType, "Can't see the type")
+        self.assertEqual(res.node[0].stmts[0].v.ls[0].t, 'A', "Can't see the type A")
+        self.assertEqual(res.node[0].stmts[0].v.ls[1].t, 'B', "Can't see the type B")
+        self.assertEqual(res.node[0].stmts[0].v.ls[2].t, 'C', "Can't see the type C")
+        self.assertEqual(res.node[0].stmts[0].v.ls[3].t, 'D', "Can't see the type D")
         res = p.parse("""
             {
-                A(...) - < B(...) / C(...) > - D(...) => #hook1;
+                A(...) ~~ < B(...) / C(...) > ~~ D(...) => #hook1;
             }
         """)
         self.assertIs(type(res.node[0].stmts[0].v), MatchSibling, "Can't see the sibling")
-        self.assertIs(type(res.node[0].stmts[0].v.left), MatchSibling, "Can't see the sibling")
-        self.assertIs(type(res.node[0].stmts[0].v.left.left), MatchType, "Can't see the type")
-        self.assertEqual(res.node[0].stmts[0].v.left.left.t, 'A', "Can't see the A")
-        self.assertIs(type(res.node[0].stmts[0].v.left.right), MatchAncestor, "Can't see the ancestor")
-        self.assertEqual(res.node[0].stmts[0].v.left.right.left.t, 'B', "Can't see the B")
-        self.assertEqual(res.node[0].stmts[0].v.left.right.right.t, 'C', "Can't see the C")
-        self.assertIs(type(res.node[0].stmts[0].v.right), MatchType, "Can't see the type")
-        self.assertEqual(res.node[0].stmts[0].v.right.t, 'D', "Can't see the D")
+        self.assertIs(type(res.node[0].stmts[0].v.ls[0]), MatchType, "Can't see the sibling")
+        self.assertIs(type(res.node[0].stmts[0].v.ls[1]), MatchAncestor, "Can't see the type")
+        self.assertIs(type(res.node[0].stmts[0].v.ls[2]), MatchType, "Can't see the type")
+        self.assertEqual(res.node[0].stmts[0].v.ls[0].t, 'A', "Can't see the A")
+        self.assertEqual(res.node[0].stmts[0].v.ls[1].left.t, 'B', "Can't see the B")
+        self.assertEqual(res.node[0].stmts[0].v.ls[1].right.t, 'C', "Can't see the C")
+        self.assertEqual(res.node[0].stmts[0].v.ls[2].t, 'D', "Can't see the D")
 
     def test_5_psl_stack_basic(self):
         class A:
@@ -428,8 +424,6 @@ class InternalAst_Test(unittest.TestCase):
         self.assertEqual(self.nbhook, 1, "Bad number of hook call")
         
         # counter example
-        print("###############")
-        #
         t = A()
         t.b = 12
         #
@@ -594,7 +588,9 @@ class InternalAst_Test(unittest.TestCase):
             user_data.extend(a)
 
         def testancestor(capture, user_data):
-            print("ANC CAPT %s" % repr(capture))
+            user_data.append(capture.copy())
+
+        def testsibling(capture, user_data):
             user_data.append(capture.copy())
     
         ###
@@ -662,4 +658,13 @@ class InternalAst_Test(unittest.TestCase):
         self.assertEqual(len(res), 1, "Only one capture with 3 depth")
         self.assertEqual(res[0]['c'].n, 31, "the C with 31 as value")
         # Sibling
-        ##
+        ## we don't care of order, we match a list of same depth patterns
+        t = A(l=[B(c=C(n=12)), C(b=B()), D(c=C(n=21)), B(a=A(c=C(n=13))), C(), B(a=A(d=D(c=C(n=31)))), A(), C(), D()])
+        expr = "{ B(...) -> b ~~ C(...) -> c ~~ D(...) -> d => #hook1;}"
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook1': testsibling}, res)
+        self.assertEqual(len(res), 1, "Can't match sibling")
+        self.assertIn('b', res[0], "Can't capture 'b'")
+        self.assertIn('c', res[0], "Can't capture 'c'")
+        self.assertIn('d', res[0], "Can't capture 'd'")

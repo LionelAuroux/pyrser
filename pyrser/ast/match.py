@@ -43,6 +43,7 @@ class MatchExpr:
         return uid
 
     def create_depthreg(self) -> int:
+        # depth reg are common for ancestors and siblings
         r = self.get_root()
         if not hasattr(r, 'max_depthreg'):
             r.max_depthreg = 0
@@ -337,7 +338,6 @@ class MatchType(MatchExpr):
         list_ev = []
         # subs are Dict or List
         if self.subs is not None:
-            print("SUBS %s" % type(self.subs))
             tree = self.subs.get_stack_action()
             unkev = self.create_unknown_event()
             tree[-1].append(('set_event', unkev))
@@ -418,33 +418,37 @@ class MatchSibling(MatchExpr):
     Ast Node for capturing sequence of siblings
     """
 
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-        self.ref_me('left')
-        self.ref_me('right')
+    def __init__(self, old, new):
+        self.ls = None
+        if type(old) is MatchSibling:
+            self.ls = old.ls
+            self.ls.append(new)
+        else:
+            self.ls = [old, new]
+        self.ref_me('ls')
     
     def to_fmt(self) -> fmt.indentable:
         def get_with_bracket(tree):
             if type(tree) is MatchAncestor:
                 return fmt.block('< ', ' >', [tree.to_fmt()])
             return tree.to_fmt()
-        res = fmt.sep(' - ', [])
-        res.lsdata.append(get_with_bracket(self.left))
-        res.lsdata.append(get_with_bracket(self.right))
+        res = fmt.sep(' ~~ ', [])
+        for it in self.ls:
+            res.lsdata.append(get_with_bracket(it))
         return res
 
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
     def get_stack_action(self):
-        tree = self.right.get_stack_action()
-        rregd = self.create_depthreg()
-        tree[-1].append(('store_depth', rregd))
-        tree += self.left.get_stack_action()
-        lregd = self.create_depthreg()
-        tree[-1].append(('store_depth', lregd))
-        tree[-1].append(('check_depth_sibling', [lregd, rregd]))
+        tree = []
+        lsdepth = []
+        for it in self.ls:
+            tree += it.get_stack_action()
+            regd = self.create_depthreg()
+            tree[-1].append(('store_sibling_depth', regd))
+            lsdepth.append(regd)
+        tree[-1].append(('check_sibling_depth', lsdepth))
         return tree
 
 class MatchCapture(MatchExpr):

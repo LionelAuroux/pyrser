@@ -53,7 +53,6 @@ class EventType(Event):
             if len(action) == 1:
                 return True
             if action[1] == self.attr:
-                print("ok type")
                 return True
         return False
 
@@ -64,14 +63,12 @@ class EventValue(Event):
             if len(action) == 1:
                 return True
             if type(self.node) in match_value and action[1] == self.node:
-                print("ok value")
                 return True
         return False
 
 class EventEndNode(Event):
     def check_event(self, action, chk) -> bool:
         if action[0] == 'end_node':
-            print("ok end_node")
             return True
         return False
 
@@ -81,14 +78,12 @@ class EventAttr(Event):
             if len(action) == 1:
                 return True
             if action[1] == self.attr:
-                print("ok attr")
                 return True
         return False
 
 class EventEndAttrs(Event):
     def check_event(self, action, chk) -> bool:
         if action[0] == 'end_attrs':
-            print("ok end_attrs")
             return True
         return False
 
@@ -97,17 +92,14 @@ class EventKey(Event):
         if action[0] == 'key':
             chk.first = self.attr
             if len(action) == 1:
-                print("ok key: %s" % repr(chk.first))
                 return True
             if action[1] == chk.first:
-                print("ok key: %s" % repr(chk.first))
                 return True
         return False
 
 class EventEndKeys(Event):
     def check_event(self, action, chk) -> bool:
         if action[0] == 'end_keys':
-            print("ok end_keys")
             return True
         return False
 
@@ -116,16 +108,13 @@ class EventIndice(Event):
         if action[0] == 'indice':
             chk.first = self.attr
             if len(action) == 1:
-                print("ok indice: %s" % repr(chk.first))
                 return True
             if action[1] == chk.first:
-                print("ok indice: %s" % repr(chk.first))
                 return True
         return False
 
 class EventEndIndices(Event):
     def check_event(self, action, chk) -> bool:
         if action[0] == 'end_indices':
-            print("ok end_indices")
             return True
         return False

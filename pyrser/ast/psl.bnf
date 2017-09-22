@@ -39,7 +39,7 @@ node_seq = [
         num?:depth
         node_item:subn
         #new_MatchAncestor(_, subn, depth, flags)
-        | '-'
+        | "~~"
         node_item:subn
         #new_MatchSibling(_, subn)
     ]*
