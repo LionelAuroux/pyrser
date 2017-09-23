@@ -32,7 +32,7 @@ class H(dict):
     def __repr__(self) -> str:
         return dict.__repr__(self) + " - " + str(vars(self))
 
-class InternalAst_Test(unittest.TestCase):
+class PSL_Test(unittest.TestCase):
 
 
     def test_0_list(self):
@@ -249,12 +249,19 @@ class InternalAst_Test(unittest.TestCase):
         m = MatchType('A', subs=MatchDict([MatchKey('a', MatchValue(12)), MatchKey('b', MatchValue('toto')), MatchKey('c', MatchValue(13))], strict=False), strict=False)
         r = "A({'a': 12, 'b': 'toto', 'c': 13, ...} ...)"
         self.assertEqual(str(m), r, "Can't format MatchType")
-        # -> hook
-        def hook():
-            pass
+        # => #hook
         m = MatchHook('hook', MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
         r = "A(.a='toto', .b=12, .c='lolo', ...) => #hook;"
         self.assertEqual(str(m), r, "Can't format MatchHook")
+        # => Event
+        m = MatchEvent('Event', MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
+        r = "A(.a='toto', .b=12, .c='lolo', ...) => Event;"
+        self.assertEqual(str(m), r, "Can't format MatchEvent")
+        # PrecondEvent
+        m = MatchPrecond(PrecondEvent('Event'), MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
+        r = "A(.a='toto', .b=12, .c='lolo', ...) && (Event)"
+        self.assertEqual(str(m), r, "Can't format MatchEvent")
+
         # BLOCK
         m = MatchBlock([MatchHook('hook', MatchCapture('y', MatchType('A', [MatchAttr('a', MatchCapture('x', MatchValue('toto'))), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False)))])
         r = "{\n    A(.a='toto'->x, .b=12, .c='lolo', ...)->y => #hook;\n}"
@@ -289,6 +296,7 @@ class InternalAst_Test(unittest.TestCase):
             pass
         def hook2():
             pass
+        # Basic syntax
         p = PSL()
         res = p.parse("""
             {
@@ -303,6 +311,7 @@ class InternalAst_Test(unittest.TestCase):
         self.assertEqual(type(res.node[0].stmts[0].v.v.attrs[0].v.v), MatchValue, "Bad parsing of PSL expression")
         self.assertEqual(res.node[0].stmts[0].v.v.attrs[0].v.v.v, 'toto', "Bad parsing of PSL expression")
         tree = res.node[0].get_stack_action()
+        # wildcard on value
         p = PSL()
         res = p.parse("""
             {
@@ -311,6 +320,7 @@ class InternalAst_Test(unittest.TestCase):
         """)
         self.assertIs(res.node[0].stmts[0].v.attrs[0].v.v, None, "Can't see the star")
         self.assertEqual(res.node[0].stmts[0].v.strict, False, "Can't see the ellipsis")
+        # wildcard on list
         res = p.parse("""
             {
                 A([*:* , ...] ...) => #hook1;
@@ -321,6 +331,7 @@ class InternalAst_Test(unittest.TestCase):
         self.assertIs(type(res.node[0].stmts[0].v.subs), MatchList, "Can't see the ellipsis")
         self.assertIs(res.node[0].stmts[0].v.subs.ls[0].idx, None, "Can't see the star")
         self.assertIs(res.node[0].stmts[0].v.subs.ls[0].v.v, None, "Can't see the star")
+        # wildcard on dict
         res = p.parse("""
             {
                 A({*:* , ...} ...) => #hook1;
@@ -331,6 +342,7 @@ class InternalAst_Test(unittest.TestCase):
         self.assertIs(type(res.node[0].stmts[0].v.subs), MatchDict, "Can't see the ellipsis")
         self.assertIs(res.node[0].stmts[0].v.subs.d[0].key, None, "Can't see the star")
         self.assertIs(res.node[0].stmts[0].v.subs.d[0].v.v, None, "Can't see the star")
+        # ancestors
         res = p.parse("""
             {
                 A(...) / B(...) /+2 C(...) /3 D(...) => #hook1;
@@ -346,6 +358,7 @@ class InternalAst_Test(unittest.TestCase):
         self.assertEqual(res.node[0].stmts[0].v.left.left.depth, 1, "Can't see the depth")
         self.assertFalse(res.node[0].stmts[0].v.left.left.is_min, "Can't see the is_min")
         self.assertIs(type(res.node[0].stmts[0].v.left.right), MatchType, "Can't see the ancestor")
+        # siblings
         res = p.parse("""
             {
                 A(...) ~~ B(...) ~~ C(...) ~~ D(...) => #hook1;
@@ -360,6 +373,7 @@ class InternalAst_Test(unittest.TestCase):
         self.assertEqual(res.node[0].stmts[0].v.ls[1].t, 'B', "Can't see the type B")
         self.assertEqual(res.node[0].stmts[0].v.ls[2].t, 'C', "Can't see the type C")
         self.assertEqual(res.node[0].stmts[0].v.ls[3].t, 'D', "Can't see the type D")
+        # mix ancestors/siblings with <> for priority
         res = p.parse("""
             {
                 A(...) ~~ < B(...) / C(...) > ~~ D(...) => #hook1;
@@ -593,6 +607,8 @@ class InternalAst_Test(unittest.TestCase):
         def testsibling(capture, user_data):
             user_data.append(capture.copy())
     
+        def testevent(capture, user_data):
+            print("SPECIAL EVENT")
         ###
         t = {'toto':A(a=12), 'd':[1, 2, A(b=12), 3, A(a=12, b=A(a=12))]}
         comp_psl = PSL()
@@ -668,3 +684,14 @@ class InternalAst_Test(unittest.TestCase):
         self.assertIn('b', res[0], "Can't capture 'b'")
         self.assertIn('c', res[0], "Can't capture 'c'")
         self.assertIn('d', res[0], "Can't capture 'd'")
+        # Event
+        t = A(l=[B(), C(), D()])
+        #                C(...) && (Event) => #hook1;
+        expr = """
+            {
+                B(...) => Event;
+            }
+        """
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook1': testevent}, res)

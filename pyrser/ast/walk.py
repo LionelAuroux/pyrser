@@ -9,37 +9,41 @@ not_normalized = {set, list, dict, tuple}
 match_value = {int, float, str, bytes}
 
 @meta.add_method(node.Node)
-def walk(self, depth=0):
+def walk(self, depth=0, pwidth=0):
     """
     Work only on normalized tree
     """
-
+    width = 0
     if type(self) in not_normalized:
         raise TypeError("Not a normalized tree! User node.normalize() function!")
     if hasattr(self, '__dict__') and not isinstance(self, node.ListNode):
         for k in sorted(vars(self).keys()):
-            yield from walk(getattr(self, k), depth + 1)
-            yield EventAttr(getattr(self, k), k, depth + 1)
+            yield from walk(getattr(self, k), depth + 1, width)
+            yield EventAttr(getattr(self, k), k, depth + 1, width)
+            width += 1
         yield EventEndAttrs(self, depth=depth + 1)
     if hasattr(self, 'keys'):
         for k in sorted(self.keys()):
-            yield from walk(self[k], depth + 1)
-            yield EventKey(self[k], k, depth + 1)
+            yield from walk(self[k], depth + 1, width)
+            yield EventKey(self[k], k, depth + 1, width)
+            width += 1
         yield EventEndKeys(self, depth=depth + 1)
     elif not isinstance(self, str) and hasattr(self, '__iter__'):
         for idx, item in enumerate(self):
-            yield from walk(self[idx], depth + 1)
-            yield EventIndice(self[idx], idx, depth + 1)
+            yield from walk(self[idx], depth + 1, width)
+            yield EventIndice(self[idx], idx, depth + 1, width)
+            width += 1
         yield EventEndIndices(self, depth=depth + 1)
-    yield EventValue(self, None, depth)
-    yield EventType(self, type(self).__name__, depth)
-    yield EventEndNode(self, depth=depth)
+    yield EventValue(self, None, depth, pwidth)
+    yield EventType(self, type(self).__name__, depth, pwidth)
+    yield EventEndNode(self, depth=depth, width=pwidth)
 
 class Event:
-    def __init__(self, node=None, attr=None, depth=None):
+    def __init__(self, node=None, attr=None, depth=None, width=None):
         self.node = node
         self.attr = attr
         self.depth = depth
+        self.width = width
 
     def __repr__(self) -> str:
         return "%s(%r, %r)" % (type(self).__name__, self.attr, self.node)

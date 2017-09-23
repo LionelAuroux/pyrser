@@ -30,7 +30,7 @@ test_cases = (
     grammar_directive.GrammarDirective_Test, #OK
     #grammar_file.GrammarFile_Test,
     hooks.Hooks_Test, #OK
-    #psl.PSL_Test, #OK
+    psl.PSL_Test, #OK
     internal_dsl.InternalDsl_Test, #OK
     internal_error.InternalError_Test, #OK
     internal_fmt.InternalFmt_Test, #OK

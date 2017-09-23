@@ -14,8 +14,13 @@ WIP:
     * Improvement of Type System
     * Documentation and Tutorials
 
+version 0.3.0: 2017-09-23
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    * Add a stable version of PSL (Pyrser Selector Language)
+
 version 0.2.0: 2017-06-09
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
     * Bug fixes: see Issues in github.com
     * Add wheel package distribution

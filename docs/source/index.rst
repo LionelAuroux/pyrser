@@ -10,17 +10,18 @@ Welcome to pyrser's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
    
-   quickstart
-   changelog
-   dsl
-   base
-   API
-   tutorial1
-   tutorial2
-   tutorial3
-   maintainers
+    quickstart
+    changelog
+    dsl
+    psl
+    base
+    API
+    tutorial1
+    tutorial2
+    tutorial3
+    maintainers
 
 
 

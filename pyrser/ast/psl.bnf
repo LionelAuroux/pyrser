@@ -16,7 +16,12 @@ psl_block = [
 ]
 
 psl_stmt = [
-    node_seq:ns "=>" action:a #new_Action(_, a, ns) ';'
+    node_seq:ns "=>" 
+    [
+        hook:h #new_Hook(_, h, ns)
+        | event:e #new_Event(_, e, ns)
+    ]
+    ';'
 ]
 
 action = [
@@ -24,7 +29,7 @@ action = [
 ]
 
 event = [
-    id
+    id:i #new_text(_, i)
 ]
 
 hook = [
@@ -43,6 +48,11 @@ node_seq = [
         node_item:subn
         #new_MatchSibling(_, subn)
     ]*
+    [
+        "&&"
+        '(' precond_expr:expr ')'
+        #new_MatchPrecond(_, expr)
+    ]?
 ]
 
 node_item = [
@@ -53,7 +63,6 @@ node_item = [
     ["->" id:i
         #new_MatchCapture(_, i)
     ]?
-    precond?
     | '<' node_seq:>_  '>'
 ]
 
@@ -64,11 +73,6 @@ node_val = [
     ["->" id:i
         #new_MatchCapture(_, i)
     ]?
-    precond?
-]
-
-precond = [
-   ['??' | '?'] '<' id '>'
 ]
 
 val_scalar = [
@@ -170,3 +174,36 @@ digits = [ digit+ ]
 digit1_9s = [ digit1_9 digits ]
 
 e = [ ['e'|'E'] ['+'|'-']? ]
+
+precond_expr = [
+    precond_xor:>_
+    [
+        '|' precond_xor:or
+        #new_PrecondOr(_, or)
+    ]*
+]
+
+precond_xor = [
+    precond_and:>_
+    [
+        '^' precond_and:xor
+        #new_PrecondXor(_, xor)
+    ]*
+]
+
+precond_and = [
+    precond_unary:>_
+    [
+        '&' precond_unary:and
+        #new_PrecondAnd(_, and)
+    ]*
+]
+
+precond_unary = [
+    '!' precond_primary:prim #new_PrecondFalse(_, prim)
+    | precond_primary:>_
+]
+
+precond_primary = [
+    [id:i #new_PrecondEvent(_, i) | '(' precond_expr:>_ ')']
+]

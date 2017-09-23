@@ -484,69 +484,69 @@ class MatchCapture(MatchExpr):
             tree[-1].insert(-1, ('capture', self.name))
         return tree
 
-#class MatchPrecond(MatchExpr):
-#    """
-#    Ast Node for matching a precondition expression.
-#    """
-#    def __init__(
-#        self,
-#        precond: state.EventExpr,
-#        v: MatchValue=None,
-#        clean_event=True
-#    ):
-#        self.precond = precond
-#        self.v = v
-#        self.clean_event = clean_event
-#
-#    def __eq__(self, other) -> bool:
-#        return id(self.precond) == id(other.precond)
-#
-#    def to_fmt(self) -> fmt.indentable:
-#        res = fmt.sep(' ', [])
-#        if self.v is not None:
-#            res.lsdata.append(self.v.to_fmt())
-#        if self.clean_event:
-#            res.lsdata.append('?')
-#        else:
-#            res.lsdata.append('??')
-#        res.lsdata.append('<' + repr(self.precond) + '>')
-#        return res
-#
-#    def __repr__(self) -> str:
-#        return str(self.to_fmt())
+class MatchPrecond(MatchExpr):
+    """
+    Ast Node for matching a precondition expression.
+    """
+    def __init__(
+        self,
+        precond,
+        v: MatchExpr=None,
+        clean_event=True
+    ):
+        self.precond = precond
+        self.v = v
+        self.clean_event = clean_event
 
+    def to_fmt(self) -> fmt.indentable:
+        res = fmt.sep(' ', [])
+        if self.v is not None:
+            res.lsdata.append(self.v.to_fmt())
+        if self.clean_event:
+            res.lsdata.append('!!')
+        else:
+            res.lsdata.append('&&')
+        res.lsdata.append(fmt.block('(', ')', self.precond.to_fmt()))
+        return res
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
+
+class PrecondEvent(MatchExpr):
+    def __init__(self, name):
+        self.name = name
+
+    def to_fmt(self) -> fmt.indentable:
+        return self.name
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
 
 class MatchEvent(MatchExpr):
     """
     Ast Node for a Resulting Event or intermediate Event.
     """
-    nbinst = 0
 
     def __init__(self, n: str, v: MatchExpr):
         self.n = n
         self.v = v
         self.ref_me('v')
 
-    def getname() -> str:
-        res = "E%d" % MatchEvent.nbinst
-        MatchEvent.nbinst += 1
-        return res
-
     def __eq__(self, other) -> bool:
         return self.n == other.n
 
     def to_fmt(self) -> fmt.indentable:
-        res = fmt.sep(' ! ', [self.v.to_fmt(), self.n + ';'])
+        res = fmt.sep(' => ', [self.v.to_fmt(), self.n + ';'])
         return res
 
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-    #def get_stack_action(self, tree):
-    #    print("%s" % tree)
-    #    self.v.get_stack_action(tree)
-    #    t = ('event', self.n, id(self))
-    #    tree.append(t)
+    def get_stack_action(self):
+        tree = self.v.get_stack_action()
+        t = ('set_named_event', self.n)
+        tree[-1].append(t)
+        return tree
 
 class MatchHook(MatchExpr):
     """

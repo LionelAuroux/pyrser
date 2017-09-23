@@ -38,8 +38,13 @@ def new_MatchHook(self, blck, s):
     return True
 
 @meta.hook(PSL)
-def new_Action(self, ast, a, ns):
-    ast.node = MatchHook(a.node, ns.node)
+def new_Hook(self, ast, h, ns):
+    ast.node = MatchHook(h.node, ns.node)
+    return True
+
+@meta.hook(PSL)
+def new_Event(self, ast, e, ns):
+    ast.node = MatchEvent(e.node, ns.node)
     return True
 
 @meta.hook(PSL)
@@ -179,4 +184,28 @@ def new_MatchIndice(self, ast, i, ns):
     else:
         idx = int(idx)
     ast.node = MatchIndice(idx, ns.node)
+    return True
+
+@meta.hook(PSL)
+def new_MatchPrecond(self, ast, expr):
+    return True
+
+@meta.hook(PSL)
+def new_PrecondOr(self, ast, expr):
+    return True
+
+@meta.hook(PSL)
+def new_PrecondXor(self, ast, expr):
+    return True
+
+@meta.hook(PSL)
+def new_PrecondAnd(self, ast, expr):
+    return True
+
+@meta.hook(PSL)
+def new_PrecondFalse(self, ast, expr):
+    return True
+
+@meta.hook(PSL)
+def new_PrecondEvent(self, ast, i):
     return True
