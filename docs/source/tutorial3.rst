@@ -1,6 +1,8 @@
 Tutorial III: Handling Type System (part 2) Toy Language For Typing:
 =======================================================================
 
+TODO new version coming soon (see version 0.2.0 for older version).
+
 .. 1 - Using inference with a Toy Language
 .. ---------------------------------------
 .. 

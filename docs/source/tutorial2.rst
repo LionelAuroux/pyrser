@@ -9,6 +9,8 @@ To handle this problem, the package ``pyrser.type_system`` provide what we need.
 
 We provide some classes to describe types.
 
+TODO new version coming soon (see version 0.2.0 for older version).
+
 .. :class:`pyrser.type_system.Symbol`: A Symbol represents a thing in our
 .. language.
 .. 

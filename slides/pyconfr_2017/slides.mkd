@@ -1,0 +1,97 @@
+% Pyrser Selector Language
+% Lionel Auroux
+% lionel@lse.epita.fr \ 2017-09-24
+
+# Intro
+
+## About me
+
+Researcher @ LSE (lse.epita.fr) in Security, System and Language
+
+Teacher in CS @ EPITA and EPITECH:
+
+* Python, Kernel for EPITA
+* Language Theory, Kernel for EPITECH
+
+    Project KOOC (Kind Of Object C)
+
+        Made OO compiler based an extended C Grammar
+        One trimester to do the stuff
+        Bac+3 Students
+
+# Pyrser?
+
+## Legacy
+
+KOOC begin in 2003!
+
+Requirements:
+
+* Need something easier than LR parsers (grammar conflicts)
+* Need a hackable C frontend (grammar composition)
+* Workarounds
+
+## Legacy
+
+* 2003 perl Parse::Yapp (Lex/Yacc4perl)
+* 2004-2012 Codeworker (LL(k))
+* 2013-???? Pyrser (PEG):
+
+\small
+        Pyrser is all the good stuff of codeworker in python and more
+
+## Features of Pyrser
+
+Pyrser is a toolbox for SLE (Software Language Engineering).
+
+So with that, you could:
+
+* Describe a grammar with a specific DSL
+* Parse text with your grammar (PEG algorithm)
+* Create an AST
+* Type check it
+* Transform it
+
+# Pyrser Selector Language?
+
+## The problem
+
+Classical compilation scheme:
+
+* Parsing -> Define a grammar -> AST
+* Validating & AST Desugaring -> AST Visiting
+* Type Checking -> AST Visiting
+* Generation -> AST Visiting
+
+## Example
+
+```python
+import ast
+class Allnames(ast.NodeVisitor):
+    def visit_Module(self, node):
+        self.names = {}
+        self.generic_visit(node)
+        print(sorted(self.names.keys()))
+
+    def visit_Name(self, node):
+        self.names[node.id] = node
+
+x = Allnames()
+t = ast.parse('d[x] += v[y, x]')
+x.visit(t)
+```
+
+## The problem
+
+By AST visiting:
+
+* we visit only some type of node by pass
+* we handle the states between different methods
+
+Semantic = many passes, many states shared
+
+## So we need...
+
+A centralized DSL (Domain Specific Language) to describe what to **match** and what to **transform**.
+
+Like regexes, but for data structures.

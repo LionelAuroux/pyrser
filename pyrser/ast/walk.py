@@ -58,6 +58,15 @@ class EventType(Event):
                 return True
             if action[1] == self.attr:
                 return True
+        if action[0] == 'subtype':
+            #TODO: very bad
+            for it in type(object).__subclasses__(object):
+                if it.__name__ == action[1]:
+                    if it.__name__ == self.attr:
+                        return True
+                    for it2 in type(object).__subclasses__(it):
+                        if it2.__name__ == self.attr:
+                            return True
         return False
 
 class EventValue(Event):

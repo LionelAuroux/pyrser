@@ -8,8 +8,8 @@ def read(fname):
 
 long_desc = read('README.rst')
 
-version = '0.2'
-release = '0.2.0'
+version = '0.3'
+release = '0.3.0'
 
 setuptools.setup(
     name='pyrser',
@@ -32,6 +32,7 @@ setuptools.setup(
         'License :: OSI Approved ::' +
             ' GNU General Public License v3 or later (GPLv3+)',
         'Operating System :: OS Independent',
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Topic :: Scientific/Engineering :: Information Analysis',

@@ -80,6 +80,8 @@ class MatchIndice(MatchExpr):
     def get_stack_action(self):
         tree = self.v.get_stack_action()
         t = ('indice', )
+        if self.idx is not None:
+            t = ('indice', self.idx)
         tree[-1].append(t)
         return tree
 
@@ -121,7 +123,7 @@ class MatchList(MatchExpr):
         tree.append([])
         t = ('end_indices',)
         tree[-1].append(t)
-        t = ('check_clean_event', list_ev)
+        t = ('check_clean_event_and', list_ev)
         tree[-1].append(t)
         if self.strict:
             t = ('check_len', len(self.ls))
@@ -155,6 +157,8 @@ class MatchKey(MatchExpr):
     def get_stack_action(self):
         tree = self.v.get_stack_action()
         t = ('key', )
+        if self.key is not None:
+            t = ('key', self.key)
         tree[-1].append(t)
         return tree
 
@@ -196,7 +200,7 @@ class MatchDict(MatchExpr):
         tree.append([])
         t = ('end_keys',)
         tree[-1].append(t)
-        t = ('check_clean_event', list_ev)
+        t = ('check_clean_event_and', list_ev)
         tree[-1].append(t)
         if self.strict:
             t = ('check_len', len(self.d))
@@ -235,7 +239,9 @@ class MatchAttr(MatchExpr):
 
     def get_stack_action(self):
         tree = self.v.get_stack_action()
-        t = ('attr', self.name)
+        t = ('attr',)
+        if self.name is not None:
+            t = ('attr', self.name)
         tree[-1].append(t)
         return tree
 
@@ -324,7 +330,7 @@ class MatchType(MatchExpr):
         elif iparen is None:
             data = subs
         if self.iskindof:
-            paren = fmt.block('^(', ')', data)
+            paren = fmt.block('?(', ')', data)
         else:
             paren = fmt.block('(', ')', data)
         res.lsdata.append(paren)
@@ -358,10 +364,13 @@ class MatchType(MatchExpr):
             tree[-1].append(('check_attr_len', len(self.attrs)))
         t = ('value', )
         tree[-1].append(t)
-        t = ('type', self.t)
+        if self.iskindof:
+            t = ('subtype', self.t)
+        else:
+            t = ('type', self.t)
         tree[-1].append(t)
-        if len(list_ev) > 0:
-            t = ('check_clean_event', list_ev)
+        if list_ev:
+            t = ('check_clean_event_and', list_ev)
             tree[-1].append(t)
         t = ('end_node',)
         tree[-1].append(t)
@@ -458,6 +467,7 @@ class MatchCapture(MatchExpr):
     def __init__(self, n: str, v: MatchExpr, capture_pair=False):
         self.name = n
         self.v = v
+        self.ref_me('v')
         self.capture_pair = capture_pair
         if capture_pair:
             if type(v) is MatchIndice:
@@ -497,30 +507,38 @@ class MatchPrecond(MatchExpr):
         self.precond = precond
         self.v = v
         self.clean_event = clean_event
+        self.ref_me('v')
+        self.ref_me('precond')
 
     def to_fmt(self) -> fmt.indentable:
         res = fmt.sep(' ', [])
         if self.v is not None:
             res.lsdata.append(self.v.to_fmt())
         if self.clean_event:
-            res.lsdata.append('!!')
-        else:
             res.lsdata.append('&&')
-        res.lsdata.append(fmt.block('(', ')', self.precond.to_fmt()))
+        else:
+            res.lsdata.append('!!')
+        res.lsdata.append(fmt.block('(', ')', [self.precond.to_fmt()]))
         return res
 
     def __repr__(self) -> str:
         return str(self.to_fmt())
 
-class PrecondEvent(MatchExpr):
-    def __init__(self, name):
-        self.name = name
-
-    def to_fmt(self) -> fmt.indentable:
-        return self.name
-
-    def __repr__(self) -> str:
-        return str(self.to_fmt())
+    def get_stack_action(self):
+        list_ev = []
+        tree = self.v.get_stack_action()
+        unkev = self.create_unknown_event()
+        tree[-1].append(('set_event', unkev))
+        list_ev.append(unkev)
+        unkev = self.create_unknown_event()
+        tree[-1].extend(self.precond.get_stack_action(unkev))
+        list_ev.append(unkev)
+        t = ('check_clean_event_and', list_ev)
+        tree[-1].append(t)
+        if self.clean_event:
+            t = ('postpone_clean_named_event',)
+            tree[-1].append(t)
+        return tree
 
 class MatchEvent(MatchExpr):
     """
@@ -593,5 +611,125 @@ class MatchBlock(MatchExpr):
     def get_stack_action(self):
         tree = []
         for idx, s in enumerate(self.stmts):
-            tree += [(0, idx), s.get_stack_action()]
+            tree.append([(0, idx), s.get_stack_action()])
         return tree
+
+class PrecondEvent(MatchExpr):
+    def __init__(self, name):
+        self.name = name
+
+    def to_fmt(self) -> fmt.indentable:
+        return self.name
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
+
+    def get_stack_action(self, local_ev):
+        return [('check_named_event', self.name, local_ev)]
+
+class PrecondAnd(MatchExpr):
+    def __init__(self, lhs, rhs):
+        self.lhs = lhs
+        self.rhs = rhs
+        self.ref_me('lhs')
+        self.ref_me('rhs')
+
+    def to_fmt(self) -> fmt.indentable:
+        return fmt.sep(' & ', [self.lhs.to_fmt(), self.rhs.to_fmt()])
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
+
+    def get_stack_action(self, local_ev):
+        list_ev = []
+        unkev = self.create_unknown_event()
+        tree = self.lhs.get_stack_action(unkev)
+        list_ev.append(unkev)
+        unkev = self.create_unknown_event()
+        tree.extend(self.rhs.get_stack_action(unkev))
+        list_ev.append(unkev)
+        t = ('check_clean_event_and', list_ev)
+        tree.append(t)
+        tree.append(('set_event', local_ev))
+        return tree
+
+class PrecondOr(MatchExpr):
+    def __init__(self, lhs, rhs):
+        self.lhs = lhs
+        self.rhs = rhs
+        self.ref_me('lhs')
+        self.ref_me('rhs')
+
+    def to_fmt(self) -> fmt.indentable:
+        return fmt.sep(' | ', [self.lhs.to_fmt(), self.rhs.to_fmt()])
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
+
+    def get_stack_action(self, local_ev):
+        list_ev = []
+        unkev = self.create_unknown_event()
+        tree = self.lhs.get_stack_action(unkev)
+        list_ev.append(unkev)
+        unkev = self.create_unknown_event()
+        tree.extend(self.rhs.get_stack_action(unkev))
+        list_ev.append(unkev)
+        t = ('check_clean_event_or', list_ev)
+        tree.append(t)
+        tree.append(('set_event', local_ev))
+        return tree
+
+class PrecondXor(MatchExpr):
+    def __init__(self, lhs, rhs):
+        self.lhs = lhs
+        self.rhs = rhs
+        self.ref_me('lhs')
+        self.ref_me('rhs')
+
+    def to_fmt(self) -> fmt.indentable:
+        return fmt.sep(' ^ ', [self.lhs.to_fmt(), self.rhs.to_fmt()])
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
+
+    def get_stack_action(self, local_ev):
+        list_ev = []
+        unkev = self.create_unknown_event()
+        tree = self.lhs.get_stack_action(unkev)
+        list_ev.append(unkev)
+        unkev = self.create_unknown_event()
+        tree.extend(self.rhs.get_stack_action(unkev))
+        list_ev.append(unkev)
+        t = ('check_clean_event_xor', list_ev)
+        tree.append(t)
+        tree.append(('set_event', local_ev))
+        return tree
+
+class PrecondNot(MatchExpr):
+    def __init__(self, expr):
+        self.expr = expr
+        self.ref_me('expr')
+
+    def to_fmt(self) -> fmt.indentable:
+        return fmt.sep('', ['!', self.expr.to_fmt()])
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
+
+    def get_stack_action(self, local_ev):
+        #TODO
+        return tree
+
+class PrecondParen(MatchExpr):
+    def __init__(self, expr):
+        self.expr = expr
+        self.ref_me('expr')
+
+    def to_fmt(self) -> fmt.indentable:
+        return fmt.block('(', ')', [self.expr.to_fmt()])
+
+    def __repr__(self) -> str:
+        return str(self.to_fmt())
+
+    def get_stack_action(self, local_ev):
+        return tree.expr.get_stack_action(local_ev)

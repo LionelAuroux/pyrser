@@ -241,6 +241,10 @@ class PSL_Test(unittest.TestCase):
         m = MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False)
         r = "A(.a='toto', .b=12, .c='lolo', ...)"
         self.assertEqual(str(m), r, "Can't format MatchType")
+        # type base instanceof
+        m = MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False, iskindof=True)
+        r = "A?(.a='toto', .b=12, .c='lolo', ...)"
+        self.assertEqual(str(m), r, "Can't format MatchType")
         # type list
         m = MatchType('A', subs=MatchList([MatchIndice(1, MatchValue(12)), MatchIndice(3, MatchValue('toto')), MatchIndice(5, MatchValue(13))], strict=False), strict=False)
         r = "A([1: 12, 3: 'toto', 5: 13, ...] ...)"
@@ -260,8 +264,31 @@ class PSL_Test(unittest.TestCase):
         # PrecondEvent
         m = MatchPrecond(PrecondEvent('Event'), MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
         r = "A(.a='toto', .b=12, .c='lolo', ...) && (Event)"
-        self.assertEqual(str(m), r, "Can't format MatchEvent")
-
+        self.assertEqual(str(m), r, "Can't format PrecondEvent")
+        # PrecondEvent no clean
+        m = MatchPrecond(PrecondEvent('Event'), MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False), clean_event=False)
+        r = "A(.a='toto', .b=12, .c='lolo', ...) !! (Event)"
+        self.assertEqual(str(m), r, "Can't format PrecondEvent")
+        # PrecondAnd
+        m = MatchPrecond(PrecondAnd(PrecondEvent('Event1'), PrecondEvent('Event2')), MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
+        r = "A(.a='toto', .b=12, .c='lolo', ...) && (Event1 & Event2)"
+        self.assertEqual(str(m), r, "Can't format PrecondAnd")
+        # PrecondOr
+        m = MatchPrecond(PrecondOr(PrecondEvent('Event1'), PrecondEvent('Event2')), MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
+        r = "A(.a='toto', .b=12, .c='lolo', ...) && (Event1 | Event2)"
+        self.assertEqual(str(m), r, "Can't format PrecondOr")
+        # PrecondXor
+        m = MatchPrecond(PrecondXor(PrecondEvent('Event1'), PrecondEvent('Event2')), MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
+        r = "A(.a='toto', .b=12, .c='lolo', ...) && (Event1 ^ Event2)"
+        self.assertEqual(str(m), r, "Can't format PrecondXor")
+        # PrecondNot
+        #m = MatchPrecond(PrecondNot(PrecondEvent('Event')), MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
+        #r = "A(.a='toto', .b=12, .c='lolo', ...) && (!Event)"
+        #self.assertEqual(str(m), r, "Can't format PrecondNot")
+        # PrecondParen
+        m = MatchPrecond(PrecondParen(PrecondEvent('Event')), MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
+        r = "A(.a='toto', .b=12, .c='lolo', ...) && ((Event))"
+        self.assertEqual(str(m), r, "Can't format PrecondEvent")
         # BLOCK
         m = MatchBlock([MatchHook('hook', MatchCapture('y', MatchType('A', [MatchAttr('a', MatchCapture('x', MatchValue('toto'))), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False)))])
         r = "{\n    A(.a='toto'->x, .b=12, .c='lolo', ...)->y => #hook;\n}"
@@ -287,7 +314,7 @@ class PSL_Test(unittest.TestCase):
                                             MatchAttr('d', MatchValue('lolo'))], strict=False)),
             ])
         tree = m.get_stack_action()
-        self.assertEqual(len(tree), 4, "Can't get a good stack action len")
+        self.assertEqual(len(tree), 2, "Can't get a good stack action len")
 
     def test_4_psl_syntax(self):
         class A:
@@ -311,6 +338,14 @@ class PSL_Test(unittest.TestCase):
         self.assertEqual(type(res.node[0].stmts[0].v.v.attrs[0].v.v), MatchValue, "Bad parsing of PSL expression")
         self.assertEqual(res.node[0].stmts[0].v.v.attrs[0].v.v.v, 'toto', "Bad parsing of PSL expression")
         tree = res.node[0].get_stack_action()
+        # iskindof type
+        p = PSL()
+        res = p.parse("""
+            {
+                A?(.a=*, ...) => #hook1;
+            }
+        """)
+        self.assertIs(res.node[0].stmts[0].v.iskindof, True, "Can't see the iskindof")
         # wildcard on value
         p = PSL()
         res = p.parse("""
@@ -387,6 +422,54 @@ class PSL_Test(unittest.TestCase):
         self.assertEqual(res.node[0].stmts[0].v.ls[1].left.t, 'B', "Can't see the B")
         self.assertEqual(res.node[0].stmts[0].v.ls[1].right.t, 'C', "Can't see the C")
         self.assertEqual(res.node[0].stmts[0].v.ls[2].t, 'D', "Can't see the D")
+        # event & PrecondEvent
+        res = p.parse("""
+            {
+                A(...) && (Event1) => Event2;
+            }
+        """)
+        self.assertIs(type(res.node[0].stmts[0].v), MatchPrecond, "Can't see MatchPrecond")
+        self.assertIs(type(res.node[0].stmts[0].v.precond), PrecondEvent, "Can't see PrecondEvent")
+        # event & PrecondNot
+        #res = p.parse("""
+        #    {
+        #        A(...) && (!Event1) => Event2;
+        #    }
+        #""")
+        #self.assertIs(type(res.node[0].stmts[0].v), MatchPrecond, "Can't see MatchPrecond")
+        #self.assertIs(type(res.node[0].stmts[0].v.precond), PrecondNot, "Can't see PrecondNot")
+        # event & PrecondParen
+        res = p.parse("""
+            {
+                A(...) && ((Event1)) => Event2;
+            }
+        """)
+        self.assertIs(type(res.node[0].stmts[0].v), MatchPrecond, "Can't see MatchPrecond")
+        self.assertIs(type(res.node[0].stmts[0].v.precond), PrecondParen, "Can't see PrecondParen")
+        # event & PrecondOr
+        res = p.parse("""
+            {
+                A(...) && (Event1 | Event2) => Event3;
+            }
+        """)
+        self.assertIs(type(res.node[0].stmts[0].v), MatchPrecond, "Can't see MatchPrecond")
+        self.assertIs(type(res.node[0].stmts[0].v.precond), PrecondOr, "Can't see PrecondOr")
+        # event & PrecondAnd
+        res = p.parse("""
+            {
+                A(...) && (Event1 & Event2) => Event3;
+            }
+        """)
+        self.assertIs(type(res.node[0].stmts[0].v), MatchPrecond, "Can't see MatchPrecond")
+        self.assertIs(type(res.node[0].stmts[0].v.precond), PrecondAnd, "Can't see PrecondAnd")
+        # event & PrecondXor
+        res = p.parse("""
+            {
+                A(...) && (Event1 ^ Event2) => Event3;
+            }
+        """)
+        self.assertIs(type(res.node[0].stmts[0].v), MatchPrecond, "Can't see MatchPrecond")
+        self.assertIs(type(res.node[0].stmts[0].v.precond), PrecondXor, "Can't see PrecondXor")
 
     def test_5_psl_stack_basic(self):
         class A:
@@ -409,7 +492,7 @@ class PSL_Test(unittest.TestCase):
         hook_fun = {'hook1': hook1}
 
         # stack for matching: A(.a=12)
-        stack = [
+        stack = [[
         [(0, 0), # block id, stmt id
             [
             [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('attr', 'a'), ('set_event', 0)],
@@ -418,13 +501,13 @@ class PSL_Test(unittest.TestCase):
                 ('check_attr_len', 1),
                 ('value', ),
                 ('type', 'A'),
-                ('check_clean_event', [0]),
+                ('check_clean_event_and', [0]),
                 ('capture', 'a'),
             ('end_node', ),
             ('hook', 'hook1')],
             ]
         ]
-        ]
+        ]]
         #
         t = A()
         t.a = 12
@@ -450,24 +533,23 @@ class PSL_Test(unittest.TestCase):
         self.assertEqual(self.nbhook, 0, "Bad number of hook call")
 
         # stack for matching: A(.a=12, .b='toto')
-        stack = [
+        stack = [[
         [(0, 0), # block id, stmt id
             [
             [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('attr', 'a'), ('set_event', 0)],
-            [('value', 'toto'), ('check_event', [0]), ('type', 'str'), ('capture', 'c'),
-                ('end_node', ), ('attr', 'b'), ('set_event', 1)],
+            [('value', 'toto'), ('type', 'str'), ('capture', 'c'), ('end_node', ), ('attr', 'b'), ('set_event', 1)],
             [
                 ('end_attrs', ),
                 ('check_attr_len', 2),
                 ('value', ),
                 ('type', 'A'),
-                ('check_clean_event', [0, 1]),
+                ('check_clean_event_and', [0, 1]),
                 ('capture', 'a'),
             ('end_node', ),
             ('hook', 'hook1')],
             ]
         ]
-        ]
+        ]]
         #
         t = A()
         t.a = 12
@@ -495,7 +577,7 @@ class PSL_Test(unittest.TestCase):
         self.assertEqual(self.nbhook, 0, "Bad number of hook call")
 
         # stack for matching: B([0: 12->b, 1: 42, 2: 'toto'])->a
-        stack = [
+        stack = [[
         [(0, 0), # block id, stmt id
             [
             [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('indice', 0), ('set_event', 0)],
@@ -506,13 +588,13 @@ class PSL_Test(unittest.TestCase):
                 ('check_len', 3),
                 ('value', ),
                 ('type', 'B'),
-                ('check_clean_event', [0, 1, 2]),
+                ('check_clean_event_and', [0, 1, 2]),
                 ('capture', 'a'),
             ('end_node', ),
             ('hook', 'hook1')],
             ]
         ]
-        ]
+        ]]
         #
         t = B([12, 42, 'toto'])
         #
@@ -536,7 +618,7 @@ class PSL_Test(unittest.TestCase):
         self.assertEqual(self.nbhook, 0, "Bad number of hook call")
 
         # stack for matching: C({'toto': 12->b, 'totu': 42, 'tutu': 'toto'})->a
-        stack = [
+        stack = [[
         [(0, 0), # block id, stmt id
             [
             [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('key', 'toto'), ('set_event', 0)],
@@ -547,13 +629,13 @@ class PSL_Test(unittest.TestCase):
                 ('check_len', 3),
                 ('value', ),
                 ('type', 'C'),
-                ('check_clean_event', [0, 1, 2]),
+                ('check_clean_event_and', [0, 1, 2]),
                 ('capture', 'a'),
             ('end_node', ),
             ('hook', 'hook1')],
             ]
         ]
-        ]
+        ]]
         #
         t = C({'toto': 12, 'totu': 42, 'tutu': 'toto'})
         #
@@ -601,16 +683,11 @@ class PSL_Test(unittest.TestCase):
             user_data.clear()
             user_data.extend(a)
 
-        def testancestor(capture, user_data):
+        def testcopy(capture, user_data):
             user_data.append(capture.copy())
 
-        def testsibling(capture, user_data):
-            user_data.append(capture.copy())
-    
-        def testevent(capture, user_data):
-            print("SPECIAL EVENT")
         ###
-        t = {'toto':A(a=12), 'd':[1, 2, A(b=12), 3, A(a=12, b=A(a=12))]}
+        t = {'toto':A(a=12), 'd':[1, 2, A(b=12), A(z=13), 3, A(a=12, b=A(a=12))]}
         comp_psl = PSL()
         # basic 
         expr = "{ A(.a=12)->a => #hook1; }"
@@ -624,19 +701,25 @@ class PSL_Test(unittest.TestCase):
         res = []
         match(t, psl_comp, {'hook1': test1}, res)
         self.assertEqual(len(res), 3, "Can't match: %s" % expr)
+        ##
+        expr = "{ A(.*=12, ...)->a => #hook1; }"
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook1': test1}, res)
+        self.assertEqual(len(res), 4, "Can't match: %s" % expr)
         # List Match
         ##
         expr = "{ [*:* -> a, ...] => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': testlist}, res)
-        self.assertEqual(len(res), 5, "Can't match: %s" % expr)
+        self.assertEqual(len(res), 6, "Can't match: %s" % expr)
         ##
         expr = "{ [*:A(...) -> a, ...] => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': testlist}, res)
-        self.assertEqual(len(res), 2, "Can't match: %s" % expr)
+        self.assertEqual(len(res), 3, "Can't match: %s" % expr)
         # Dict Match
         ##
         t = {'toto':A(a=12), 'd':{1:2, 2:3}}
@@ -658,40 +741,117 @@ class PSL_Test(unittest.TestCase):
         expr = "{ B(...) -> b / C(...) -> c => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
-        match(t, psl_comp, {'hook1': testancestor}, res)
+        match(t, psl_comp, {'hook1': testcopy}, res)
         self.assertEqual(len(res), 1, "Only one capture with depth exactly 1")
         self.assertEqual(res[0]['c'].n, 12, "the C with 12 as value")
         expr = "{ B(...) -> b /+ C(...) -> c => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
-        match(t, psl_comp, {'hook1': testancestor}, res)
+        match(t, psl_comp, {'hook1': testcopy}, res)
         self.assertEqual(len(res), 3, "Only 3 capture with depth minimun 1")
         self.assertEqual(res[1]['c'].n, 13, "the 2nd C with 13 as value")
         expr = "{ B(...) -> b /3 C(...) -> c => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
-        match(t, psl_comp, {'hook1': testancestor}, res)
+        match(t, psl_comp, {'hook1': testcopy}, res)
         self.assertEqual(len(res), 1, "Only one capture with 3 depth")
         self.assertEqual(res[0]['c'].n, 31, "the C with 31 as value")
+        # counter example
+        t = A(l=[A(c=C(n=12)), B(z=44), D(c=C(n=21)), B(a=A(c=C(n=13))), B(a=A(d=D(c=C(n=31))))])
+        expr = "{ B(...) -> b / C(...) -> c => #hook1; }"
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook1': testcopy}, res)
+        #self.assertFalse(len(res) == 1, "No capture of not related ancestors")
         # Sibling
         ## we don't care of order, we match a list of same depth patterns
         t = A(l=[B(c=C(n=12)), C(b=B()), D(c=C(n=21)), B(a=A(c=C(n=13))), C(), B(a=A(d=D(c=C(n=31)))), A(), C(), D()])
         expr = "{ B(...) -> b ~~ C(...) -> c ~~ D(...) -> d => #hook1;}"
         psl_comp = comp_psl.compile(expr)
         res = []
-        match(t, psl_comp, {'hook1': testsibling}, res)
+        match(t, psl_comp, {'hook1': testcopy}, res)
         self.assertEqual(len(res), 1, "Can't match sibling")
         self.assertIn('b', res[0], "Can't capture 'b'")
         self.assertIn('c', res[0], "Can't capture 'c'")
         self.assertIn('d', res[0], "Can't capture 'd'")
-        # Event
+        # Event simple
         t = A(l=[B(), C(), D()])
-        #                C(...) && (Event) => #hook1;
         expr = """
             {
+                C(...) -> c && (Event) => #hook;
                 B(...) => Event;
             }
         """
         psl_comp = comp_psl.compile(expr)
         res = []
-        match(t, psl_comp, {'hook1': testevent}, res)
+        match(t, psl_comp, {'hook': testcopy}, res)
+        self.assertEqual(len(res), 1, "Can't mach with event")
+        self.assertIs(type(res[0]['c']), C, "Can't mach with event")
+        # Event And
+        t = A(l=[B(), C(), D(a=12), A(), D(a=42)])
+        expr = """
+            {
+                A(...) => E1;
+                B(...) => E2;
+                C(...) => E3;
+                D(...) -> d && (E1 & E2 & E3) => #hook;
+            }
+        """
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook': testcopy}, res)
+        self.assertEqual(len(res), 1, "Can't mach with event")
+        self.assertIs(type(res[0]['d']), D, "Can't mach with event")
+        self.assertEqual(res[0]['d'].a, 42, "Can't mach with event")
+        # Event Or
+        t = A(l=[B(), C(), D(a=12), A(), D(a=42)])
+        expr = """
+            {
+                A(...) => E1;
+                B(...) => E2;
+                C(...) => E3;
+                D(...) -> d && (E1 | E2 | E3) => #hook;
+            }
+        """
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook': testcopy}, res)
+        self.assertEqual(len(res), 2, "Can't mach with event")
+        self.assertIs(type(res[0]['d']), D, "Can't mach with event")
+        self.assertEqual(res[0]['d'].a, 12, "Can't mach with event")
+        self.assertIs(type(res[1]['d']), D, "Can't mach with event")
+        self.assertEqual(res[1]['d'].a, 42, "Can't mach with event")
+        # Event Xor
+        t = A(l=[B(), C(), D(a=12), A(), D(a=42), B(), D(a=14), B(), A(), D(a=66)])
+        expr = """
+            {
+                A(...) => E1;
+                B(...) => E2;
+                C(...) && (E1 | E2) => E3;
+                D(...) -> d && (E1 ^ E2) => #hook;
+            }
+        """
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook': testcopy}, res)
+        self.assertEqual(len(res), 2, "Can't mach with event")
+        self.assertIs(type(res[0]['d']), D, "Can't mach with event")
+        self.assertEqual(res[0]['d'].a, 42, "Can't mach with event")
+        self.assertIs(type(res[1]['d']), D, "Can't mach with event")
+        self.assertEqual(res[1]['d'].a, 14, "Can't mach with event")
+        ## iskindof
+        t = [1, 2, B(a=12), A(), A(z=C(a=12))]
+        comp_psl = PSL()
+        expr = "{ A?(...)->a => #hook1; }"
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook1': testcopy}, res)
+        self.assertEqual(len(res), 4, "We must fail: %s" % repr(res))
+        ## counter examples
+        t = [1, 2, B(a=12), A()]#, A(z=C(a=12))]
+        comp_psl = PSL()
+        expr = "{ A(.a=12)->a => #hook1; }"
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        match(t, psl_comp, {'hook1': test1}, res)
+        self.assertFalse(len(res) == 1, "We must fail: %s" % repr(res))

@@ -15,6 +15,48 @@ from pyrser.hooks.vars import *
 # PARSING
 PSL = grammar.from_file(os.path.dirname(__file__) + "/psl.bnf", 'psl') 
 
+def match(tree, compile_psl, hooks, user_data):
+    #TODO: not complete
+    from pyrser.ast.walk import walk
+    from pyrser.parsing.node import normalize
+    from pyrser.ast.stack_action import get_events_list, Checker
+
+    tree = normalize(tree)
+    stack = []
+    for block in compile_psl:
+        stack += [block.get_stack_action()]
+    #print(repr(stack))
+    chk = Checker(hooks, user_data)
+    res = False
+
+    class FakeList:
+        def __init__(self, gen):
+            self.gen = gen
+
+        def __iter__(self):
+            self.cache = []
+            self.idx = 0
+            return self
+
+        def __next__(self):
+            ev = self.gen.send(None)
+            self.cache.append(ev)
+            self.idx += 1
+            return ev
+
+        def __getitem__(self, k):
+            if k not in self.cache and k > self.idx:
+                while self.idx < k:
+                    self.cache.append(self.gen.send(None))
+                    self.idx += 1
+            return self.cache[k]
+
+    #ls = FakeList(walk(tree))
+    ls = get_events_list(tree)
+    for idx, ev in enumerate(ls):
+        chk.check_event_and_action(idx, ls, stack)
+
+
 # new methods
 @meta.add_method(PSL)
 def compile(self, txt) -> MatchExpr:
@@ -105,18 +147,21 @@ def is_str(self, ast, s):
     return True
 
 @meta.hook(PSL)
-def new_MatchType(self, ast, n, nd, idef, strict):
+def new_MatchType(self, ast, n, nd, idef, strict, iskindof):
     tname = self.value(n)
     is_strict = True
-    if len(self.value(strict)) > 1:
+    if len(self.value(strict)) > 0:
         is_strict = False
+    iko = False
+    if len(self.value(iskindof)) > 0:
+        iko = True
     defsub = None
     if hasattr(idef, 'node') and type(idef.node[0]) in {MatchDict, MatchList}:
         defsub = idef.node[0]
     attrs = None
     if hasattr(nd, 'node'):
         attrs = nd.node
-    ast.node = MatchType(tname, attrs, defsub, is_strict)
+    ast.node = MatchType(tname, attrs, defsub, is_strict, iko)
     return True
 
 @meta.hook(PSL)
@@ -153,7 +198,10 @@ def add_into(self, ast, it):
 
 @meta.hook(PSL)
 def new_MatchAttr(self, ast, n, ns):
-    ast.node = MatchAttr(self.value(n), ns.node)
+    attr = self.value(n)
+    if attr == '*':
+        attr = None
+    ast.node = MatchAttr(attr, ns.node)
     return True
 
 @meta.hook(PSL)
@@ -187,25 +235,36 @@ def new_MatchIndice(self, ast, i, ns):
     return True
 
 @meta.hook(PSL)
-def new_MatchPrecond(self, ast, expr):
+def new_MatchPrecond(self, ast, expr, t):
+    ast.node = MatchPrecond(expr.node, t.node)
     return True
 
 @meta.hook(PSL)
 def new_PrecondOr(self, ast, expr):
+    ast.node = PrecondOr(ast.node, expr.node)
     return True
 
 @meta.hook(PSL)
 def new_PrecondXor(self, ast, expr):
+    ast.node = PrecondXor(ast.node, expr.node)
     return True
 
 @meta.hook(PSL)
 def new_PrecondAnd(self, ast, expr):
+    ast.node = PrecondAnd(ast.node, expr.node)
     return True
 
 @meta.hook(PSL)
-def new_PrecondFalse(self, ast, expr):
+def new_PrecondNot(self, ast, expr):
+    ast.node = PrecondNot(expr.node)
+    return True
+
+@meta.hook(PSL)
+def new_PrecondParen(self, ast, expr):
+    ast.node = PrecondParen(expr.node)
     return True
 
 @meta.hook(PSL)
 def new_PrecondEvent(self, ast, i):
+    ast.node = PrecondEvent(self.value(i))
     return True

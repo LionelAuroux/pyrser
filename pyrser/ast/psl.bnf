@@ -51,7 +51,7 @@ node_seq = [
     [
         "&&"
         '(' precond_expr:expr ')'
-        #new_MatchPrecond(_, expr)
+        #new_MatchPrecond(_, expr, _)
     ]?
 ]
 
@@ -90,7 +90,8 @@ val_node = [
 ]
 
 type_node = [
-    id:n '^'?
+    id:n 
+    "?"?:iskindof
     __scope__:idef
     '('
         [
@@ -100,7 +101,7 @@ type_node = [
         node_def:nd
         [','? '...']?:strict
     ')'
-    #new_MatchType(_, n, nd, idef, strict)
+    #new_MatchType(_, n, nd, idef, strict, iskindof)
 ]
 
 node_def = [
@@ -113,7 +114,7 @@ attrs_def = [
 ]
 
 attr_def = [
-    @ignore('null') ['.' id:n] '=' node_val:ns #new_MatchAttr(_, n, ns)
+    @ignore('null') ['.' [id | '*']:n] '=' node_val:ns #new_MatchAttr(_, n, ns)
 ]
 
 dict_def = [
@@ -200,10 +201,11 @@ precond_and = [
 ]
 
 precond_unary = [
-    '!' precond_primary:prim #new_PrecondFalse(_, prim)
-    | precond_primary:>_
+    //'!' precond_primary:prim #new_PrecondNot(_, prim)
+    //| 
+    precond_primary:>_
 ]
 
 precond_primary = [
-    [id:i #new_PrecondEvent(_, i) | '(' precond_expr:>_ ')']
+    [id:i #new_PrecondEvent(_, i) | '(' precond_expr:p ')' #new_PrecondParen(_, p)]
 ]
