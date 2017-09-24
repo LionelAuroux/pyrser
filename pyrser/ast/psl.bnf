@@ -3,6 +3,7 @@
 */
 
 psl = [
+    @ignore("C/C++")
     [
         __scope__:blck
         psl_block
