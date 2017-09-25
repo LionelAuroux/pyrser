@@ -127,7 +127,8 @@ def to_yml_item(item, pp, name):
         tag = fmt.block(name + " " + str(yml_attr('type', 'set')) + ':\n',
                         '', inner)
         for subitem in sorted(item):
-            inner.lsdata.append(fmt.sep(", ", [repr(subitem)]))
+            idxname = str(fmt.sep(", ", [repr(subitem)]))
+            to_yml_item(subitem, inner.lsdata, idxname)
         if len(item) == 0:
             inner.lsdata.append("\n")
         pp.append(tag)

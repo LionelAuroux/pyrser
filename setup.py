@@ -6,7 +6,7 @@ def read(fname):
     import os
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-long_desc = read('README.md')
+long_desc = read('README.rst')
 
 version = '0.2'
 release = '0.2.0'
