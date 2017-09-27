@@ -2,19 +2,26 @@ from pyrser.ast.walk import *
 
 class Checker:
     def __init__(self, hook_fun, user_data):
+        # for events to throw at certain position
         self.dict_action = {}
-        self.states = {}
-        self.events = {}
+        # block scope
         self.named_events = {}
         self.postpone_clean = {}
+        # block/stmt scope
+        self.captures = {}
+        self.events = {}
         self.depths = {}
         self.sibling_depths = []
-        self.captures = {}
+
+        self.childrelat = {}
+
+        # internal state
         self.current_node = None
         self.current_depth = None
         self.last_depth = None
         self.current_width = None
         self.last_width = None
+        # user data
         self.hook_fun = hook_fun
         self.user_data = user_data
 
@@ -37,14 +44,14 @@ class Checker:
                                 # thru events
                                 if action[0] not in pure_action_map:
                                     res = ev.check_event(action, self)
-                                    #print("POS %d %s - %s" % (relat_loc, action[0], res))
+                                    print("POS %d %s - %s" % (relat_loc, action[0], res))
                                     if not res:
                                         for all_loc in self.dict_action.keys():
                                             for k in list(self.dict_action[all_loc].keys()):
                                                 del_id = (cur_pos, block_id, stmt_id, stackid)
                                                 if k == del_id:
-                                                    #print("DEL %s" % repr(k))
-                                                    #print("\t%s" % repr(self.dict_action[all_loc][k]))
+                                                    print("DEL %s" % repr(k))
+                                                    print("\t%s" % repr(self.dict_action[all_loc][k]))
                                                     del self.dict_action[all_loc][k]
                                         raise Abort()
                                     idx_loc += 1
@@ -72,9 +79,13 @@ class Checker:
             self.current_width = lsevents[cur_pos].width
             if self.last_depth is not None and self.last_depth > self.current_depth:
                 # go up,
+                print("UP %s" % repr(self.depths))
+                print("CHILD RELAT %s" % (self.childrelat))
                 pass
             if self.last_depth is not None and self.last_depth < self.current_depth:
                 # go down, clean stored depths >= current_depth if any
+                print("DOWN %s" % repr(self.depths))
+                print("CHILD RELAT %s" % (self.childrelat))
                 pass
             self.last_depth = self.current_depth
             self.last_width = self.current_width
@@ -83,13 +94,13 @@ class Checker:
                 for action in self.dict_action[cur_pos][uid]:
                     if last_action:
                         last_action = pure_action_map[action[0]](action, self, uid)
-                        #print("POS2 %d %s - %s" % (cur_pos, action[0], last_action))
+                        print("POS2 %d %s - %s" % (cur_pos, action[0], last_action))
                     if not last_action:
                         for all_loc in self.dict_action.keys():
                             for k in list(self.dict_action[all_loc].keys()):
                                 if k == uid:
-                                    #print("DEL2 %s" % repr(k))
-                                    #print("\t%s" % repr(self.dict_action[all_loc][k]))
+                                    print("DEL2 %s" % repr(k))
+                                    print("\t%s" % repr(self.dict_action[all_loc][k]))
                                     del self.dict_action[all_loc][k]
 
 def get_events_list(tree) -> []:

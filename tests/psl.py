@@ -16,21 +16,34 @@ import os
 rpath = os.path.dirname(os.path.realpath(__file__)) + os.sep + 'png'
 os.makedirs(rpath, exist_ok=True)
 
-# for validating that we go into hooks
-in_test = False
-class r:
-    def __repr__(self) -> str:
-        return str(vars(self))
-class Test(r):
-    pass
-class A(r):
-    pass
-class L(list):
-    def __repr__(self) -> str:
-        return list.__repr__(self) + " - " + str(vars(self))
-class H(dict):
-    def __repr__(self) -> str:
-        return dict.__repr__(self) + " - " + str(vars(self))
+###
+class A:
+    def __init__(self, **k):
+        self.__dict__.update(k)
+    def __repr__(self):
+        return "%s(%s)" % (type(self).__name__, ', '.join(["%s=%s" % (k, repr(v)) for k, v in vars(self).items()]))
+
+class B(A): pass
+class C(A): pass
+class D(A): pass
+
+def test1(capture, user_data):
+    a = capture['a']
+    user_data.append(a)
+
+def testlist(capture, user_data):
+    a = capture['a']
+    user_data += a
+
+def testdict(capture, user_data):
+    a = capture['a']
+    user_data.clear()
+    user_data.extend(a)
+
+def testcopy(capture, user_data):
+    user_data.append(capture.copy())
+###
+
 
 class PSL_Test(unittest.TestCase):
 
@@ -501,9 +514,9 @@ class PSL_Test(unittest.TestCase):
                 ('check_attr_len', 1),
                 ('value', ),
                 ('type', 'A'),
-                ('check_clean_event_and', [0]),
                 ('capture', 'a'),
             ('end_node', ),
+            ('check_clean_event_and', [0]),
             ('hook', 'hook1')],
             ]
         ]
@@ -543,9 +556,9 @@ class PSL_Test(unittest.TestCase):
                 ('check_attr_len', 2),
                 ('value', ),
                 ('type', 'A'),
-                ('check_clean_event_and', [0, 1]),
                 ('capture', 'a'),
             ('end_node', ),
+            ('check_clean_event_and', [0, 1]),
             ('hook', 'hook1')],
             ]
         ]
@@ -588,9 +601,9 @@ class PSL_Test(unittest.TestCase):
                 ('check_len', 3),
                 ('value', ),
                 ('type', 'B'),
-                ('check_clean_event_and', [0, 1, 2]),
                 ('capture', 'a'),
             ('end_node', ),
+            ('check_clean_event_and', [0, 1, 2]),
             ('hook', 'hook1')],
             ]
         ]
@@ -629,9 +642,9 @@ class PSL_Test(unittest.TestCase):
                 ('check_len', 3),
                 ('value', ),
                 ('type', 'C'),
-                ('check_clean_event_and', [0, 1, 2]),
                 ('capture', 'a'),
             ('end_node', ),
+            ('check_clean_event_and', [0, 1, 2]),
             ('hook', 'hook1')],
             ]
         ]
@@ -658,85 +671,71 @@ class PSL_Test(unittest.TestCase):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 0, "Bad number of hook call")
 
-    def test_6_psl_example(self):
-        ###
-        class A:
-            def __init__(self, **k):
-                self.__dict__.update(k)
-            def __repr__(self):
-                return "%s(%s)" % (type(self).__name__, ', '.join(["%s=%s" % (k, repr(v)) for k, v in vars(self).items()]))
-
-        class B(A): pass
-        class C(A): pass
-        class D(A): pass
-
-        def test1(capture, user_data):
-            a = capture['a']
-            user_data.append(a)
-
-        def testlist(capture, user_data):
-            a = capture['a']
-            user_data += a
-
-        def testdict(capture, user_data):
-            a = capture['a']
-            user_data.clear()
-            user_data.extend(a)
-
-        def testcopy(capture, user_data):
-            user_data.append(capture.copy())
-
-        ###
-        t = {'toto':A(a=12), 'd':[1, 2, A(b=12), A(z=13), 3, A(a=12, b=A(a=12))]}
+    def test_6_psl_01_type_value_attribute(self):
         comp_psl = PSL()
-        # basic 
+        t = {'toto':A(a=12), 'd':[1, 2, A(b=12), A(z=13), 3, A(a=12, b=A(a=12))]}
         expr = "{ A(.a=12)->a => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': test1}, res)
         self.assertEqual(len(res), 2, "Can't match: %s" % expr)
-        ##
+
+    def test_6_psl_02_type_value_wildcard(self):
+        comp_psl = PSL()
+        t = {'toto':A(a=12), 'd':[1, 2, A(b=12), A(z=13), 3, A(a=12, b=A(a=12))]}
         expr = "{ A(.a=*, ...)->a => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': test1}, res)
         self.assertEqual(len(res), 3, "Can't match: %s" % expr)
-        ##
+
+    def test_6_psl_03_type_attribute_wildcard(self):
+        comp_psl = PSL()
+        t = {'toto':A(a=12), 'd':[1, 2, A(b=12), A(z=13), 3, A(a=12, b=A(a=12))]}
         expr = "{ A(.*=12, ...)->a => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': test1}, res)
         self.assertEqual(len(res), 4, "Can't match: %s" % expr)
-        # List Match
-        ##
+
+    def test_6_psl_04_list_all_wildcard(self):
+        comp_psl = PSL()
+        t = {'toto':A(a=12), 'd':[1, 2, A(b=12), A(z=13), 3, A(a=12, b=A(a=12))]}
         expr = "{ [*:* -> a, ...] => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': testlist}, res)
         self.assertEqual(len(res), 6, "Can't match: %s" % expr)
-        ##
+
+    def test_6_psl_05_list_index_wildcard(self):
+        comp_psl = PSL()
+        t = {'toto':A(a=12), 'd':[1, 2, A(b=12), A(z=13), 3, A(a=12, b=A(a=12))]}
         expr = "{ [*:A(...) -> a, ...] => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': testlist}, res)
         self.assertEqual(len(res), 3, "Can't match: %s" % expr)
-        # Dict Match
-        ##
+
+    def test_6_psl_06_dict_all_wildcard(self):
+        comp_psl = PSL()
         t = {'toto':A(a=12), 'd':{1:2, 2:3}}
         expr = "{ {*:* -> a, ...} => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': testdict}, res)
         self.assertEqual(len(res), 4, "Can't match: %s" % expr)
-        ##
+
+    def test_6_psl_07_dict_key_wildcard(self):
+        comp_psl = PSL()
         t = {'toto':A(a=12), 'd':{1:A(), 2:A(a=3), 3:A(b=12, a=13), 4:A(b=13, a=12)}}
         expr = "{ {*:A(.a=12, ...) -> a, ...} => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': testdict}, res)
         self.assertEqual(len(res), 2, "Can't match: %s" % expr)
-        # Ancestor
-        ##
+
+    def test_6_psl_08_ancestor_simple(self):
+        comp_psl = PSL()
         t = A(l=[B(c=C(n=12)), C(b=B()), D(c=C(n=21)), B(a=A(c=C(n=13))), B(a=A(d=D(c=C(n=31))))])
         expr = "{ B(...) -> b / C(...) -> c => #hook1; }"
         psl_comp = comp_psl.compile(expr)
@@ -744,26 +743,29 @@ class PSL_Test(unittest.TestCase):
         match(t, psl_comp, {'hook1': testcopy}, res)
         self.assertEqual(len(res), 1, "Only one capture with depth exactly 1")
         self.assertEqual(res[0]['c'].n, 12, "the C with 12 as value")
+
+    def test_6_psl_09_ancestor_depth_variable(self):
+        comp_psl = PSL()
+        t = A(l=[B(c=C(n=12)), C(b=B()), D(c=C(n=21)), B(a=A(c=C(n=13))), B(a=A(d=D(c=C(n=31))))])
         expr = "{ B(...) -> b /+ C(...) -> c => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': testcopy}, res)
         self.assertEqual(len(res), 3, "Only 3 capture with depth minimun 1")
         self.assertEqual(res[1]['c'].n, 13, "the 2nd C with 13 as value")
+
+    def test_6_psl_10_ancestor_depth_fix(self):
+        comp_psl = PSL()
+        t = A(l=[B(c=C(n=12)), C(b=B()), D(c=C(n=21)), B(a=A(c=C(n=13))), B(a=A(d=D(c=C(n=31))))])
         expr = "{ B(...) -> b /3 C(...) -> c => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': testcopy}, res)
         self.assertEqual(len(res), 1, "Only one capture with 3 depth")
         self.assertEqual(res[0]['c'].n, 31, "the C with 31 as value")
-        # counter example
-        t = A(l=[A(c=C(n=12)), B(z=44), D(c=C(n=21)), B(a=A(c=C(n=13))), B(a=A(d=D(c=C(n=31))))])
-        expr = "{ B(...) -> b / C(...) -> c => #hook1; }"
-        psl_comp = comp_psl.compile(expr)
-        res = []
-        match(t, psl_comp, {'hook1': testcopy}, res)
-        #self.assertFalse(len(res) == 1, "No capture of not related ancestors")
-        # Sibling
+
+    def test_6_psl_11_sibling(self):
+        comp_psl = PSL()
         ## we don't care of order, we match a list of same depth patterns
         t = A(l=[B(c=C(n=12)), C(b=B()), D(c=C(n=21)), B(a=A(c=C(n=13))), C(), B(a=A(d=D(c=C(n=31)))), A(), C(), D()])
         expr = "{ B(...) -> b ~~ C(...) -> c ~~ D(...) -> d => #hook1;}"
@@ -774,7 +776,9 @@ class PSL_Test(unittest.TestCase):
         self.assertIn('b', res[0], "Can't capture 'b'")
         self.assertIn('c', res[0], "Can't capture 'c'")
         self.assertIn('d', res[0], "Can't capture 'd'")
-        # Event simple
+
+    def test_6_psl_12_event_precond(self):
+        comp_psl = PSL()
         t = A(l=[B(), C(), D()])
         expr = """
             {
@@ -787,7 +791,9 @@ class PSL_Test(unittest.TestCase):
         match(t, psl_comp, {'hook': testcopy}, res)
         self.assertEqual(len(res), 1, "Can't mach with event")
         self.assertIs(type(res[0]['c']), C, "Can't mach with event")
-        # Event And
+
+    def test_6_psl_13_event_and(self):
+        comp_psl = PSL()
         t = A(l=[B(), C(), D(a=12), A(), D(a=42)])
         expr = """
             {
@@ -803,7 +809,9 @@ class PSL_Test(unittest.TestCase):
         self.assertEqual(len(res), 1, "Can't mach with event")
         self.assertIs(type(res[0]['d']), D, "Can't mach with event")
         self.assertEqual(res[0]['d'].a, 42, "Can't mach with event")
-        # Event Or
+
+    def test_6_psl_14_event_or(self):
+        comp_psl = PSL()
         t = A(l=[B(), C(), D(a=12), A(), D(a=42)])
         expr = """
             {
@@ -821,7 +829,9 @@ class PSL_Test(unittest.TestCase):
         self.assertEqual(res[0]['d'].a, 12, "Can't mach with event")
         self.assertIs(type(res[1]['d']), D, "Can't mach with event")
         self.assertEqual(res[1]['d'].a, 42, "Can't mach with event")
-        # Event Xor
+
+    def test_6_psl_15_event_xor(self):
+        comp_psl = PSL()
         t = A(l=[B(), C(), D(a=12), A(), D(a=42), B(), D(a=14), B(), A(), D(a=66)])
         expr = """
             {
@@ -839,7 +849,13 @@ class PSL_Test(unittest.TestCase):
         self.assertEqual(res[0]['d'].a, 42, "Can't mach with event")
         self.assertIs(type(res[1]['d']), D, "Can't mach with event")
         self.assertEqual(res[1]['d'].a, 14, "Can't mach with event")
-        ## iskindof
+
+    def test_6_psl_16_event_not(self):
+        # TODO
+        pass
+
+    def test_6_psl_17_iskindof(self):
+        comp_psl = PSL()
         t = [1, 2, B(a=12), A(), A(z=C(a=12))]
         comp_psl = PSL()
         expr = "{ A?(...)->a => #hook1; }"
@@ -847,8 +863,21 @@ class PSL_Test(unittest.TestCase):
         res = []
         match(t, psl_comp, {'hook1': testcopy}, res)
         self.assertEqual(len(res), 4, "We must fail: %s" % repr(res))
-        ## counter examples
-        t = [1, 2, B(a=12), A()]#, A(z=C(a=12))]
+
+    def test_6_psl_bugfix_1_ancestor_are_related(self):
+        comp_psl = PSL()
+        t = A(l=[A(c=C(n=12)), B(z=44), D(c=C(n=21)), B(a=A(c=C(n=13))), B(a=A(d=D(c=C(n=31))))])
+        expr = "{ B(...) -> b / C(...) -> c => #hook1; }"
+        psl_comp = comp_psl.compile(expr)
+        res = []
+        print("<<<")
+        match(t, psl_comp, {'hook1': testcopy}, res)
+        print(">>>")
+        self.assertFalse(len(res) == 1, "No capture of not related ancestors")
+
+    def test_6_psl_bugfix_2_attribute_related_to_direct_ancestor(self):
+        comp_psl = PSL()
+        t = [1, 2, B(a=12), A(), A(z=C(a=12))]
         comp_psl = PSL()
         expr = "{ A(.a=12)->a => #hook1; }"
         psl_comp = comp_psl.compile(expr)
