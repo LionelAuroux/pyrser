@@ -22,10 +22,6 @@ def match(tree, compile_psl, hooks, user_data):
     from pyrser.ast.stack_action import get_events_list, Checker
 
     tree = normalize(tree)
-    stack = []
-    for block in compile_psl:
-        stack += [block.get_stack_action()]
-    #print(repr(stack))
     chk = Checker(hooks, user_data)
     res = False
 
@@ -54,14 +50,24 @@ def match(tree, compile_psl, hooks, user_data):
     #ls = FakeList(walk(tree))
     ls = get_events_list(tree)
     for idx, ev in enumerate(ls):
-        chk.check_event_and_action(idx, ls, stack)
+        chk.check_event_and_action(idx, ls, compile_psl.stack)
 
+class CompiledPSL:
+    def __init__(self, ast, stack):
+        self.ast = ast
+        self.stack = stack
+    def __repr__(self) -> str:
+        return repr(self.ast)
 
 # new methods
 @meta.add_method(PSL)
 def compile(self, txt) -> MatchExpr:
     res = self.parse(txt)
-    return res.node
+    stack = []
+    for block in res.node:
+        stack += [block.get_stack_action()]
+    comp = CompiledPSL(res.node, stack)
+    return comp
 
 # hooks
 

@@ -78,7 +78,7 @@ class MatchIndice(MatchExpr):
         return str(self.to_fmt())
 
     def get_stack_action(self, local_ev=None):
-        tree = self.v.get_stack_action()
+        tree = self.v.get_stack_action(local_ev)
         t = ('indice', )
         if self.idx is not None:
             t = ('indice', self.idx)
@@ -114,7 +114,7 @@ class MatchList(MatchExpr):
         tree = []
         list_ev = []
         for item in self.ls:
-            subtree = item.get_stack_action()
+            subtree = item.get_stack_action(local_ev)
             unkev = self.create_unknown_event()
             subtree[-1].append(('set_event', unkev))
             tree += subtree
@@ -155,7 +155,7 @@ class MatchKey(MatchExpr):
         return str(self.to_fmt())
 
     def get_stack_action(self, local_ev=None):
-        tree = self.v.get_stack_action()
+        tree = self.v.get_stack_action(local_ev)
         t = ('key', )
         if self.key is not None:
             t = ('key', self.key)
@@ -191,7 +191,7 @@ class MatchDict(MatchExpr):
         tree = []
         list_ev = []
         for item in self.d:
-            subtree = item.get_stack_action()
+            subtree = item.get_stack_action(local_ev)
             unkev = self.create_unknown_event()
             subtree[-1].append(('set_event', unkev))
             tree += subtree
@@ -239,6 +239,8 @@ class MatchAttr(MatchExpr):
 
     def get_stack_action(self, local_ev=None):
         tree = self.v.get_stack_action()
+        if local_ev is not None:
+            tree[-1].append(('store_ancestor_depth', local_ev))
         t = ('attr',)
         if self.name is not None:
             t = ('attr', self.name)
@@ -342,6 +344,7 @@ class MatchType(MatchExpr):
     def get_stack_action(self, local_ev=None):
         tree = []
         list_ev = []
+        list_depth = []
         # subs are Dict or List
         if self.subs is not None:
             tree = self.subs.get_stack_action()
@@ -351,16 +354,17 @@ class MatchType(MatchExpr):
         # TODO: first elem of subtree
         if self.attrs is not None:
             for idx, item in enumerate(self.attrs):
-                subtree = item.get_stack_action()
+                regdepth = self.create_depthreg()
+                subtree = item.get_stack_action(regdepth)
+                list_depth.append(regdepth)
                 unkev = self.create_unknown_event()
                 subtree[-1].append(('set_event', unkev))
                 tree += subtree
                 list_ev.append(unkev)
         # final checks
         tree.append([])
-        t = ('end_attrs',)
-        tree[-1].append(t)
         if self.strict:
+            tree[-1].append(('end_attrs',))
             tree[-1].append(('check_attr_len', len(self.attrs)))
         t = ('value', )
         tree[-1].append(t)
@@ -369,9 +373,13 @@ class MatchType(MatchExpr):
         else:
             t = ('type', self.t)
         tree[-1].append(t)
-        #ancestor paternity
         t = ('end_node',)
         tree[-1].append(t)
+        #ancestor paternity
+        if list_depth:
+            for d in list_depth:
+                tree[-1].append(('check_ancestor_depth', d, 1, False))
+        # sync event
         if list_ev:
             t = ('check_clean_event_and', list_ev)
             tree[-1].append(t)
@@ -414,13 +422,18 @@ class MatchAncestor(MatchExpr):
         return str(self.to_fmt())
 
     def get_stack_action(self, local_ev=None):
-        tree = self.right.get_stack_action()
+        lsev = []
+        unkev = self.create_unknown_event()
+        tree = self.right.get_stack_action(unkev)
+        lsev.append(unkev)
         # store depth
         regdepth = self.create_depthreg()
-        tree[-1].append(('store_depth', regdepth))
-        tree += self.left.get_stack_action()
+        tree[-1].append(('store_ancestor_depth', regdepth))
+        unkev = self.create_unknown_event()
+        tree += self.left.get_stack_action(unkev)
+        lsev.append(unkev)
         # check depth
-        tree[-1].append(('check_depth', regdepth, self.depth, self.is_min))
+        tree[-1].append(('check_ancestor_depth', regdepth, self.depth, self.is_min))
         return tree
 
 class MatchSibling(MatchExpr):
@@ -453,8 +466,11 @@ class MatchSibling(MatchExpr):
     def get_stack_action(self, local_ev=None):
         tree = []
         lsdepth = []
+        lsev = []
         for it in self.ls:
-            tree += it.get_stack_action()
+            unkev = self.create_unknown_event()
+            tree += it.get_stack_action(unkev)
+            lsev.append(unkev)
             regd = self.create_depthreg()
             tree[-1].append(('store_sibling_depth', regd))
             lsdepth.append(regd)
@@ -486,7 +502,7 @@ class MatchCapture(MatchExpr):
         return str(self.to_fmt())
 
     def get_stack_action(self, local_ev=None):
-        tree = self.v.get_stack_action()
+        tree = self.v.get_stack_action(local_ev)
         # we add capture before leaving the node
         if self.capture_pair:
             tree[-1].insert(-1, ('capture_pair_second', self.name))
@@ -587,7 +603,8 @@ class MatchHook(MatchExpr):
         return str(self.to_fmt())
 
     def get_stack_action(self, local_ev=None):
-        tree = self.v.get_stack_action()
+        unkev = self.create_unknown_event()
+        tree = self.v.get_stack_action(unkev)
         t = ('hook', self.n)
         tree[-1].append(t)
         return tree

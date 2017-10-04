@@ -14,6 +14,7 @@ class Checker:
         self.sibling_depths = []
 
         self.childrelat = {}
+        self.event_chr = {} #event childrelat
 
         # internal state
         self.current_node = None
@@ -21,9 +22,31 @@ class Checker:
         self.last_depth = None
         self.current_width = None
         self.last_width = None
+        self.current_parent = None
         # user data
         self.hook_fun = hook_fun
         self.user_data = user_data
+
+    def is_parentof(self, idparent, idchild) -> bool:
+        def get_parent_of(childrelat, idchild):
+            if idchild in self.childrelat:
+                for parent in self.childrelat[idchild]:
+                    print("CHECK")
+                    yield parent
+                    print("UP")
+                    yield from get_parent_of(self.childrelat, parent)
+            #elif idchild == self.current_parent:
+            #    yield idchild
+        print("ancestor %d parent of %d" % (idparent, idchild))
+        if idparent == idchild:
+            print("found")
+            return True
+        for parent in get_parent_of(self, idchild):
+            print("check parent %d" % (parent))
+            if parent == idparent:
+                print("found")
+                return True
+        return False
 
     def check_event_and_action(self, cur_pos, lsevents, stack):
         class Abort(Exception):
@@ -43,6 +66,19 @@ class Checker:
                                 ev = lsevents[relat_loc]
                                 # thru events
                                 if action[0] not in pure_action_map:
+                                    #
+                                    if ev.childrelat is not None:
+                                        idchild = ev.childrelat[0]
+                                        idparent = ev.childrelat[1]
+                                        print("EV CHILD %d HAS PARENT %d" % (idchild, idparent))
+                                        # literals have always the same id, so they have many parents
+                                        if idchild not in self.childrelat:
+                                            self.childrelat[idchild] = []
+                                        # called many time for the same node (depend of stack)
+                                        if idparent not in self.childrelat[idchild]:
+                                            self.childrelat[idchild].append(idparent)
+                                        self.current_parent = ev.childrelat[1]
+                                    #
                                     res = ev.check_event(action, self)
                                     print("POS %d %s - %s" % (relat_loc, action[0], res))
                                     if not res:
@@ -79,13 +115,13 @@ class Checker:
             self.current_width = lsevents[cur_pos].width
             if self.last_depth is not None and self.last_depth > self.current_depth:
                 # go up,
-                print("UP %s" % repr(self.depths))
                 print("CHILD RELAT %s" % (self.childrelat))
+                print("CURRENT PARENT %d" % (self.current_parent))
                 pass
             if self.last_depth is not None and self.last_depth < self.current_depth:
                 # go down, clean stored depths >= current_depth if any
-                print("DOWN %s" % repr(self.depths))
                 print("CHILD RELAT %s" % (self.childrelat))
+                print("CURRENT PARENT %d" % (self.current_parent))
                 pass
             self.last_depth = self.current_depth
             self.last_width = self.current_width
@@ -100,6 +136,8 @@ class Checker:
                             for k in list(self.dict_action[all_loc].keys()):
                                 if k == uid:
                                     print("DEL2 %s" % repr(k))
+                                    if self.captures:
+                                        print("CAPTURES? %s" % repr(self.captures))
                                     print("\t%s" % repr(self.dict_action[all_loc][k]))
                                     del self.dict_action[all_loc][k]
 
@@ -126,6 +164,8 @@ def action_set_event(action, chk, uid):
     evid = (action[1], block_id, stmt_id)
     if evid not in chk.events:
         chk.events[evid] = []
+        chk.event_chr[evid] = []
+    chk.events[evid].append(chk.current_depth)
     chk.events[evid].append(chk.current_depth)
     return True
 
@@ -264,28 +304,44 @@ def action_capture_pair_second(action, chk, uid):
     chk.captures[block_id][stmt_id][action[1]].append(chk.current_node)
     return True
 
-def action_store_depth(action, chk, uid):
+def action_store_ancestor_depth(action, chk, uid):
     cur_pos, block_id, stmt_id, stackid = uid
     depthid = (action[1], block_id, stmt_id)
-    chk.depths[depthid] = chk.current_depth
+    if depthid not in chk.depths:
+        chk.depths[depthid] = []
+    chk.depths[depthid].append((chk.current_depth, id(chk.current_node)))
     return True
 
-def action_check_depth(action, chk, uid):
+def action_check_ancestor_depth(action, chk, uid):
     cur_pos, block_id, stmt_id, stackid = uid
     depthid = (action[1], block_id, stmt_id)
     d = action[2]
     ismin = action[3]
     if depthid not in chk.depths:
         return False
-    if ismin:
-        if chk.depths[depthid] - chk.current_depth >= d:
-            del chk.depths[depthid]
-            return True
-    else:
-        if chk.depths[depthid]  - chk.current_depth == d:
-            del chk.depths[depthid]
-            return True
-    return False
+    # check ancestor links
+    print("CURRENT NODE %d" % id(chk.current_node))
+    check = False
+    for idx in range(len(chk.depths[depthid]) - 1, -1, -1):
+        curdepth = chk.depths[depthid][idx]
+        depth = curdepth[0]
+        idnode = curdepth[1]
+        print("ANCESTOR ID %d D %d" % (idnode, depth))
+        if not chk.is_parentof(id(chk.current_node), idnode):
+            continue
+        print("ismin %s: %d - %d ?? %d" % (ismin, depth, chk.current_depth, d))
+        if ismin:
+            if depth - chk.current_depth >= d:
+                check = True
+                chk.depths[depthid].pop(idx)
+                break
+        elif depth  - chk.current_depth == d:
+                check = True
+                chk.depths[depthid].pop(idx)
+                break
+    if not chk.depths[depthid]:
+        del chk.depths[depthid]
+    return check
 
 def action_store_sibling_depth(action, chk, uid):
     cur_pos, block_id, stmt_id, stackid = uid
@@ -323,6 +379,7 @@ def action_hook(action, chk, uid):
     if funname not in chk.hook_fun:
         raise TypeError("Can't find %s in Checker" % funname)
     capt_dict = {}
+    print("CALL HOOK %s" % chk.captures)
     if block_id in chk.captures and stmt_id in chk.captures[block_id]:
         capt_dict = chk.captures[block_id][stmt_id]
     chk.hook_fun[funname](capt_dict, chk.user_data)
@@ -342,8 +399,8 @@ pure_action_map = {
     'capture': action_capture,
     'capture_pair_first': action_capture_pair_first,
     'capture_pair_second': action_capture_pair_second,
-    'store_depth': action_store_depth,
-    'check_depth': action_check_depth,
+    'store_ancestor_depth': action_store_ancestor_depth,
+    'check_ancestor_depth': action_check_ancestor_depth,
     'store_sibling_depth': action_store_sibling_depth,
     'check_sibling_depth': action_check_sibling_depth,
     'hook': action_hook

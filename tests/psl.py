@@ -18,14 +18,44 @@ os.makedirs(rpath, exist_ok=True)
 
 ###
 class A:
-    def __init__(self, **k):
-        self.__dict__.update(k)
+    def __init__(self, *item, **k):
+        self._is_list = False
+        self._is_dict = False
+        self._have_attr = False
+        for it in item:
+            if type(it) is list:
+                self._l = it
+                self._is_list = True
+            if type(it) is dict:
+                self._d = it
+                self._is_dict = True
+        if k is not None:
+            self.__dict__.update(k)
+            self._have_attr = True
     def __repr__(self):
-        return "%s(%s)" % (type(self).__name__, ', '.join(["%s=%s" % (k, repr(v)) for k, v in vars(self).items()]))
+        lsres = []
+        if self._is_list:
+            lsres.append(repr(self._l))
+        if self._is_dict:
+            lsres.append(repr(self._d))
+        if self._have_attr:
+           lsres += ["%s=%s" % (k, repr(v)) for k, v in vars(self).items() if k[0] != '_']
+        return "%s(%s)" % (type(self).__name__, ', '.join(lsres))
 
 class B(A): pass
 class C(A): pass
 class D(A): pass
+
+def hook1(capture, user_data):
+    user_data.nbhook += 1
+    user_data.assertIn('a', capture, "Not captured")
+    user_data.assertIn('b', capture, "Not captured")
+    a = capture['a']
+    b = capture['b']
+    user_data.assertEqual(b, 12, "Not captured")
+
+def hook_count(capture, user_data):
+    user_data.nbhook += 1
 
 def test1(capture, user_data):
     a = capture['a']
@@ -484,42 +514,27 @@ class PSL_Test(unittest.TestCase):
         self.assertIs(type(res.node[0].stmts[0].v), MatchPrecond, "Can't see MatchPrecond")
         self.assertIs(type(res.node[0].stmts[0].v.precond), PrecondXor, "Can't see PrecondXor")
 
-    def test_5_psl_stack_basic(self):
+    def test_5_stack_basic(self):
         class A:
             pass
-
-        class B(list):
-            pass
-
-        class C(dict):
-            pass
-
-        def hook1(capture, user_data):
-            user_data.nbhook += 1
-            user_data.assertIn('a', capture, "Not captured")
-            user_data.assertIn('b', capture, "Not captured")
-            a = capture['a']
-            b = capture['b']
-            user_data.assertEqual(b, 12, "Not captured")
-
-        hook_fun = {'hook1': hook1}
-
         # stack for matching: A(.a=12)
         stack = [[
-        [(0, 0), # block id, stmt id
-            [
-            [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('attr', 'a'), ('set_event', 0)],
-            [
-                ('end_attrs', ),
-                ('check_attr_len', 1),
-                ('value', ),
-                ('type', 'A'),
-                ('capture', 'a'),
-            ('end_node', ),
-            ('check_clean_event_and', [0]),
-            ('hook', 'hook1')],
+            [(0, 0), # block id, stmt id
+                [
+                    [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('store_ancestor_depth', 0), ('attr', 'a'), ('set_event', 0)],
+                    [
+                        ('end_attrs', ),
+                        ('check_attr_len', 1),
+                        ('value', ),
+                        ('type', 'A'),
+                        ('capture', 'a'),
+                        ('end_node', ),
+                        ('check_ancestor_depth', 0, 1, False),
+                        ('check_clean_event_and', [0]),
+                        ('hook', 'hook1')
+                    ],
+                ]
             ]
-        ]
         ]]
         #
         t = A()
@@ -527,39 +542,44 @@ class PSL_Test(unittest.TestCase):
         #
         self.nbhook = 0
         ls = get_events_list(t)
-        chk = Checker(hook_fun, self)
+        chk = Checker({'hook1': hook1}, self)
         sz = len(ls)
         for idx in range(sz):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 1, "Bad number of hook call")
-        
         # counter example
         t = A()
         t.b = 12
         #
         self.nbhook = 0
         ls = get_events_list(t)
-        chk = Checker(hook_fun, self)
+        chk = Checker({'hook1': hook1}, self)
         sz = len(ls)
         for idx in range(sz):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 0, "Bad number of hook call")
 
+    def test_5_stack_with_attributes(self):
+        class A:
+            pass
         # stack for matching: A(.a=12, .b='toto')
         stack = [[
         [(0, 0), # block id, stmt id
             [
-            [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('attr', 'a'), ('set_event', 0)],
-            [('value', 'toto'), ('type', 'str'), ('capture', 'c'), ('end_node', ), ('attr', 'b'), ('set_event', 1)],
-            [
-                ('end_attrs', ),
-                ('check_attr_len', 2),
-                ('value', ),
-                ('type', 'A'),
-                ('capture', 'a'),
-            ('end_node', ),
-            ('check_clean_event_and', [0, 1]),
-            ('hook', 'hook1')],
+                [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('store_ancestor_depth', 0), ('attr', 'a'), ('set_event', 0)],
+                [('value', 'toto'), ('type', 'str'), ('capture', 'c'), ('end_node', ), ('store_ancestor_depth', 1), ('attr', 'b'), ('set_event', 1)],
+                [
+                    ('end_attrs', ),
+                    ('check_attr_len', 2),
+                    ('value', ),
+                    ('type', 'A'),
+                    ('capture', 'a'),
+                    ('end_node', ),
+                    ('check_ancestor_depth', 0, 1, False),
+                    ('check_ancestor_depth', 1, 1, False),
+                    ('check_clean_event_and', [0, 1]),
+                    ('hook', 'hook1')
+                ],
             ]
         ]
         ]]
@@ -570,7 +590,7 @@ class PSL_Test(unittest.TestCase):
         #
         self.nbhook = 0
         ls = get_events_list(t)
-        chk = Checker(hook_fun, self)
+        chk = Checker({'hook1': hook1}, self)
         sz = len(ls)
         for idx in range(sz):
             chk.check_event_and_action(idx, ls, stack)
@@ -583,28 +603,35 @@ class PSL_Test(unittest.TestCase):
         #
         self.nbhook = 0
         ls = get_events_list(t)
-        chk = Checker(hook_fun, self)
+        chk = Checker({'hook1': hook1}, self)
         sz = len(ls)
         for idx in range(sz):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 0, "Bad number of hook call")
 
+    def test_5_stack_with_capture(self):
+        class B(list):
+            pass
         # stack for matching: B([0: 12->b, 1: 42, 2: 'toto'])->a
         stack = [[
         [(0, 0), # block id, stmt id
             [
-            [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('indice', 0), ('set_event', 0)],
-            [('value', 42), ('type', 'int'), ('end_node', ), ('indice', 1), ('set_event', 1)],
-            [('value', 'toto'), ('type', 'str'), ('end_node', ), ('indice', 2), ('set_event', 2)],
-            [
-                ('end_indices', ),
-                ('check_len', 3),
-                ('value', ),
-                ('type', 'B'),
-                ('capture', 'a'),
-            ('end_node', ),
-            ('check_clean_event_and', [0, 1, 2]),
-            ('hook', 'hook1')],
+                [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('store_ancestor_depth', 0), ('indice', 0), ('set_event', 0)],
+                [('value', 42), ('type', 'int'), ('end_node', ), ('store_ancestor_depth', 1), ('indice', 1), ('set_event', 1)],
+                [('value', 'toto'), ('type', 'str'), ('end_node', ), ('store_ancestor_depth', 2), ('indice', 2), ('set_event', 2)],
+                [
+                    ('end_indices', ),
+                    ('check_len', 3),
+                    ('value', ),
+                    ('type', 'B'),
+                    ('capture', 'a'),
+                    ('end_node', ),
+                    ('check_ancestor_depth', 0, 1, False),
+                    ('check_ancestor_depth', 1, 1, False),
+                    ('check_ancestor_depth', 2, 1, False),
+                    ('check_clean_event_and', [0, 1, 2]),
+                    ('hook', 'hook1')
+                ],
             ]
         ]
         ]]
@@ -612,8 +639,8 @@ class PSL_Test(unittest.TestCase):
         t = B([12, 42, 'toto'])
         #
         self.nbhook = 0
-        ls = get_events_list(t)
-        chk = Checker(hook_fun, self)
+        ls = get_events_list(node.normalize(t))
+        chk = Checker({'hook1': hook1}, self)
         sz = len(ls)
         for idx in range(sz):
             chk.check_event_and_action(idx, ls, stack)
@@ -623,29 +650,36 @@ class PSL_Test(unittest.TestCase):
         t = B([12, 42, 'tota'])
         #
         self.nbhook = 0
-        ls = get_events_list(t)
-        chk = Checker(hook_fun, self)
+        ls = get_events_list(node.normalize(t))
+        chk = Checker({'hook1': hook1}, self)
         sz = len(ls)
         for idx in range(sz):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 0, "Bad number of hook call")
 
+    def test_5_stack_with_dict(self):
+        class C(dict):
+            pass
         # stack for matching: C({'toto': 12->b, 'totu': 42, 'tutu': 'toto'})->a
         stack = [[
         [(0, 0), # block id, stmt id
             [
-            [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('key', 'toto'), ('set_event', 0)],
-            [('value', 42), ('type', 'int'), ('end_node', ), ('key', 'totu'), ('set_event', 1)],
-            [('value', 'toto'), ('type', 'str'), ('end_node', ), ('key', 'tutu'), ('set_event', 2)],
-            [
-                ('end_keys', ),
-                ('check_len', 3),
-                ('value', ),
-                ('type', 'C'),
-                ('capture', 'a'),
-            ('end_node', ),
-            ('check_clean_event_and', [0, 1, 2]),
-            ('hook', 'hook1')],
+                [('value', 12), ('type', 'int'), ('capture', 'b'), ('end_node', ), ('store_ancestor_depth', 0), ('key', 'toto'), ('set_event', 0)],
+                [('value', 42), ('type', 'int'), ('end_node', ), ('store_ancestor_depth', 1), ('key', 'totu'), ('set_event', 1)],
+                [('value', 'toto'), ('type', 'str'), ('end_node', ), ('store_ancestor_depth', 2), ('key', 'tutu'), ('set_event', 2)],
+                [
+                    ('end_keys', ),
+                    ('check_len', 3),
+                    ('value', ),
+                    ('type', 'C'),
+                    ('capture', 'a'),
+                    ('end_node', ),
+                    ('check_ancestor_depth', 0, 1, False),
+                    ('check_ancestor_depth', 1, 1, False),
+                    ('check_ancestor_depth', 2, 1, False),
+                    ('check_clean_event_and', [0, 1, 2]),
+                    ('hook', 'hook1')
+                ],
             ]
         ]
         ]]
@@ -653,8 +687,8 @@ class PSL_Test(unittest.TestCase):
         t = C({'toto': 12, 'totu': 42, 'tutu': 'toto'})
         #
         self.nbhook = 0
-        ls = get_events_list(t)
-        chk = Checker(hook_fun, self)
+        ls = get_events_list(node.normalize(t))
+        chk = Checker({'hook1': hook1}, self)
         sz = len(ls)
         for idx in range(sz):
             chk.check_event_and_action(idx, ls, stack)
@@ -664,14 +698,44 @@ class PSL_Test(unittest.TestCase):
         t = C({'toto': 12, 'totu': 42, 'tutu': 'tota'})
         #
         self.nbhook = 0
-        ls = get_events_list(t)
-        chk = Checker(hook_fun, self)
+        ls = get_events_list(node.normalize(t))
+        chk = Checker({'hook1': hook1}, self)
         sz = len(ls)
         for idx in range(sz):
             chk.check_event_and_action(idx, ls, stack)
         self.assertEqual(self.nbhook, 0, "Bad number of hook call")
 
+    def test_5_stack_basic_with_ancestor(self):
+        # stack for matching: A(...) / C(...) -> a => #hook1
+        stack = [[
+        [(0, 0), # block id, stmt id
+            [
+                [('value',), ('type', 'C'), ('capture', 'a'), ('end_node',), ('store_ancestor_depth', 0)],
+                [
+                    ('value', ),
+                    ('type', 'A'),
+                    ('end_node', ),
+                    ('check_ancestor_depth', 0, 1, False),
+                    ('hook', 'hook1')
+                ]
+            ]
+        ]
+        ]]
+        #
+        t = [1, 2, C(c=12), A(a=13), A(a=C(c=42))]
+        #
+        self.nbhook = 0
+        ls = get_events_list(node.normalize(t))
+        chk = Checker({'hook1': hook_count}, self)
+        sz = len(ls)
+        for idx in range(sz):
+            chk.check_event_and_action(idx, ls, stack)
+        self.assertEqual(self.nbhook, 1, "Bad number of hook call")
+
     def test_6_psl_01_type_value_attribute(self):
+        class A:
+            def __init__(self, **k):
+                self.__dict__.update(k)
         comp_psl = PSL()
         t = {'toto':A(a=12), 'd':[1, 2, A(b=12), A(z=13), 3, A(a=12, b=A(a=12))]}
         expr = "{ A(.a=12)->a => #hook1; }"
@@ -681,13 +745,21 @@ class PSL_Test(unittest.TestCase):
         self.assertEqual(len(res), 2, "Can't match: %s" % expr)
 
     def test_6_psl_02_type_value_wildcard(self):
+        class A:
+            def __init__(self, **k):
+                self.__dict__.update(k)
+            def __repr__(self):
+                return "%s(%s)" % (type(self).__name__, ', '.join(["%s=%s" % (k, repr(v)) for k, v in vars(self).items() if k[0] != '_']))
+        class B(A): pass
+        class C(A): pass
+        class D(A): pass
         comp_psl = PSL()
-        t = {'toto':A(a=12), 'd':[1, 2, A(b=12), A(z=13), 3, A(a=12, b=A(a=12))]}
+        t = {'toto':A(a=12), 'd':[1, 2, A(b=12), A(z=13), 3, B(a=A(a=D())), A(a=12, b=A(a=13))]}
         expr = "{ A(.a=*, ...)->a => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': test1}, res)
-        self.assertEqual(len(res), 3, "Can't match: %s" % expr)
+        self.assertEqual(len(res), 4, "Can't match: %s" % expr)
 
     def test_6_psl_03_type_attribute_wildcard(self):
         comp_psl = PSL()
@@ -741,7 +813,7 @@ class PSL_Test(unittest.TestCase):
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': testcopy}, res)
-        self.assertEqual(len(res), 1, "Only one capture with depth exactly 1")
+        self.assertEqual(len(res), 1, "Only one capture with depth exactly 1: %s" % repr(res))
         self.assertEqual(res[0]['c'].n, 12, "the C with 12 as value")
 
     def test_6_psl_09_ancestor_depth_variable(self):
@@ -750,8 +822,10 @@ class PSL_Test(unittest.TestCase):
         expr = "{ B(...) -> b /+ C(...) -> c => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
+        print(">>> DEPTH: %s" % repr(psl_comp.stack))
         match(t, psl_comp, {'hook1': testcopy}, res)
-        self.assertEqual(len(res), 3, "Only 3 capture with depth minimun 1")
+        print("<<< DEPTH")
+        self.assertEqual(len(res), 3, "Only 3 capture with depth minimun 1: %s" % repr(res))
         self.assertEqual(res[1]['c'].n, 13, "the 2nd C with 13 as value")
 
     def test_6_psl_10_ancestor_depth_fix(self):
@@ -761,7 +835,7 @@ class PSL_Test(unittest.TestCase):
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': testcopy}, res)
-        self.assertEqual(len(res), 1, "Only one capture with 3 depth")
+        self.assertEqual(len(res), 1, "Only one capture with 3 depth: %s" % repr(res))
         self.assertEqual(res[0]['c'].n, 31, "the C with 31 as value")
 
     def test_6_psl_11_sibling(self):
@@ -772,7 +846,7 @@ class PSL_Test(unittest.TestCase):
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook1': testcopy}, res)
-        self.assertEqual(len(res), 1, "Can't match sibling")
+        self.assertEqual(len(res), 1, "Can't match sibling: %s" % repr(res))
         self.assertIn('b', res[0], "Can't capture 'b'")
         self.assertIn('c', res[0], "Can't capture 'c'")
         self.assertIn('d', res[0], "Can't capture 'd'")

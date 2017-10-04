@@ -19,19 +19,19 @@ def walk(self, depth=0, pwidth=0, idparent=0):
     if hasattr(self, '__dict__') and not isinstance(self, node.ListNode):
         for k in sorted(vars(self).keys()):
             yield from walk(getattr(self, k), depth + 1, width, id(self))
-            yield EventAttr(getattr(self, k), k, depth + 1, width)
+            yield EventAttr(getattr(self, k), k, depth + 1, width, childrelat=(id(getattr(self, k)), idparent))
             width += 1
         yield EventEndAttrs(self, depth=depth + 1)
     if hasattr(self, 'keys'):
         for k in sorted(self.keys()):
             yield from walk(self[k], depth + 1, width, id(self))
-            yield EventKey(self[k], k, depth + 1, width)
+            yield EventKey(self[k], k, depth + 1, width, childrelat=(id(self[k]), idparent))
             width += 1
         yield EventEndKeys(self, depth=depth + 1)
     elif not isinstance(self, str) and hasattr(self, '__iter__'):
         for idx, item in enumerate(self):
             yield from walk(self[idx], depth + 1, width, id(self))
-            yield EventIndice(self[idx], idx, depth + 1, width)
+            yield EventIndice(self[idx], idx, depth + 1, width, childrelat=(id(self[idx]), idparent))
             width += 1
         yield EventEndIndices(self, depth=depth + 1)
     yield EventValue(self, None, depth, pwidth)
@@ -57,6 +57,7 @@ class EventType(Event):
         if action[0] == 'type':
             if len(action) == 1:
                 return True
+            print("Check TYPE %s ?? %s" % (self.attr, action[1]))
             if action[1] == self.attr:
                 return True
         if action[0] == 'subtype':
@@ -83,7 +84,16 @@ class EventValue(Event):
 class EventEndNode(Event):
     def check_event(self, action, chk) -> bool:
         if action[0] == 'end_node':
-            chk.childrelat[self.childrelat[0]] = self.childrelat[1]
+#            idchild = self.childrelat[0]
+#            idparent = self.childrelat[1]
+#            print("ENDNODE CHILD %d HAS PARENT %d" % (idchild, idparent))
+#            # literals have always the same id, so they have many parents
+#            if idchild not in chk.childrelat:
+#                chk.childrelat[idchild] = []
+#            # EventEnNode.check_event is called many time for the same node (depend of stack)
+#            if idparent not in chk.childrelat[idchild]:
+#                chk.childrelat[idchild].append(idparent)
+#            chk.current_parent = self.childrelat[1]
             return True
         return False
 
@@ -92,6 +102,7 @@ class EventAttr(Event):
         if action[0] == 'attr':
             if len(action) == 1:
                 return True
+            print("Check %s ?? %s" % (self.attr, action[1]))
             if action[1] == self.attr:
                 return True
         return False
