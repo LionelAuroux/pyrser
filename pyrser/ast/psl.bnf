@@ -202,8 +202,8 @@ precond_and = [
 ]
 
 precond_unary = [
-    //'!' precond_primary:prim #new_PrecondNot(_, prim)
-    //| 
+    '!' precond_primary:prim #new_PrecondNot(_, prim)
+    | 
     precond_primary:>_
 ]
 

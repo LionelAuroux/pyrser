@@ -325,9 +325,9 @@ class PSL_Test(unittest.TestCase):
         r = "A(.a='toto', .b=12, .c='lolo', ...) && (Event1 ^ Event2)"
         self.assertEqual(str(m), r, "Can't format PrecondXor")
         # PrecondNot
-        #m = MatchPrecond(PrecondNot(PrecondEvent('Event')), MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
-        #r = "A(.a='toto', .b=12, .c='lolo', ...) && (!Event)"
-        #self.assertEqual(str(m), r, "Can't format PrecondNot")
+        m = MatchPrecond(PrecondNot(PrecondEvent('Event')), MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
+        r = "A(.a='toto', .b=12, .c='lolo', ...) && (!Event)"
+        self.assertEqual(str(m), r, "Can't format PrecondNot")
         # PrecondParen
         m = MatchPrecond(PrecondParen(PrecondEvent('Event')), MatchType('A', [MatchAttr('a', MatchValue('toto')), MatchAttr('b', MatchValue(12)), MatchAttr('c', MatchValue('lolo'))], strict=False))
         r = "A(.a='toto', .b=12, .c='lolo', ...) && ((Event))"
@@ -474,13 +474,13 @@ class PSL_Test(unittest.TestCase):
         self.assertIs(type(res.node[0].stmts[0].v), MatchPrecond, "Can't see MatchPrecond")
         self.assertIs(type(res.node[0].stmts[0].v.precond), PrecondEvent, "Can't see PrecondEvent")
         # event & PrecondNot
-        #res = p.parse("""
-        #    {
-        #        A(...) && (!Event1) => Event2;
-        #    }
-        #""")
-        #self.assertIs(type(res.node[0].stmts[0].v), MatchPrecond, "Can't see MatchPrecond")
-        #self.assertIs(type(res.node[0].stmts[0].v.precond), PrecondNot, "Can't see PrecondNot")
+        res = p.parse("""
+            {
+                A(...) && (!Event1) => Event2;
+            }
+        """)
+        self.assertIs(type(res.node[0].stmts[0].v), MatchPrecond, "Can't see MatchPrecond")
+        self.assertIs(type(res.node[0].stmts[0].v.precond), PrecondNot, "Can't see PrecondNot")
         # event & PrecondParen
         res = p.parse("""
             {
@@ -822,9 +822,7 @@ class PSL_Test(unittest.TestCase):
         expr = "{ B(...) -> b /+ C(...) -> c => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
-        print(">>> DEPTH: %s" % repr(psl_comp.stack))
         match(t, psl_comp, {'hook1': testcopy}, res)
-        print("<<< DEPTH")
         self.assertEqual(len(res), 3, "Only 3 capture with depth minimun 1: %s" % repr(res))
         self.assertEqual(res[1]['c'].n, 13, "the 2nd C with 13 as value")
 
@@ -918,15 +916,27 @@ class PSL_Test(unittest.TestCase):
         psl_comp = comp_psl.compile(expr)
         res = []
         match(t, psl_comp, {'hook': testcopy}, res)
-        self.assertEqual(len(res), 2, "Can't mach with event")
+        self.assertEqual(len(res), 2, "Can't mach with event: %s" % res)
         self.assertIs(type(res[0]['d']), D, "Can't mach with event")
         self.assertEqual(res[0]['d'].a, 42, "Can't mach with event")
-        self.assertIs(type(res[1]['d']), D, "Can't mach with event")
-        self.assertEqual(res[1]['d'].a, 14, "Can't mach with event")
 
     def test_6_psl_16_event_not(self):
-        # TODO
-        pass
+        def is_called(capture, user_data):
+            user_data.call += 1
+            user_data.b = capture['b']
+        comp_psl = PSL()
+        t = C(l=[B(b=1), A(), B(b=2), B(b=3)])
+        expr = """
+            {
+                A(...) => E1;
+                B(...) -> b && (!E1) => #hook;
+            }
+        """
+        psl_comp = comp_psl.compile(expr)
+        ud = A()
+        ud.call = 0
+        match(t, psl_comp, {'hook': is_called}, ud)
+        self.assertEqual(ud.call, 2, "Can't manage Not: %s" % repr(ud))
 
     def test_6_psl_17_iskindof(self):
         comp_psl = PSL()

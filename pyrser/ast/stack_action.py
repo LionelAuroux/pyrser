@@ -205,6 +205,7 @@ def action_check_clean_event_and(action, chk, uid):
     if len(nb_match) == len(action[1]) and nb_match.count(nb_match[0]) == len(nb_match):
         for ev in action[1]:
             evid = (ev, block_id, stmt_id)
+            # clean fired events
             chk.events[evid].pop(0)
             if not chk.events[evid]:
                 del chk.events[evid]
@@ -219,9 +220,11 @@ def action_check_clean_event_or(action, chk, uid):
         if evid in chk.events:
             # logically the first element is the deeper
             nb_match.append((evid, chk.events[evid][0]))
-    # we unsure that all event come from the same depth, but we don't car how many are set (OR)
+    # we unsure that all event come from the same depth, but we don't care how many are set (OR)
     if sum(1 for y in nb_match if y[1] == nb_match[0][1]) == len(nb_match):
         for evid, _ in nb_match:
+            # clear fired events if the condition is OK
+            # TODO: clean only events when all the condition is evaluated to true
             chk.events[evid].pop(0)
             if not chk.events[evid]:
                 del chk.events[evid]
@@ -237,6 +240,8 @@ def action_check_clean_event_xor(action, chk, uid):
             # logically the first element is the deeper
             nb_match.append((evid, chk.events[evid][0]))
     # only one element is set (XOR)
+    print("CHECK XOR LEN: %d" % len(nb_match))
+    print("EV %s" % nb_match)
     if len(nb_match) == 1:
         evid, _ = nb_match[0]
         chk.events[evid].pop(0)
@@ -244,6 +249,18 @@ def action_check_clean_event_xor(action, chk, uid):
             del chk.events[evid]
         return True
     return False
+
+def action_check_clean_event_not(action, chk, uid):
+    cur_pos, block_id, stmt_id, stackid = uid
+    evid = (action[1], block_id, stmt_id)
+    if evid in chk.events:
+        # only one element is checked for set (NOT)
+        print("NOT EV %s" % repr(evid))
+        chk.events[evid].pop(0)
+        if not chk.events[evid]:
+            del chk.events[evid]
+        return False
+    return True
 
 def action_check_named_event(action, chk, uid):
     cur_pos, block_id, stmt_id, stackid = uid
@@ -262,6 +279,7 @@ def action_postpone_clean_named_event(action, chk, uid):
         for it in chk.postpone_clean[block_id].values():
             if it[0] >= chk.current_depth:
                 lsr.append(it)
+    print("clean fired events: %s" % lsr)
     for it in lsr:
         del chk.named_events[it[1]]
         del chk.postpone_clean[block_id][it[1][0]]
@@ -394,6 +412,7 @@ pure_action_map = {
     'check_clean_event_and': action_check_clean_event_and,
     'check_clean_event_or': action_check_clean_event_or,
     'check_clean_event_xor': action_check_clean_event_xor,
+    'check_clean_event_not': action_check_clean_event_not,
     'check_named_event': action_check_named_event,
     'postpone_clean_named_event': action_postpone_clean_named_event,
     'capture': action_capture,

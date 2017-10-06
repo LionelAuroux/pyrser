@@ -735,7 +735,11 @@ class PrecondNot(MatchExpr):
         return str(self.to_fmt())
 
     def get_stack_action(self, local_ev=None):
-        #TODO
+        unkev = self.create_unknown_event()
+        tree = self.expr.get_stack_action(unkev)
+        t = ('check_clean_event_not', unkev)
+        tree.append(t)
+        tree.append(('set_event', local_ev))
         return tree
 
 class PrecondParen(MatchExpr):
