@@ -935,7 +935,9 @@ class PSL_Test(unittest.TestCase):
         psl_comp = comp_psl.compile(expr)
         ud = A()
         ud.call = 0
+        print("!!! NOT: %s" % repr(psl_comp.stack))
         match(t, psl_comp, {'hook': is_called}, ud)
+        print("!!!")
         self.assertEqual(ud.call, 2, "Can't manage Not: %s" % repr(ud))
 
     def test_6_psl_17_iskindof(self):
@@ -954,9 +956,7 @@ class PSL_Test(unittest.TestCase):
         expr = "{ B(...) -> b / C(...) -> c => #hook1; }"
         psl_comp = comp_psl.compile(expr)
         res = []
-        print("<<<")
         match(t, psl_comp, {'hook1': testcopy}, res)
-        print(">>>")
         self.assertFalse(len(res) == 1, "No capture of not related ancestors")
 
     def test_6_psl_bugfix_2_attribute_related_to_direct_ancestor(self):

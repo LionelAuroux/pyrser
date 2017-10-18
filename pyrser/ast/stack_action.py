@@ -35,8 +35,6 @@ class Checker:
                     yield parent
                     print("UP")
                     yield from get_parent_of(self.childrelat, parent)
-            #elif idchild == self.current_parent:
-            #    yield idchild
         print("ancestor %d parent of %d" % (idparent, idchild))
         if idparent == idchild:
             print("found")
@@ -68,6 +66,7 @@ class Checker:
                                 if action[0] not in pure_action_map:
                                     #
                                     if ev.childrelat is not None:
+                                        # TODO: put in a function called in the walking passes
                                         idchild = ev.childrelat[0]
                                         idparent = ev.childrelat[1]
                                         print("EV CHILD %d HAS PARENT %d" % (idchild, idparent))
@@ -117,6 +116,7 @@ class Checker:
                 # go up,
                 print("CHILD RELAT %s" % (self.childrelat))
                 print("CURRENT PARENT %d" % (self.current_parent))
+                # TODO: clean all event set at this depth
                 pass
             if self.last_depth is not None and self.last_depth < self.current_depth:
                 # go down, clean stored depths >= current_depth if any
@@ -170,6 +170,7 @@ def action_set_event(action, chk, uid):
     return True
 
 def action_set_named_event(action, chk, uid):
+    # TODO: potentially clean activated named events of the statement
     cur_pos, block_id, stmt_id, stackid = uid
     evid = (action[1], block_id)
     chk.named_events[evid] = chk.current_depth
@@ -198,14 +199,17 @@ def action_check_clean_event_and(action, chk, uid):
     nb_match = []
     for ev in action[1]:
         evid = (ev, block_id, stmt_id)
+        print("CHECK AND %s" % repr(evid))
         if evid in chk.events:
             # logically the first element is the deeper
             nb_match.append(chk.events[evid][0])
-    # we unsure that all event come from the same depth and are all set (AND)
+    #!! we unsure that all event come from the same depth and are all set (AND)
     if len(nb_match) == len(action[1]) and nb_match.count(nb_match[0]) == len(nb_match):
+    #if len(nb_match) == len(action[1]):
         for ev in action[1]:
             evid = (ev, block_id, stmt_id)
             # clean fired events
+            # TODO: assume that the first is the deeper
             chk.events[evid].pop(0)
             if not chk.events[evid]:
                 del chk.events[evid]
@@ -217,10 +221,11 @@ def action_check_clean_event_or(action, chk, uid):
     nb_match = []
     for ev in action[1]:
         evid = (ev, block_id, stmt_id)
+        print("CHECK OR %s" % repr(evid))
         if evid in chk.events:
             # logically the first element is the deeper
             nb_match.append((evid, chk.events[evid][0]))
-    # we unsure that all event come from the same depth, but we don't care how many are set (OR)
+    #!! we unsure that all event come from the same depth, but we don't care how many are set (OR)
     if sum(1 for y in nb_match if y[1] == nb_match[0][1]) == len(nb_match):
         for evid, _ in nb_match:
             # clear fired events if the condition is OK
@@ -234,8 +239,10 @@ def action_check_clean_event_or(action, chk, uid):
 def action_check_clean_event_xor(action, chk, uid):
     cur_pos, block_id, stmt_id, stackid = uid
     nb_match = []
+    print("--- XOR")
     for ev in action[1]:
         evid = (ev, block_id, stmt_id)
+        print("CHECK XOR %s" % repr(evid))
         if evid in chk.events:
             # logically the first element is the deeper
             nb_match.append((evid, chk.events[evid][0]))
@@ -243,10 +250,12 @@ def action_check_clean_event_xor(action, chk, uid):
     print("CHECK XOR LEN: %d" % len(nb_match))
     print("EV %s" % nb_match)
     if len(nb_match) == 1:
-        evid, _ = nb_match[0]
-        chk.events[evid].pop(0)
-        if not chk.events[evid]:
-            del chk.events[evid]
+        for evid, _ in nb_match:
+            # clear fired events if the condition is OK
+            # TODO: clean only events when all the condition is evaluated to true
+            chk.events[evid].pop(0)
+            if not chk.events[evid]:
+                del chk.events[evid]
         return True
     return False
 
@@ -263,25 +272,36 @@ def action_check_clean_event_not(action, chk, uid):
     return True
 
 def action_check_named_event(action, chk, uid):
+    """
+    Check is the named event is set and so set a local event
+    """
     cur_pos, block_id, stmt_id, stackid = uid
-    evid = (action[1], block_id)
+    evid = (action[1], block_id) #!!
+    print("CHECK NAMED %s" % action[1])
     if evid in chk.named_events:
         if block_id not in chk.postpone_clean:
             chk.postpone_clean[block_id] = {}
-        chk.postpone_clean[block_id][action[1]] = (chk.named_events[evid], evid)
+        # store depth and evid
+        chk.postpone_clean[block_id][action[1]] = (chk.named_events[evid], evid, (action[2], block_id, stmt_id))
+        # so locally we store an event
         action_set_event((None, action[2]), chk, uid)
+        print("SET LOCAL %d" % action[2])
     return True
 
 def action_postpone_clean_named_event(action, chk, uid):
+    # TODO: take all named events used, and store for futur clean during final SetEvent or Hook
     cur_pos, block_id, stmt_id, stackid = uid
     lsr = []
     if block_id in chk.postpone_clean:
         for it in chk.postpone_clean[block_id].values():
+            print("IN POSTPONE %s" % repr(it))
             if it[0] >= chk.current_depth:
                 lsr.append(it)
     print("clean fired events: %s" % lsr)
     for it in lsr:
         del chk.named_events[it[1]]
+        # clean local events
+        del chk.events[it[2]]
         del chk.postpone_clean[block_id][it[1][0]]
         if not chk.postpone_clean[block_id]:
             del chk.postpone_clean[block_id]
@@ -392,6 +412,7 @@ def action_check_sibling_depth(action, chk, uid):
     return False
 
 def action_hook(action, chk, uid):
+    # TODO: potentially clean activated named events of the statement
     cur_pos, block_id, stmt_id, stackid = uid
     funname = action[1]
     if funname not in chk.hook_fun:

@@ -552,6 +552,7 @@ class MatchPrecond(MatchExpr):
         list_ev.append(unkev)
         t = ('check_clean_event_and', list_ev)
         tree[-1].append(t)
+        # TODO: to the end of the statement, so on MatchHook or MatchEvent
         if self.clean_event:
             t = ('postpone_clean_named_event',)
             tree[-1].append(t)
