@@ -30,12 +30,15 @@ sys.path.insert(0, os.path.abspath('../../'))
 # They can be extensions coming with Sphinx (named 'sphinx.ext.*')
 # or your custom ones.
 extensions = ['sphinx.ext.viewcode', 'sphinx.ext.todo', 'sphinx.ext.graphviz',
-              'sphinx.ext.inheritance_diagram', 'sphinx.ext.autodoc',
+              'sphinx.ext.inheritance_diagram', 'sphinx.ext.autodoc', 'rst2pdf.pdfbuilder',
               'sphinxcontrib.programoutput']
 file_insertion_enabled = True
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members', 'undoc-members', 'special-members',
                          'show-inheritance']
+
+pdf_documents = [('index', 'rst2pdf', 'Sample rst2pdf doc', 'Your Name')]
+
 import inspect
 def process_signature(app, what, name, obj, options,
                       signature, return_annotation):

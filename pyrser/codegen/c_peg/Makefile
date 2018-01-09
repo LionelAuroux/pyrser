@@ -13,7 +13,7 @@ debug: ${objcxx}
 	@gcc -DDEBUG -g ${srcc} ${objcxx} -o ${test}
 
 clean:
-	@rm -f *.swp *~ *.o
+	@rm -f .*.swp *~ *.o
 
 distclean: clean
 	@rm -f ${test}
