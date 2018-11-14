@@ -31,18 +31,18 @@ class Checker:
         def get_parent_of(childrelat, idchild):
             if idchild in self.childrelat:
                 for parent in self.childrelat[idchild]:
-                    print("CHECK")
+                    #print("CHECK")
                     yield parent
-                    print("UP")
+                    #print("UP")
                     yield from get_parent_of(self.childrelat, parent)
-        print("ancestor %d parent of %d" % (idparent, idchild))
+        #print("ancestor %d parent of %d" % (idparent, idchild))
         if idparent == idchild:
-            print("found")
+            #print("found")
             return True
         for parent in get_parent_of(self, idchild):
-            print("check parent %d" % (parent))
+            #print("check parent %d" % (parent))
             if parent == idparent:
-                print("found")
+                #print("found")
                 return True
         return False
 
@@ -69,7 +69,7 @@ class Checker:
                                         # TODO: put in a function called in the walking passes
                                         idchild = ev.childrelat[0]
                                         idparent = ev.childrelat[1]
-                                        print("EV CHILD %d HAS PARENT %d" % (idchild, idparent))
+                                        #print("EV CHILD %d HAS PARENT %d" % (idchild, idparent))
                                         # literals have always the same id, so they have many parents
                                         if idchild not in self.childrelat:
                                             self.childrelat[idchild] = []
@@ -79,14 +79,14 @@ class Checker:
                                         self.current_parent = ev.childrelat[1]
                                     #
                                     res = ev.check_event(action, self)
-                                    print("POS %d %s - %s" % (relat_loc, action[0], res))
+                                    #print("POS %d %s - %s" % (relat_loc, action[0], res))
                                     if not res:
                                         for all_loc in self.dict_action.keys():
                                             for k in list(self.dict_action[all_loc].keys()):
                                                 del_id = (cur_pos, block_id, stmt_id, stackid)
                                                 if k == del_id:
-                                                    print("DEL %s" % repr(k))
-                                                    print("\t%s" % repr(self.dict_action[all_loc][k]))
+                                                    #print("DEL %s" % repr(k))
+                                                    #print("\t%s" % repr(self.dict_action[all_loc][k]))
                                                     del self.dict_action[all_loc][k]
                                         raise Abort()
                                     idx_loc += 1
@@ -114,14 +114,14 @@ class Checker:
             self.current_width = lsevents[cur_pos].width
             if self.last_depth is not None and self.last_depth > self.current_depth:
                 # go up,
-                print("CHILD RELAT %s" % (self.childrelat))
-                print("CURRENT PARENT %d" % (self.current_parent))
+                #print("CHILD RELAT %s" % (self.childrelat))
+                #print("CURRENT PARENT %d" % (self.current_parent))
                 # TODO: clean all event set at this depth
                 pass
             if self.last_depth is not None and self.last_depth < self.current_depth:
                 # go down, clean stored depths >= current_depth if any
-                print("CHILD RELAT %s" % (self.childrelat))
-                print("CURRENT PARENT %d" % (self.current_parent))
+                #print("CHILD RELAT %s" % (self.childrelat))
+                #print("CURRENT PARENT %d" % (self.current_parent))
                 pass
             self.last_depth = self.current_depth
             self.last_width = self.current_width
@@ -130,15 +130,16 @@ class Checker:
                 for action in self.dict_action[cur_pos][uid]:
                     if last_action:
                         last_action = pure_action_map[action[0]](action, self, uid)
-                        print("POS2 %d %s - %s" % (cur_pos, action[0], last_action))
+                        #print("POS2 %d %s - %s" % (cur_pos, action[0], last_action))
                     if not last_action:
                         for all_loc in self.dict_action.keys():
                             for k in list(self.dict_action[all_loc].keys()):
                                 if k == uid:
-                                    print("DEL2 %s" % repr(k))
+                                    #print("DEL2 %s" % repr(k))
                                     if self.captures:
-                                        print("CAPTURES? %s" % repr(self.captures))
-                                    print("\t%s" % repr(self.dict_action[all_loc][k]))
+                                        #print("CAPTURES? %s" % repr(self.captures))
+                                        pass
+                                    #print("\t%s" % repr(self.dict_action[all_loc][k]))
                                     del self.dict_action[all_loc][k]
 
 def get_events_list(tree) -> []:
@@ -172,6 +173,7 @@ def action_set_event(action, chk, uid):
 def action_set_named_event(action, chk, uid):
     # TODO: potentially clean activated named events of the statement
     cur_pos, block_id, stmt_id, stackid = uid
+    #print("NAME EVENT %s" % action[1])
     evid = (action[1], block_id)
     chk.named_events[evid] = chk.current_depth
     return True
@@ -199,7 +201,7 @@ def action_check_clean_event_and(action, chk, uid):
     nb_match = []
     for ev in action[1]:
         evid = (ev, block_id, stmt_id)
-        print("CHECK AND %s" % repr(evid))
+        #print("CHECK AND %s" % repr(evid))
         if evid in chk.events:
             # logically the first element is the deeper
             nb_match.append(chk.events[evid][0])
@@ -221,7 +223,7 @@ def action_check_clean_event_or(action, chk, uid):
     nb_match = []
     for ev in action[1]:
         evid = (ev, block_id, stmt_id)
-        print("CHECK OR %s" % repr(evid))
+        #print("CHECK OR %s" % repr(evid))
         if evid in chk.events:
             # logically the first element is the deeper
             nb_match.append((evid, chk.events[evid][0]))
@@ -239,16 +241,16 @@ def action_check_clean_event_or(action, chk, uid):
 def action_check_clean_event_xor(action, chk, uid):
     cur_pos, block_id, stmt_id, stackid = uid
     nb_match = []
-    print("--- XOR")
+    #print("--- XOR")
     for ev in action[1]:
         evid = (ev, block_id, stmt_id)
-        print("CHECK XOR %s" % repr(evid))
+        #print("CHECK XOR %s" % repr(evid))
         if evid in chk.events:
             # logically the first element is the deeper
             nb_match.append((evid, chk.events[evid][0]))
     # only one element is set (XOR)
-    print("CHECK XOR LEN: %d" % len(nb_match))
-    print("EV %s" % nb_match)
+    #print("CHECK XOR LEN: %d" % len(nb_match))
+    #print("EV %s" % nb_match)
     if len(nb_match) == 1:
         for evid, _ in nb_match:
             # clear fired events if the condition is OK
@@ -264,10 +266,10 @@ def action_check_clean_event_not(action, chk, uid):
     evid = (action[1], block_id, stmt_id)
     if evid in chk.events:
         # only one element is checked for set (NOT)
-        print("NOT EV %s" % repr(evid))
-        chk.events[evid].pop(0)
-        if not chk.events[evid]:
-            del chk.events[evid]
+        #print("NOT EV %s" % repr(evid))
+        #chk.events[evid].pop(0)
+        #if not chk.events[evid]:
+        #    del chk.events[evid]
         return False
     return True
 
@@ -277,7 +279,7 @@ def action_check_named_event(action, chk, uid):
     """
     cur_pos, block_id, stmt_id, stackid = uid
     evid = (action[1], block_id) #!!
-    print("CHECK NAMED %s" % action[1])
+    #print("CHECK NAMED %s" % action[1])
     if evid in chk.named_events:
         if block_id not in chk.postpone_clean:
             chk.postpone_clean[block_id] = {}
@@ -285,7 +287,7 @@ def action_check_named_event(action, chk, uid):
         chk.postpone_clean[block_id][action[1]] = (chk.named_events[evid], evid, (action[2], block_id, stmt_id))
         # so locally we store an event
         action_set_event((None, action[2]), chk, uid)
-        print("SET LOCAL %d" % action[2])
+        #print("SET LOCAL %d" % action[2])
     return True
 
 def action_postpone_clean_named_event(action, chk, uid):
@@ -294,10 +296,10 @@ def action_postpone_clean_named_event(action, chk, uid):
     lsr = []
     if block_id in chk.postpone_clean:
         for it in chk.postpone_clean[block_id].values():
-            print("IN POSTPONE %s" % repr(it))
+            #print("IN POSTPONE %s" % repr(it))
             if it[0] >= chk.current_depth:
                 lsr.append(it)
-    print("clean fired events: %s" % lsr)
+    #print("clean fired events: %s" % lsr)
     for it in lsr:
         del chk.named_events[it[1]]
         # clean local events
@@ -358,16 +360,16 @@ def action_check_ancestor_depth(action, chk, uid):
     if depthid not in chk.depths:
         return False
     # check ancestor links
-    print("CURRENT NODE %d" % id(chk.current_node))
+    #print("CURRENT NODE %d" % id(chk.current_node))
     check = False
     for idx in range(len(chk.depths[depthid]) - 1, -1, -1):
         curdepth = chk.depths[depthid][idx]
         depth = curdepth[0]
         idnode = curdepth[1]
-        print("ANCESTOR ID %d D %d" % (idnode, depth))
+        #print("ANCESTOR ID %d D %d" % (idnode, depth))
         if not chk.is_parentof(id(chk.current_node), idnode):
             continue
-        print("ismin %s: %d - %d ?? %d" % (ismin, depth, chk.current_depth, d))
+        #print("ismin %s: %d - %d ?? %d" % (ismin, depth, chk.current_depth, d))
         if ismin:
             if depth - chk.current_depth >= d:
                 check = True
@@ -418,7 +420,7 @@ def action_hook(action, chk, uid):
     if funname not in chk.hook_fun:
         raise TypeError("Can't find %s in Checker" % funname)
     capt_dict = {}
-    print("CALL HOOK %s" % chk.captures)
+    #print("CALL HOOK %s : %s" % (funname, chk.captures))
     if block_id in chk.captures and stmt_id in chk.captures[block_id]:
         capt_dict = chk.captures[block_id][stmt_id]
     chk.hook_fun[funname](capt_dict, chk.user_data)

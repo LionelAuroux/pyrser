@@ -198,9 +198,14 @@ class ListNode:
     def index(self, data) -> int:
         self._update()
         for k, v in self.cache.items():
-            if v.data == data:
+            print(repr(v.data))
+            if id(v.data) == id(data):
                 return k
-        raise ValueError("%d is not in list" % v)
+        raise ValueError("%d is not in list" % id(data))
+
+    def insert(self, idx, d):
+        self._update()
+        #TODO: self
 
     def count(self, data) -> int:
         self._update()
@@ -218,6 +223,11 @@ class ListNode:
         if k not in self.cache:
             raise IndexError("list index out of range")
         return self.cache[k]
+
+    def remove(self, d):
+        idx = self.index(d)
+        del self[idx]
+        self._update()
 
     # []
     def __getitem__(self, k) -> object:

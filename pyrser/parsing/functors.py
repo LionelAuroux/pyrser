@@ -17,6 +17,8 @@ class Functor:
         ptlist if contain a list of Functor
     """
 
+    auto_skip_ignore = True
+
     def do_call(self, parser: BasicParser) -> Node:
         pass
 
@@ -67,8 +69,6 @@ class SkipIgnore(Functor):
         self.convention = convention
 
     def do_call(self, parser: BasicParser) -> bool:
-        #if len(parser._ignores) > 0:
-        #    parser._ignores[-1](parser)
         parser.skip_ignore()
         return True
 
@@ -76,6 +76,8 @@ class SkipIgnore(Functor):
 class Leaf:
     pass
 
+class Branch:
+    pass
 
 class PeekChar(Functor, Leaf):
     """ !!'A' bnf primitive functor. """
@@ -138,7 +140,7 @@ class UntilChar(Functor, Leaf):
         return parser.read_until(self.char)
 
 
-class Seq(Functor):
+class Seq(Functor, Branch):
     """ A B C bnf primitive as a functor. """
 
     def __init__(self, *ptlist: Functor):
@@ -146,12 +148,17 @@ class Seq(Functor):
         if len(ptlist) == 0:
             raise TypeError("Expected Functor")
         self.ptlist = []
-        for it in ptlist:
-            if not isinstance(it, SkipIgnore):
+        ## TODO: must be add by transform
+        if Functor.auto_skip_ignore:
+            for it in ptlist:
+                if not isinstance(it, SkipIgnore):
+                    self.ptlist.append(it)
+                    self.ptlist.append(SkipIgnore())
+            if not isinstance(self.ptlist[0], SkipIgnore):
+                self.ptlist.insert(0, SkipIgnore())
+        else:
+            for it in ptlist:
                 self.ptlist.append(it)
-                self.ptlist.append(SkipIgnore())
-        if not isinstance(self.ptlist[0], SkipIgnore):
-            self.ptlist.insert(0, SkipIgnore())
 
     def __getitem__(self, idx) -> Functor:
         """ Hide SkipIgnore object from outside """
@@ -169,7 +176,7 @@ class Seq(Functor):
         return parser._stream.validate_context()
 
 
-class Scope(Functor):
+class Scope(Functor, Branch):
     """ functor to wrap SCOPE/rule directive or just []. """
 
     def __init__(self, begin: Seq, end: Seq, pt: Seq):
@@ -187,16 +194,18 @@ class Scope(Functor):
         return res
 
 
-class LookAhead(Functor):
+class LookAhead(Functor, Leaf):
     """ !!A bnf primitive as a functor. """
     def __init__(self, pt: Functor):
         Functor.__init__(self)
         self.pt = pt
-        if isinstance(self.pt, Seq):
-            if isinstance(self.pt.ptlist[0], SkipIgnore):
-                self.pt.ptlist.pop(0)
-            if isinstance(self.pt.ptlist[-1], SkipIgnore):
-                self.pt.ptlist.pop()
+        # TODO: add SkipIgnore by transform
+        if Functor.auto_skip_ignore:
+            if isinstance(self.pt, Seq):
+                if isinstance(self.pt.ptlist[0], SkipIgnore):
+                    self.pt.ptlist.pop(0)
+                if isinstance(self.pt.ptlist[-1], SkipIgnore):
+                    self.pt.ptlist.pop()
 
     def do_call(self, parser: BasicParser) -> bool:
         parser._stream.save_context()
@@ -205,17 +214,19 @@ class LookAhead(Functor):
         return res
 
 
-class Neg(Functor):
+class Neg(Functor, Leaf):
     """ !A bnf primitive as a functor. """
 
     def __init__(self, pt: Functor):
         Functor.__init__(self)
         self.pt = pt
-        if isinstance(self.pt, Seq):
-            if isinstance(self.pt.ptlist[0], SkipIgnore):
-                self.pt.ptlist.pop(0)
-            if isinstance(self.pt.ptlist[-1], SkipIgnore):
-                self.pt.ptlist.pop()
+        # TODO: add SkipIgnore by transform
+        if Functor.auto_skip_ignore:
+            if isinstance(self.pt, Seq):
+                if isinstance(self.pt.ptlist[0], SkipIgnore):
+                    self.pt.ptlist.pop(0)
+                if isinstance(self.pt.ptlist[-1], SkipIgnore):
+                    self.pt.ptlist.pop()
 
     def do_call(self, parser: BasicParser):
         parser._stream.save_context()
@@ -225,17 +236,19 @@ class Neg(Functor):
         return parser._stream.validate_context()
 
 
-class Complement(Functor):
+class Complement(Functor, Leaf):
     """ ~A bnf primitive as a functor. """
 
     def __init__(self, pt: Functor):
         Functor.__init__(self)
         self.pt = pt
-        if isinstance(self.pt, Seq):
-            if isinstance(self.pt.ptlist[0], SkipIgnore):
-                self.pt.ptlist.pop(0)
-            if isinstance(self.pt.ptlist[-1], SkipIgnore):
-                self.pt.ptlist.pop()
+        # TODO: add SkipIgnore by transform
+        if Functor.auto_skip_ignore:
+            if isinstance(self.pt, Seq):
+                if isinstance(self.pt.ptlist[0], SkipIgnore):
+                    self.pt.ptlist.pop(0)
+                if isinstance(self.pt.ptlist[-1], SkipIgnore):
+                    self.pt.ptlist.pop()
 
     def do_call(self, parser: BasicParser) -> bool:
         if parser.read_eof():
@@ -249,17 +262,19 @@ class Complement(Functor):
         return False
 
 
-class Until(Functor):
+class Until(Functor, Leaf):
     """ ->A bnf primitive as a functor. """
 
     def __init__(self, pt: Functor):
         Functor.__init__(self)
         self.pt = pt
-        if isinstance(self.pt, Seq):
-            if isinstance(self.pt.ptlist[0], SkipIgnore):
-                self.pt.ptlist.pop(0)
-            if isinstance(self.pt.ptlist[-1], SkipIgnore):
-                self.pt.ptlist.pop()
+        # TODO: add SkipIgnore by transform
+        if Functor.auto_skip_ignore:
+            if isinstance(self.pt, Seq):
+                if isinstance(self.pt.ptlist[0], SkipIgnore):
+                    self.pt.ptlist.pop(0)
+                if isinstance(self.pt.ptlist[-1], SkipIgnore):
+                    self.pt.ptlist.pop()
 
     def do_call(self, parser: BasicParser) -> bool:
         parser._stream.save_context()
@@ -273,7 +288,7 @@ class Until(Functor):
         return False
 
 
-class Call(Functor):
+class Call(Functor, Leaf):
     """ Functor wrapping a BasicParser method call in a BNF clause. """
 
     def __init__(self, callObject, *params):
@@ -293,7 +308,7 @@ class CallTrue(Call):
         return True
 
 
-class Capture(Functor):
+class Capture(Functor, Leaf):
     """ Functor to handle capture nodes. """
 
     def __init__(self, tagname: str, pt: Functor):
@@ -302,9 +317,11 @@ class Capture(Functor):
             raise TypeError("Illegal tagname for capture")
         self.tagname = tagname
         self.pt = pt
-        if isinstance(self.pt, Seq):
-            if isinstance(self.pt.ptlist[-1], SkipIgnore):
-                self.pt.ptlist.pop()
+        # TODO: add SkipIgnore by transform
+        if Functor.auto_skip_ignore:
+            if isinstance(self.pt, Seq):
+                if isinstance(self.pt.ptlist[-1], SkipIgnore):
+                    self.pt.ptlist.pop()
 
     def do_call(self, parser: BasicParser) -> Node:
         if parser.begin_tag(self.tagname):
@@ -325,7 +342,7 @@ class Capture(Functor):
         return False
 
 
-class DeclNode(Functor):
+class DeclNode(Functor, Leaf):
     """ Functor to handle node declaration with __scope__:N. """
 
     def __init__(self, tagname: str):
@@ -359,7 +376,7 @@ class Bind(Functor):
         return False
 
 
-class Alt(Functor):
+class Alt(Functor, Branch):
     """ A | B bnf primitive as a functor. """
 
     def __init__(self, *ptlist: Seq):
@@ -387,7 +404,7 @@ class Alt(Functor):
         return False
 
 
-class RepOptional(Functor):
+class RepOptional(Functor, Branch):
     """ []? bnf primitive as a functor. """
     def __init__(self, pt: Seq):
         Functor.__init__(self)
@@ -404,7 +421,7 @@ class RepOptional(Functor):
         return True
 
 
-class Rep0N(Functor):
+class Rep0N(Functor, Branch):
     """ []* bnf primitive as a functor. """
 
     def __init__(self, pt: Seq):
@@ -424,7 +441,7 @@ class Rep0N(Functor):
         return parser._stream.validate_context()
 
 
-class Rep1N(Functor):
+class Rep1N(Functor, Branch):
     """ []+ bnf primitive as a functor. """
 
     def __init__(self, pt: Seq):

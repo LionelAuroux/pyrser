@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html$if(lang)$ lang="$lang$"$endif$>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+$for(author-meta)$
+  <meta name="author" content="$author-meta$">
+$endfor$
+$if(date-meta)$
+  <meta name="dcterms.date" content="$date-meta$">
+$endif$
+  <title>$if(title-prefix)$$title-prefix$ - $endif$$pagetitle$</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+$if(quotes)$
+  <style type="text/css">q { quotes: "“" "”" "‘" "’"; }</style>
+$endif$
+$if(highlighting-css)$
+  <style type="text/css">
+$highlighting-css$
+  </style>
+$endif$
+$for(css)$
+  <link rel="stylesheet" href="$css$">
+$endfor$
+  <style type="text/css">
+html {
+  font-size: 100%; }
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 .5em 0;
+  color: #003366; }
+
+h1 {
+  font-size: 3em; }
+
+h2 {
+  font-size: 1.8em; }
+
+h3 {
+  font-size: 1.2em; }
+
+h4 {
+  font-size: 1em; }
+
+ul, ol {
+  margin: .75em 0 .75em 24px;
+  padding: 0; }
+
+ul {
+  list-style: square; }
+
+li {
+  margin: 0;
+  padding: 0; }
+
+p {
+  margin: .75em 0; }
+
+li p, blockquote p {
+  margin: .5em 0; }
+
+a {
+  color: #003366;
+  text-decoration: underline; }
+  a:hover, a:focus {
+    color: crimson; }
+  a img {
+    border: none; }
+
+em {
+  font-style: italic; }
+
+strong {
+  font-weight: bold;
+  color: dimgray; }
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Verdana, "Bitstream Vera Sans", "Lucida Grande", sans-serif;
+  font-size: .8em;
+  line-height: 1.25;
+  color: #444444;
+  background: white; }
+
+#global {
+  width: 100%;
+  overflow: hidden;
+  margin-left: auto;
+  margin-right: auto; }
+
+header {
+  height: 90px;
+  margin-bottom: 2px;
+  background-color: #eeeeee;
+  border-bottom: dotted #aaa 1px;
+  display: none;
+  position: relative; }
+  header #logo {
+    position: absolute;
+    top: 5px;
+    left: 5px; }
+  header #quicklinks {
+    position: absolute;
+    bottom: 5px;
+    right: 5px; }
+    header #quicklinks a {
+      text-decoration: none; }
+
+nav {
+  width: 180px;
+  float: left;
+  line-height: 1em; }
+  nav ul {
+    margin: 0;
+    padding: 0 10px;
+    list-style: none; }
+  nav .first_level {
+    border-bottom: 1px dotted #444444;
+    margin-top: 15px;
+    margin-bottom: 5px; }
+  nav a {
+    display: block;
+    height: 1%;
+    padding: 2px 6px 2px 10px;
+    line-height: 1.5;
+    font-size: .9em;
+    text-decoration: none; }
+
+#content {
+  margin-left: 220px;
+  padding: 10px 20px 10px 40px; }
+  #content p, #content li {
+    line-height: 1.5; }
+
+#content > :first-child {
+  margin-top: 10px; }
+
+pre {
+  padding: 0.6em;
+  border: #444444 dashed 0.2em;
+  background-color: #f7faff; }
+  </style>
+$if(math)$
+  $math$
+$endif$
+$for(header-includes)$
+  $header-includes$
+$endfor$
+</head>
+<body>
+$for(include-before)$
+$include-before$
+$endfor$
+$if(title)$
+<header>
+<h1 class="title">$title$</h1>
+$if(subtitle)$
+<h1 class="subtitle">$subtitle$</h1>
+$endif$
+$for(author)$
+<h2 class="author">$author$</h2>
+$endfor$
+$if(date)$
+<h3 class="date">$date$</h3>
+$endif$
+</header>
+$endif$
+$if(toc)$
+<nav id="$idprefix$TOC">
+$toc$
+</nav>
+$endif$
+<div id="content">
+$body$
+</div>
+$for(include-after)$
+$include-after$
+$endfor$
+</body>
+</html>

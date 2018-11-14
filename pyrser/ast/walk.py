@@ -57,7 +57,7 @@ class EventType(Event):
         if action[0] == 'type':
             if len(action) == 1:
                 return True
-            print("Check TYPE %s ?? %s" % (self.attr, action[1]))
+            #print("Check TYPE %s ?? %s" % (self.attr, action[1]))
             if action[1] == self.attr:
                 return True
         if action[0] == 'subtype':
@@ -102,7 +102,7 @@ class EventAttr(Event):
         if action[0] == 'attr':
             if len(action) == 1:
                 return True
-            print("Check %s ?? %s" % (self.attr, action[1]))
+            #print("Check %s ?? %s" % (self.attr, action[1]))
             if action[1] == self.attr:
                 return True
         return False

@@ -1,0 +1,317 @@
+% DSL in pyrser
+% Author: L. Auroux
+% lionel@lse.epita.fr \
+    For pyParis 2018
+
+# Quick summary
+
+* About Domain Specific Language/Modeling
+* About Compiler tools...
+* ...in python
+* About Pyrser
+
+# About Domain Specific Language/Modeling
+
+```
+If I'm selling to you, I speak your language.
+If I'm buying, Alors vous devez me parler en Français!
+                    
+            thanks Willy Brandt
+```
+
+Each domain have his own words, relying on his own concepts.
+
+# About Domain Specific Language/Modeling
+
+DSM literally follow this principe by promoting the design of DSL to mimic words and concepts of domain.
+
+* Domain: system, class of problems
+* DSM: Domain Specific Modeling
+* DSL: Domain Specific Language
+
+# About Domain Specific Language/Modeling
+
+So:
+
+* Get a formal language for the Domain
+* No more specification in human language
+
+And:
+
+* Words become Abstractions
+* Concepts become Algorithm
+* DSL as direct input for ad-hoc tools
+
+# About Compiler creation...
+
+Two way to handle DSL.
+
+1) Embedded DSL (use a host language)
+
+```python
+from scapy.all import *
+# ...
+ether = Ether(dst="ff:ff:ff:ff:ff:ff")
+ip = IP(src="0.0.0.0",dst="255.255.255.255")
+udp = UDP(sport=68,dport=67)
+bootp = BOOTP(chaddr=hw)
+dhcp = DHCP(options=[("message-type","discover"),
+    "end"])
+dhcp_discover = ether / ip / udp / bootp / dhcp
+
+ans, unans = srp(dhcp_discover, multi=True,
+    timeout=5)
+```
+
+# About Compiler creation...
+
+2) True Compiler/Interpreter
+
+## Anatomy of a compiler
+
+* Grammar -> Parsing -> AST
+* Handle AST:
+    - semantic
+    - typing
+* Interpretation / Code generation
+
+## Type of grammar
+
+* CFG (Context Free Grammar): LL, LR algorithm
+* PEG (Parsing Expression Grammar): 
+
+# ... in python
+
+* CFG (Context Free Grammar)
+    - PLY
+    - PlyPlus
+    - Lrparsing
+    - ...
+* PEG (Parsing Expression Grammar)
+    - Arpeggio (Aug 2014)
+    - Parsimonious (Dec 2012)
+    - Tatsu (May 2017), Grako (Jun 2013)
+    - Pyrser (Aug 2013)
+    - ...
+
+# About Pyrser
+
+## A bit of history
+
+Epitech KOOC Project (2013-2016): Kind Of Object C.
+
+* Student must create a superset of C language with classes (CFront revival).
+* Compiler write in pyrser (Cnorm)
+* Compiler product C
+
+## Why another tool?
+
+What other tools do that bother me:
+
+* Automatic CST (parse tree) creation
+* Provide only features for parsing
+* Mix grammar and host language (action)
+* Python3
+* CFG! 2013
+
+# Pyrser main feature
+
+```shell
+iopi$ pip3 install pyrser
+```
+
+* Parsing:
+    - Basic classes provide PEG Parser in a EDSL way
+    - BNF like language to write Grammar
+* Tree handling:
+    - PSL (Pyrser Selector Language)
+    - Tree matching and rewriting
+* Type checking:
+    - You have module for type check your language.
+
+# Grammar examples
+
+1) CSV parser
+
+```python
+from pyrser import grammar
+class Csv(grammar.Grammar):
+    entry = "csv"
+    grammar = """
+        csv = [
+            @ignore("null") [ line eol ]+
+            line? eof
+        ]
+
+        line = [
+            item [';' item ]*
+        ]
+
+        item = [ [ ~[';' | eol] ]* ]
+    """
+```
+
+# Grammar examples
+
+* Grammar is a Class
+    - so inheritable (grammar composition)
+
+* Rule are Method
+    - so overidable
+
+\tiny
+
+```python
+class A(grammar.Grammar):
+    grammar="""
+        rule = [ id eof ]
+    """
+
+class B(grammar.Grammar, A):
+    grammar="""
+        rule = [ A.rule | string eof ]
+    """
+```
+\normalsize
+
+# Grammar examples
+
+* 2 abstractions two handle AST:
+    - Nodes for data handling
+    - Hooks for event handling
+
+```python
+// inside a DummyGrammar
+R = [
+    ThisRuleReturnSomethingIn_ : weCaptureInThisNode
+]
+
+ThisRuleReturnSomethingIn_ = [
+    #putSomethingIn(_)
+]
+```
+
+* weCaptureInThisNode is a **Node**
+* _ is the returning **Node** of the **current** Rule
+* \#putSomethingIn is **hook**
+
+# Grammar examples
+
+Defining hooks outside the class **DummyGrammar** definition.
+
+```python
+from pyrser import meta
+
+@meta.hook(DummyGrammar)
+def putSomethingIn(self, _):
+    _.is_touched = True
+    return True
+```
+
+# Grammar examples
+
+More complete examples:
+
+* How to create a JSON parser:
+
+https://pythonhosted.org/pyrser/tutorial1.html
+
+* A complete C Frontend:
+
+https://github.com/LionelAuroux/cnorm
+https://pythonhosted.org/cnorm/
+
+# Pyrser Selector Language
+
+PSL describe what to **match** and what to **transform**
+
+```python
+import pyrser.ast.psl as psl
+
+parser = psl.PSL()
+psl_comp = parser.compile("""
+{
+    A(...) -> a => #hook;
+}
+""")
+```
+
+# Pyrser Selector Language
+
+```python
+def my_hook(capture, user_data):
+    print("captured node %s" % repr(capture['a']))
+    user_data.append(capture['a'])
+
+class A: pass
+
+user_data = []
+t = [1, 2, A(), 3]
+psl.match(t, psl_comp, {'hook': my_hook}, user_data)
+```
+
+# Pyrser Selector Language
+
+What do we match?
+
+* Type
+* Value
+* Attributes
+* List (index)
+* Dict (key)
+* Strict or not (wildcards)
+* Ancestors/Siblings
+
+# Pyrser Type System
+
+Pyrser provides a basic "type system" module to check any producted AST.
+
+Due to KOOC project, this TS focus on ad-hoc polymorphism.
+
+No type reconstruction yet.
+
+\tiny
+
+```python
+from pyrser.type_system import *
+
+t1 = Type('int')
+t2 = Type('double')
+var = Var('var1', 'int')
+f1 = Fun('fun1', 'int', [])
+f2 = Fun('fun2', 'int', ['char'])
+f3 = Fun('fun2', 'int', ['int', 'double'])
+scope = Scope(sig=[t1, t2, var, f1, f2, f3])
+print(str(scope))
+```
+\normalsize
+
+# Pyrser Type System
+
+```shell
+scope :
+    type double
+    fun fun1 : () -> int
+    fun fun2 : (char) -> int
+    fun fun2 : (int, double) -> int
+    type int
+    var var1 : int
+```
+
+Pyrser provide technics to connect AST to inference:
+
+https://pythonhosted.org/pyrser/tutorial3.html
+
+# Roadmap
+
+* KOOC will evolve in KOOC++
+* So, Pyrser needs too
+    - An agnostic version of PSL:
+        treematching (WIP)
+    - A better TS (wand's Type Inference Algo)
+
+# Conclusion
+
+\huge \center
+
+**Q/A!**

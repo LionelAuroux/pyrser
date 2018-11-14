@@ -9,7 +9,7 @@ class Grammar(IR):
 
     def __init__(self, name: str):
         self.name = name
-        self.rules = []
+        self.rules = {}
 
 class Rule(IR):
     """Abstraction of a target function. """
