@@ -359,5 +359,8 @@ https://pythonhosted.org/pyrser/tutorial3.html
 
 \justify
 
-* lionel [at] lse.epita.fr
-* https://github.com/LionelAuroux/pyrser
+\tiny
+
+* **[slides](https://github.com/LionelAuroux/pyrser/tree/new\_type\_system/slides/pyparis\_2018/content/pyrser.pdf)**
+
+* **[https://github.com/LionelAuroux/pyrser](https://github.com/LionelAuroux/pyrser)**
