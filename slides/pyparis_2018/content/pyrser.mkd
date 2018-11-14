@@ -120,7 +120,7 @@ What other tools do that bother me:
 * Provide only features for parsing
 * Mix grammar and host language (action)
 * Python3
-* CFG! 2013
+* PEG in 2013!
 
 # Pyrser main features
 
@@ -159,6 +159,38 @@ class Csv(grammar.Grammar):
     """
 ```
 
+# Grammar definition
+
+\tiny
+
+```
+'a':
+    Read the character a in the input.
+"foo":
+    Read the text foo in the input.
+'a'..'z':
+    Read the next character if its value is between a and z.
+
+expr1 expr2 | expr3 expr4:
+    Alternative (priority choice).
+    If the sequence expr1 followed by expr2 fail, backtrack and try expr3 followed by expr4
+!expr:
+    Negative lookahead.
+    Fails if the next item in the input matches expr.
+    Consumes no input.
+!!expr:
+    Positive lookahead.
+    Fails if the next item in the input does not matches expr.
+    Consumes no input.
+~expr:
+    Complement of expr.
+    Consumes one character if the next item in the input does not matches expr.
+->expr:
+    Read until expr. Consumes any characters until the next item in the input matches expr.
+```
+
+\normalsize
+
 # Grammar examples
 
 * Grammar is a Class
@@ -167,7 +199,6 @@ class Csv(grammar.Grammar):
 * Rule are Method
     - so overidable
 
-\tiny
 
 ```python
 class A(grammar.Grammar):
@@ -180,7 +211,6 @@ class B(grammar.Grammar, A):
         rule = [ [ A.rule | string ] eof ]
     """
 ```
-\normalsize
 
 # Grammar examples
 
@@ -202,6 +232,7 @@ ThisRuleReturnSomethingIn_ = [
 * weCaptureInThisNode is a **Node**
 * _ is the returning **Node** of the **current** Rule
 * \#putSomethingIn is **hook**
+* **Node** livecycle is attached to his **Rule**
 
 # Grammar examples
 
@@ -216,49 +247,18 @@ def putSomethingIn(self, _):
     return True
 ```
 
-# Grammar definition
-
-\tiny
-
-```
-!expr:
-    Negative lookahead.
-    Fails if the next item in the input matches expr.
-    Consumes no input.
-!!expr:
-    Positive lookahead.
-    Fails if the next item in the input does not matches expr.
-    Consumes no input.
-~expr:
-    Complement of expr.
-    Consumes one character if the next item in the input matches does not matches expr.
-->expr:
-    Read until expr. Consumes N character until the next item in the input matches expr.
-A:
-    Call the rule A.
-'a':
-    Read the character a in the input.
-"foo":
-    Read the text foo in the input.
-'a'..'z':
-    Read the next character if its value is between a and z.
-...
-```
-
-\normalsize
-
 # Grammar examples
 
 More complete examples:
 
 * How to create a JSON parser:
 
-https://pythonhosted.org/pyrser/tutorial1.html
+**[https://pythonhosted.org/pyrser/tutorial1.html](https://pythonhosted.org/pyrser/tutorial1.html)**
 
 * A complete C Frontend:
 
-https://github.com/LionelAuroux/cnorm
-https://pythonhosted.org/cnorm/
+**[https://github.com/LionelAuroux/cnorm](https://github.com/LionelAuroux/cnorm)**
+**[https://pythonhosted.org/cnorm/](https://pythonhosted.org/cnorm/)**
 
 # Pyrser Selector Language
 
@@ -293,13 +293,14 @@ psl.match(t, psl_comp, {'hook': my_hook}, user_data)
 
 What do we match?
 
-* Type
-* Value
+* Type/KindOf
+* Value/AnyValue
 * Attributes
-* List (index)
-* Dict (key)
-* Strict or not (wildcards)
-* Ancestors/Siblings
+* List (index/anyIndex)
+* Dict (key/anyKey)
+* Ancestors sequence/Siblings sequence
+
+And all combinaison of that...
 
 # Pyrser Type System
 
@@ -339,7 +340,7 @@ scope :
 
 Pyrser provide technics to connect AST to inference:
 
-https://pythonhosted.org/pyrser/tutorial3.html
+**[https://pythonhosted.org/pyrser/tutorial3.html](https://pythonhosted.org/pyrser/tutorial3.html)**
 
 # Roadmap
 
