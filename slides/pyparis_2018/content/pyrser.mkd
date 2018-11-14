@@ -1,16 +1,18 @@
-% DSL in pyrser
+% DSL with pyrser
 % Author: L. Auroux
 % lionel@lse.epita.fr \
     For pyParis 2018
 
 # Quick summary
 
-* About Domain Specific Language/Modeling
-* About Compiler tools...
+* About Domain Specific Modeling/Language
+* About Compiler creation...
 * ...in python
 * About Pyrser
 
-# About Domain Specific Language/Modeling
+# About Domain Specific Modeling/Language
+
+Each domain have his own words, relying on his own concepts.
 
 ```
 If I'm selling to you, I speak your language.
@@ -19,9 +21,7 @@ If I'm buying, Alors vous devez me parler en Français!
             thanks Willy Brandt
 ```
 
-Each domain have his own words, relying on his own concepts.
-
-# About Domain Specific Language/Modeling
+# About Domain Specific Modeling/Language
 
 DSM literally follow this principe by promoting the design of DSL to mimic words and concepts of domain.
 
@@ -29,12 +29,12 @@ DSM literally follow this principe by promoting the design of DSL to mimic words
 * DSM: Domain Specific Modeling
 * DSL: Domain Specific Language
 
-# About Domain Specific Language/Modeling
+# About Domain Specific Modeling/Language
 
 So:
 
-* Get a formal language for the Domain
 * No more specification in human language
+* Get a formal language for the Domain
 
 And:
 
@@ -44,7 +44,7 @@ And:
 
 # About Compiler creation...
 
-Two way to handle DSL.
+Two way to create DSL.
 
 1) Embedded DSL (use a host language)
 
@@ -75,10 +75,18 @@ ans, unans = srp(dhcp_discover, multi=True,
     - typing
 * Interpretation / Code generation
 
-## Type of grammar
+# Type of grammar
 
-* CFG (Context Free Grammar): LL, LR algorithm
-* PEG (Parsing Expression Grammar): 
+* CFG (Context Free Grammar)
+    - Production rules -> Automata
+    - Token (scanner)
+    - Parser
+
+* PEG (Parsing Expression Grammar) (2004)
+    - Scannerless
+    - Top-down recursive parser with memoization
+        - so Rules are functions/methods
+    - Priority choice
 
 # ... in python
 
@@ -98,7 +106,7 @@ ans, unans = srp(dhcp_discover, multi=True,
 
 ## A bit of history
 
-Epitech KOOC Project (2013-2016): Kind Of Object C.
+Epitech KOOC Project (2013-2017): Kind Of Object C.
 
 * Student must create a superset of C language with classes (CFront revival).
 * Compiler write in pyrser (Cnorm)
@@ -114,7 +122,7 @@ What other tools do that bother me:
 * Python3
 * CFG! 2013
 
-# Pyrser main feature
+# Pyrser main features
 
 ```shell
 iopi$ pip3 install pyrser
@@ -169,7 +177,7 @@ class A(grammar.Grammar):
 
 class B(grammar.Grammar, A):
     grammar="""
-        rule = [ A.rule | string eof ]
+        rule = [ [ A.rule | string ] eof ]
     """
 ```
 \normalsize
@@ -208,6 +216,37 @@ def putSomethingIn(self, _):
     return True
 ```
 
+# Grammar definition
+
+\tiny
+
+```
+!expr:
+    Negative lookahead.
+    Fails if the next item in the input matches expr.
+    Consumes no input.
+!!expr:
+    Positive lookahead.
+    Fails if the next item in the input does not matches expr.
+    Consumes no input.
+~expr:
+    Complement of expr.
+    Consumes one character if the next item in the input matches does not matches expr.
+->expr:
+    Read until expr. Consumes N character until the next item in the input matches expr.
+A:
+    Call the rule A.
+'a':
+    Read the character a in the input.
+"foo":
+    Read the text foo in the input.
+'a'..'z':
+    Read the next character if its value is between a and z.
+...
+```
+
+\normalsize
+
 # Grammar examples
 
 More complete examples:
@@ -243,10 +282,10 @@ def my_hook(capture, user_data):
     print("captured node %s" % repr(capture['a']))
     user_data.append(capture['a'])
 
-class A: pass
+class A: ...
 
 user_data = []
-t = [1, 2, A(), 3]
+t = [1, 2, C(v=A()), {'toto': A(flags=True)}]
 psl.match(t, psl_comp, {'hook': my_hook}, user_data)
 ```
 
@@ -315,3 +354,10 @@ https://pythonhosted.org/pyrser/tutorial3.html
 \huge \center
 
 **Q/A!**
+
+\normalsize
+
+\justify
+
+* lionel [at] lse.epita.fr
+* https://github.com/LionelAuroux/pyrser
