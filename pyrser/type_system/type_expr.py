@@ -3,6 +3,7 @@
 class TypeExprComponent(list):
     contains = None
     minarity = None
+
     def __init__(self, *deflist):
         if self.minarity is not None and len(deflist) < self.minarity:
             raise TypeError("%s take minimum %d parameters" % (type(self).__name__, self.minarity))
