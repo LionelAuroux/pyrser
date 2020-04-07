@@ -1,15 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include "parser.h"
+#include "parser_{{ parser['name'] }}.h"
 
-/*
 {% for callback in parser['callbacks'] %}
-extern {{ callback }};
+extern int {{ callback }}_link(parser_t*);
 {% endfor %}
-*/
-
-extern void flush_parser_link(parser_t*); ///!!!!
 
 uint32_t    peek(parser_t* s)
 {

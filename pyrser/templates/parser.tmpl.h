@@ -1,5 +1,5 @@
-#ifndef __PARSER_H
-#define __PARSER_H
+#ifndef __PARSER_{{ parser['name'] }}_H
+#define __PARSER_{{ parser['name'] }}_H
 
 #include <stdint.h>
 
