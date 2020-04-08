@@ -47,7 +47,7 @@ parser_intern_funcs = [
     "uint8_t                read_range(parser_t *, uint32_t, uint32_t);",
 ]
 
-def compile(pkg_path: pl.Path):
+def compile(pkg_path: pl.Path, clean=True):
     if not pkg_path.exists():
         pkg_path.mkdir()
     if not pkg_path.is_dir():
@@ -107,3 +107,6 @@ def compile(pkg_path: pl.Path):
     for it in ffibuilder._assigned_source[3]['sources']:
         print(f"SOURCE {it}")
     ffibuilder.compile(tmpdir=pkg_path, verbose=True)
+    if clean:
+        for it in pkg_path.glob("*.{c,h}"):
+            it.unlink()

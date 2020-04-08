@@ -1,8 +1,3 @@
-from pyrser import parsing
-from pyrser import meta
-from pyrser import error
-from pyrser.directives import ignore
-
 
 class EBNF(parsing.Parser):
     """
