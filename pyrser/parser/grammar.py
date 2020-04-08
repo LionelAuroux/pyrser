@@ -21,6 +21,8 @@ class Grammar:
         self._parser.intern = self.ffi.new("char*", None)
         self._parser.char_pos = 0
         self._parser.byte_pos = 0
+        self._parser.eof = 0
+        self._parser.full = 0
         yield self._parser
         self._io.close()
 
@@ -38,5 +40,7 @@ class Grammar:
         self._parser.intern = self.ffi.new("char*", None)
         self._parser.char_pos = 0
         self._parser.byte_pos = 0
+        self._parser.eof = 0
+        self._parser.full = 0
         yield self._parser
         self._io.close()

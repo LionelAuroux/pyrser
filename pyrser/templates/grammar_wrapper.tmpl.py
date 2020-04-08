@@ -12,17 +12,17 @@ class {{ parser['name'] }}(Grammar):
 @ffi.def_extern()
 def flush_parser(p: 'parser_t') -> int:
     global BUFLEN
-    print(f"FLUSH IO {p}")
+    print(f"FLUSH {p}")
     if p.byte_pos == p.intern_len:
-        print(f"IO: {p.self}")
+        print(f"IO BEFORE: {p.self}")
         self = ffi.from_handle(p.self) # get self object
         io = self._io # get IO object
-        self._buf = self._buf + bytes(io.read(BUFLEN), 'utf-8') #######
-        print(f"IO: {self._buf}")
+        self._buf = self._buf + bytes(io.read(BUFLEN), 'utf-8') # TODO: list of buffer
+        print(f"IO NEXT: {self._buf}")
+        print(f"NEXT POS: {p.byte_pos}")
         p.intern_len = len(self._buf)
         self._buf_intern = ffi.new("char[]", self._buf) # warning: to avoid gc
         p.intern = self._buf_intern
-        p.byte_pos = 0
     return 1
     
 
