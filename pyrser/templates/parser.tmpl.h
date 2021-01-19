@@ -14,8 +14,8 @@ extern uint8_t {{ callback }}_link(parser_t*);
 // standard parsing functions
 uint32_t        peek(parser_t *);
 void            next_char(parser_t *);
-uint64_t        get_pos(parser_t *);
-void            set_pos(parser_t *, uint64_t);
+uint8_t         get_pos(parser_t *, location_t *);
+uint8_t         set_pos(parser_t *, location_t *);
 
 // terminal rules
 uint8_t             read_eof(parser_t *);
@@ -33,7 +33,27 @@ static inline uint8_t               read_char_in(parser_t *, uint32_t);
 static inline uint8_t               read_text_in(parser_t *, uint8_t *);
 static inline uint8_t               read_range_in(parser_t *, uint32_t, uint32_t);
 
-static inline uint8_t       len_utf_char(uint8_t c0)
+static inline uint8_t         get_pos_in(parser_t *p, location_t *l)
+{
+    l->source = p->loc.source;
+    l->line = p->loc.line;
+    l->cols = p->loc.cols;
+    l->char_pos = p->loc.char_pos;
+    l->byte_pos = p->loc.byte_pos;
+    return 1;
+}
+
+static inline uint8_t         set_pos_in(parser_t *p, location_t *l)
+{
+    p->loc.source = l->source;
+    p->loc.line = l->line;
+    p->loc.cols = l->cols;
+    p->loc.char_pos = l->char_pos;
+    p->loc.byte_pos = l->byte_pos;
+    return 1;
+}
+
+static inline uint8_t       len_utf_char_in(uint8_t c0)
 { // assume valid utf-8 encoding
     if (c0 <= 0x7f) // only 1 byte
         return 1;
@@ -48,8 +68,8 @@ static inline uint8_t       len_utf_char(uint8_t c0)
 
 static inline uint32_t      peekutf8_in(uint8_t *t, uint64_t *p)
 {
-    uint8_t l = len_utf_char(*t);
-    printf("PEEKBUF %d\n", l);
+    uint8_t l = len_utf_char_in(*t);
+    //printf("PEEKBUF %d\n", l);
     uint32_t c = 0;
     for (uint64_t i = 0; i < l; ++i)
     {
@@ -83,35 +103,42 @@ static inline uint32_t      peekutf8_in(uint8_t *t, uint64_t *p)
         }
         c = (c << nsh) + nc;
     }
-    printf("PEEKCHAR %d\n", c);
+    //printf("PEEKCHAR %d\n", c);
     *p = l;
     return c;
 }
 
 static inline uint32_t      peek_in(parser_t *p)
 {
-    printf("intern %s\n", p->intern);
-    printf("POS %ld -> %c\n", p->byte_pos, p->intern[p->byte_pos]);
-    uint8_t  l = len_utf_char(p->intern[p->byte_pos]);
-    uint64_t newpos = l + p->byte_pos;
+    //printf("intern %s\n", p->intern);
+    //printf("POS %ld -> %c\n", p->byte_pos, p->intern[p->byte_pos]);
+    uint8_t  l = len_utf_char_in(p->intern[p->loc.byte_pos]);
+    uint64_t newpos = l + p->loc.byte_pos;
     uint64_t old = p->intern_len;
-    printf("NEWPOS %ld ?? %ld\n", newpos, old);
+    //printf("NEWPOS %ld ?? %ld\n", newpos, old);
     if (!p->full && newpos > old)
     {
         flush_parser_link(p); // TODO: rename to fetch
-        printf("FLUSH %ld -> %ld\n", old, p->intern_len);
+        //printf("FLUSH %ld -> %ld\n", old, p->intern_len);
        if (old == p->intern_len)
             p->full = 1;
     }
     uint64_t p0 = 0;
-    return peekutf8_in(&p->intern[p->byte_pos], &p0);
+    return peekutf8_in(&p->intern[p->loc.byte_pos], &p0);
 }
 
 static inline void          next_char_in(parser_t *p)
 {//TODO: line/cols
-    uint8_t  l = len_utf_char(p->intern[p->byte_pos]);
-    p->char_pos += 1;
-    p->byte_pos += l;
+    uint8_t c = p->intern[p->loc.byte_pos];
+    uint8_t l = len_utf_char_in(c);
+    p->loc.char_pos += 1;
+    p->loc.cols += 1;
+    p->loc.byte_pos += l;
+    if (c == '\n')
+    {
+        p->loc.line += 1;
+        p->loc.cols = 1;
+    }
 }
 
 //////// STATIC INLINES: terminal rules
@@ -132,24 +159,23 @@ static inline uint8_t                     read_char_in(parser_t *p, uint32_t c)
 
 static inline uint8_t                     read_text_in(parser_t *p, uint8_t *t)
 {
-    printf("READTEXT\n");
+    //printf("READTEXT\n");
     while (*t && peek_in(p) != 0)
     {
-        printf("POS %ld -> '%c' %d\n", p->byte_pos, p->intern[p->byte_pos], p->intern[p->byte_pos]);
-        printf("FULL %d EOF %d\n", p->full, p->eof);
+        //printf("POS %ld -> '%c' %d\n", p->byte_pos, p->intern[p->byte_pos], p->intern[p->byte_pos]);
+        //printf("FULL %d EOF %d\n", p->full, p->eof);
         uint64_t p1 = 0;
         uint32_t c1 = peekutf8_in(t, &p1);
 
         uint32_t c2 = peek_in(p);
         
-        printf("cmp %d %d\n", c1, c2);
+        //printf("cmp %d %d\n", c1, c2);
         if (c1 != c2)
             return 0;
 
         t += p1;
-        printf("next pos +%ld\n", p1);
-        p->byte_pos += p1;
-        p->char_pos += 1;
+        //printf("next pos +%ld\n", p1);
+        next_char_in(p);
     }
     if (*t) // if not at the end
         return 0;

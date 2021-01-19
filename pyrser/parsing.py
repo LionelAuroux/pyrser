@@ -60,7 +60,7 @@ class LookAhead(ParsingBlock):
     """
     def __init__(self, name, rule: ParsingBlock):
         self.name = name
-        self.list = rule
+        self.rule = rule
 
 class Neg(ParsingBlock):
     """
@@ -68,7 +68,7 @@ class Neg(ParsingBlock):
     """
     def __init__(self, name, rule: ParsingBlock):
         self.name = name
-        self.list = rule
+        self.rule = rule
 
 class Complement(ParsingBlock):
     """
@@ -76,7 +76,7 @@ class Complement(ParsingBlock):
     """
     def __init__(self, name, rule: ParsingBlock):
         self.name = name
-        self.list = rule
+        self.rule = rule
 
 class Until(ParsingBlock):
     """
@@ -84,7 +84,7 @@ class Until(ParsingBlock):
     """
     def __init__(self, name, rule: ParsingBlock):
         self.name = name
-        self.list = rule
+        self.rule = rule
 
 class Capture(ParsingBlock):
     """
@@ -92,7 +92,7 @@ class Capture(ParsingBlock):
     """
     def __init__(self, name, rule: ParsingBlock):
         self.name = name
-        self.list = rule
+        self.rule = rule
 
 class DeclNode(ParsingBlock):
     """
@@ -106,21 +106,21 @@ class RepOptional(ParsingBlock):
     A ?
     """
     def __init__(self, rule: ParsingBlock):
-        self.list = rule
+        self.rule = rule
 
 class Rep0N(ParsingBlock):
     """
     A *
     """
     def __init__(self, rule: ParsingBlock):
-        self.list = rule
+        self.rule = rule
 
 class Rep1N(ParsingBlock):
     """
     A +
     """
     def __init__(self, rule: ParsingBlock):
-        self.list = rule
+        self.rule = rule
 
 class Rule(ParsingBlock):
     """
@@ -146,7 +146,7 @@ class Directive(ParsingBlock):
     def __init__(self, name, param: List[str], rule: ParsingBlock):
         self.name = name
         self.param = param
-        self.list = rule
+        self.rule = rule
 
 class DeclRule(ParsingBlock):
     """
@@ -154,7 +154,7 @@ class DeclRule(ParsingBlock):
     """
     def __init__(self, name, rule: ParsingBlock):
         self.name = name
-        self.list = rule
+        self.rule = rule
 
 class Decorator(ParsingBlock):
     """
@@ -162,10 +162,10 @@ class Decorator(ParsingBlock):
     @withparam(a, b, c, d)
     A = ...
     """
-    def __init__(self, name, param: List[Tuple[str]], rule: Union[DeclRule, 'Decorator']):
+    def __init__(self, name, param: List[str], rule: Union[DeclRule, 'Decorator']):
         self.name = name
         self.param = param
-        self.list = rule
+        self.rule = rule
 
 class Grammar(ParsingBlock):
     """
@@ -176,5 +176,7 @@ class Grammar(ParsingBlock):
     {
     }
     """
-    def __init__(self, includes: List[Tuple[str, str, str]], *arg: Tuple[Union[Decorator, DeclRule]]):
+    def __init__(self, name, includes: List[Tuple[str, str, str]], *arg: Tuple[Union[Decorator, DeclRule]]):
+        self.name = name
+        self.includes = includes
         self.list = arg

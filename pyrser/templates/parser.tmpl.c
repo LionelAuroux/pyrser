@@ -13,14 +13,14 @@ void                next_char(parser_t *p)
     next_char_in(p);
 }
 
-uint64_t            get_pos(parser_t *p)
+uint8_t             get_pos(parser_t *p, location_t *l)
 {
-    return p->byte_pos;
+    return get_pos_in(p, l);
 }
 
-void                set_pos(parser_t *p, uint64_t pos)
+uint8_t             set_pos(parser_t *p, location_t *l)
 {
-    p->byte_pos = pos;
+    return set_pos_in(p, l);
 }
 
 // terminal rules

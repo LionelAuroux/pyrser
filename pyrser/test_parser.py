@@ -27,14 +27,17 @@ def test_parser_01():
     g = pb.Base()
     pb.BUFLEN = 4
     # file and basic peek/next
+    newpos = pb.ffi.new("location_t*")
     with g.from_file(here / 'Base' / "parser_Base.h") as p:
         assert p is not None, "Init"
         pb.info_parser(p)
         pb.flush_parser(p)
         assert pb.lib.peek(p) == ord('#'), 'failed to peek'
-        assert pb.lib.get_pos(p) == 0, 'failed to get'
+        pb.lib.get_pos(p, newpos)
+        assert newpos.byte_pos == 0, 'failed to get'
         pb.lib.next_char(p)
-        assert pb.lib.get_pos(p) == 1, 'failed to get'
+        pb.lib.get_pos(p, newpos)
+        assert newpos.byte_pos == 1, 'failed to get'
         assert pb.lib.peek(p) == ord('i'), 'failed to peek'
 
     # string and unicode peek/next

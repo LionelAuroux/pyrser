@@ -9,17 +9,23 @@ class Grammar:
     def __init__(self, ffi):
         self.ffi = ffi
 
-    def create_parser(self):
+    def create_parser(self, source):
         self._parser = self.ffi.new("parser_t*")
         self._parser_self = self.ffi.new_handle(self) # warning: to avoid gc
         self._parser.self = self._parser_self
         self._buf = b""
         self._buf_intern = None
+        self._source = source
+        self._source_intern = self.ffi.new("char[]", bytes(source, "utf-8"))
         print(f"ID IO {self._parser.self}")
         self._parser.intern_len = 0
         self._parser.intern = self.ffi.new("char*", None)
-        self._parser.char_pos = 0
-        self._parser.byte_pos = 0
+        # TODO: loc.source
+        self._parser.loc.source = self._source_intern
+        self._parser.loc.line = 1
+        self._parser.loc.cols = 1
+        self._parser.loc.char_pos = 0
+        self._parser.loc.byte_pos = 0
         self._parser.eof = 0
         self._parser.full = 0
 
@@ -31,7 +37,7 @@ class Grammar:
             raise RuntimeError(f"'file {path}' must exists")
         self._path = path
         self._io = open(path, 'r')
-        self.create_parser()
+        self.create_parser(str(path))
         yield self._parser
         self._io.close()
 
@@ -41,7 +47,7 @@ class Grammar:
             raise RuntimeError(f"'txt' parameter must be a kind str, recv type: {type(txt)}, with no relation to 'str'")
         self._txt = txt
         self._io = io.StringIO(txt)
-        self.create_parser()
+        self.create_parser("<string>")
         yield self._parser
         self._io.close()
 
@@ -51,6 +57,6 @@ class Grammar:
             raise RuntimeError(f"'sock' parameter must be a kind of socket, recv type: {type(sock)}, with no relation to 'socket'")
         self._sock = sock
         self._io = sock.makefile('r')
-        self.create_parser()
+        self.create_parser("<socket>")
         yield self._parser
         self._io.close()

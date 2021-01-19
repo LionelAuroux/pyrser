@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from pyrser.parser import builder
+from pyrser import builder
 import pathlib as pl
 
 if __name__ == "__main__":

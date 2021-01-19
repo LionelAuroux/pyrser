@@ -18,13 +18,12 @@ parser_c_decls = [
     """
     typedef struct parser_s
     {
-        void        *self;
-        uint8_t     *intern;
         uint64_t    intern_len;
-        uint64_t    char_pos;
-        uint64_t    byte_pos;
+        uint8_t     *intern;
+        location_t  loc;
         uint8_t     eof;   // TODO: flags for many states
         uint8_t     full;   // TODO: flags for many states
+        void        *self;
     }
     parser_t;
     """,
@@ -38,8 +37,8 @@ parser_intern_funcs = [
     # intern
     "uint32_t               peek(parser_t*);",
     "void                   next_char(parser_t*);",
-    "uint64_t               get_pos(parser_t*);",
-    "void                   set_pos(parser_t*, uint64_t);",
+    "uint8_t                get_pos(parser_t*, location_t*);",
+    "uint8_t                set_pos(parser_t*, location_t*);",
     # terminal rules
     "uint8_t                read_eof(parser_t *);",
     "uint8_t                read_char(parser_t *, uint32_t);",
@@ -97,16 +96,18 @@ def compile(pkg_path: pl.Path, clean=True):
     for ext_decl in parser_c_callbacks:
         ffibuilder.cdef(f'extern "Python" uint8_t {ext_decl}(parser_t *);')
         source_txt += f'static uint8_t {ext_decl}(parser_t *);\n'
+        # link between public callback and static function embedded
         source_txt += f"uint8_t {ext_decl}_link(parser_t *p)" + " { return " + ext_decl + "(p); }\n"
     
     # TODO: must generate it for given grammar
     ffibuilder.set_source("lib_" + ctx['name'], source_txt, sources=[f'parser_{ctx["name"]}.c'])
 
     # Makefile features
-    print(f"{pformat(vars(ffibuilder))}")
-    for it in ffibuilder._assigned_source[3]['sources']:
-        print(f"SOURCE {it}")
-    ffibuilder.compile(tmpdir=pkg_path, verbose=True)
+    #print(f"{pformat(vars(ffibuilder))}")
+    #for it in ffibuilder._assigned_source[3]['sources']:
+    #    print(f"SOURCE {it}")
+
+    ffibuilder.compile(tmpdir=pkg_path, verbose=False)
     if clean:
         for it in pkg_path.glob("*.{c,h}"):
             it.unlink()
